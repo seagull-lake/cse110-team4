@@ -12,7 +12,12 @@ export class MainGameScreenController extends ScreenController {
         super();
         this.screenSwitcher = screenSwitcher;
         this.model = new MainGameScreenModel();
-        this.view = new MainGameScreenView();
+        this.view = new MainGameScreenView(() => this.handleHomeClick());
+    }
+
+    private handleHomeClick(): void {
+        // stop any timers / save progress here before leaving
+        this.screenSwitcher.switchToScreen({ type: "menu" });
     }
 
     getView(): MainGameScreenView { return this.view; }

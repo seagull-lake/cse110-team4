@@ -12,7 +12,12 @@ export class FractionSortScreenController extends ScreenController {
         super();
         this.screenSwitcher = screenSwitcher;
         this.model = new FractionSortScreenModel();
-        this.view = new FractionSortScreenView();
+        this.view = new FractionSortScreenView(() => this.handleHomeClick());
+    }
+
+    private handleHomeClick(): void {
+        // stop any timers / save progress here before leaving
+        this.screenSwitcher.switchToScreen({ type: "menu" });
     }
 
     getView(): FractionSortScreenView { return this.view; }

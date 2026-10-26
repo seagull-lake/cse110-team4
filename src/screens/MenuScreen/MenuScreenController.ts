@@ -12,8 +12,27 @@ export class MenuScreenController extends ScreenController {
         super();
         this.screenSwitcher = screenSwitcher;
         this.model = new MenuScreenModel();
-        this.view = new MenuScreenView();
+        this.view = new MenuScreenView(() => this.handleMainGameClick(),
+                                       () => this.handleMultiDivGameClick(),
+                                       () => this.handleFractionGameClick());
     }
 
-    getView(): MenuScreenView { return this.view; }
+    private handleMainGameClick(): void {
+        this.screenSwitcher.switchToScreen({ type: "maingame" })
+
+    }
+
+    private handleMultiDivGameClick(): void {
+        this.screenSwitcher.switchToScreen({ type: "multidivgame" })
+
+    }
+
+    private handleFractionGameClick(): void {
+        this.screenSwitcher.switchToScreen({ type: "fractiongame" })
+
+    }
+
+    getView(): MenuScreenView { 
+        return this.view; 
+    }
 }

@@ -11,7 +11,7 @@ export type Screen =
     { type: "menu" } |
     { type: "maingame" } |
     { type: "fractiongame" } |
-    { type: "multiplicationgame"};
+    { type: "multidivgame"};
 
 export abstract class ScreenController {
     abstract getView(): View;

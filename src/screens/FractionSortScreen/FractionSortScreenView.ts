@@ -1,12 +1,17 @@
 import Konva from "konva";
 import type { View } from "../../types.ts";
+import { createHomeButton } from "../../components/HomeButton.ts";
 
 export class FractionSortScreenView implements View {
     private group: Konva.Group;
 
-    constructor(/* callbacks, e.g. onStartClick: () => void */) {
+    constructor(onHomeClick: () => void /*, other callbacks, e.g. onStartClick: () => void */) {
         this.group = new Konva.Group({ visible: false });
-        // add Konva shapes to this.group here
+
+        // add Konva shapes (background, game elements) to this.group here
+
+        // Home button — added last so it's drawn on top of everything else
+        this.group.add(createHomeButton(onHomeClick));
     }
 
     show(): void { this.group.visible(true); this.group.getLayer()?.draw(); }

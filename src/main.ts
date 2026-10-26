@@ -6,11 +6,13 @@ import { FractionSortScreenController } from "./screens/FractionSortScreen/Fract
 import { MainGameScreenController } from "./screens/MainGameScreen/MainGameScreenController.ts";
 import { MultiplicationDivisionScreenController } from "./screens/MultiplicationDivisionScreen/MultiplicationDivisionScreenController.ts";
 
+const SCREEN_KEY = "currentScreen";
+
 class App implements ScreenSwitcher {
   private stage: Konva.Stage;
   private layer: Konva.Layer;
   private menuController: MenuScreenController;
-  private fracgameController: FractionSortScreenController;
+  private fractiongameController: FractionSortScreenController;
   private maingameController: MainGameScreenController;
   private multidivController: MultiplicationDivisionScreenController;
 
@@ -20,33 +22,45 @@ class App implements ScreenSwitcher {
     this.stage.add(this.layer);
 
     this.menuController = new MenuScreenController(this);
-    this.fracgameController = new FractionSortScreenController(this);
+    this.fractiongameController = new FractionSortScreenController(this);
     this.maingameController = new MainGameScreenController(this);
     this.multidivController = new MultiplicationDivisionScreenController(this);
 
     this.layer.add(this.menuController.getView().getGroup());
-    this.layer.add(this.fracgameController.getView().getGroup());
+    this.layer.add(this.fractiongameController.getView().getGroup());
     this.layer.add(this.maingameController.getView().getGroup());
     this.layer.add(this.multidivController.getView().getGroup());
 
 
     this.layer.draw();
     this.menuController.show();
+    this.switchToScreen(this.loadSavedScreen());
   }
 
   switchToScreen(screen: Screen): void {
+    try {
+      localStorage.setItem(SCREEN_KEY, JSON.stringify(screen));
+    } catch { /* storage blocked – just don't persist */ }
+
     this.menuController.hide();
-    this.fracgameController.hide();
     this.maingameController.hide();
     this.multidivController.hide();
-    
+    this.fractiongameController.hide();
 
     switch (screen.type) {
       case "menu": this.menuController.show(); break;
       case "maingame": this.maingameController.show(); break;
-      case "fractiongame": this.fracgameController.show(); break;
-      case "multiplicationgame": this.multidivController.show(); break;
+      case "multidivgame": this.multidivController.show(); break;
+      case "fractiongame": this.fractiongameController.show(); break;
     }
+  }
+
+  private loadSavedScreen(): Screen {
+    try {
+      const saved = localStorage.getItem(SCREEN_KEY);
+      if (saved) return JSON.parse(saved) as Screen;
+    } catch { /* bad or missing data */ }
+    return { type: "menu" };
   }
 }
 

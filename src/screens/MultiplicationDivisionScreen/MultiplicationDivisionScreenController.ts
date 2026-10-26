@@ -12,7 +12,12 @@ export class MultiplicationDivisionScreenController extends ScreenController {
         super();
         this.screenSwitcher = screenSwitcher;
         this.model = new MultiplicationDivisionScreenModel();
-        this.view = new MultiplicationDivisionScreenView();
+        this.view = new MultiplicationDivisionScreenView(() => this.handleHomeClick());
+    }
+
+    private handleHomeClick(): void {
+        // stop any timers / save progress here before leaving
+        this.screenSwitcher.switchToScreen({ type: "menu" });
     }
 
     getView(): MultiplicationDivisionScreenView { return this.view; }

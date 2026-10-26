@@ -12,9 +12,9 @@ export class MenuScreenView implements View {
     ) {
         this.group = new Konva.Group({ visible: false });
 
-        this.group.add(this.makeButton("Main Game", 200, onMainGameClick));
+        this.group.add(this.makeButton("Start", 200, onMainGameClick));
         this.group.add(this.makeButton("Multiply / Divide", 300, onMultiDivGameClick));
-        this.group.add(this.makeButton("Fractions", 400, onFractionGameClick));
+        this.group.add(this.makeButton("Fractions Sort", 400, onFractionGameClick));
     }
 
     // Helper so you don't repeat the Rect + Text code three times

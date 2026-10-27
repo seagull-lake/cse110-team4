@@ -1,6 +1,6 @@
 import Konva from "konva";
 import type { View } from "../../types.ts";
-import { STAGE_WIDTH } from "../../constants.ts";
+import { STAGE_HEIGHT, STAGE_WIDTH } from "../../constants.ts";
 
 export class MenuScreenView implements View {
     private group: Konva.Group;
@@ -12,6 +12,10 @@ export class MenuScreenView implements View {
     ) {
         this.group = new Konva.Group({ visible: false });
 
+        this.group.add(new Konva.Text({
+            x: STAGE_WIDTH/2-130, y:STAGE_HEIGHT/2-200, text:"Math Quest",
+            fontSize: 50, fontFamily: "cursive", fill: "#412F00",
+        }));
         this.group.add(this.makeButton("Start", 200, onMainGameClick));
         this.group.add(this.makeButton("Multiply / Divide", 300, onMultiDivGameClick));
         this.group.add(this.makeButton("Fractions Sort", 400, onFractionGameClick));

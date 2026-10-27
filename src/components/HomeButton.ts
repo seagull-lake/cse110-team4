@@ -4,8 +4,8 @@ import Konva from "konva";
  * Shared Home button — reuse in any screen's view:
  *   this.group.add(createHomeButton(onHomeClick));
  */
-export function createHomeButton(onClick: () => void): Konva.Group {
-    const button = new Konva.Group({ x: 20, y: 20 });
+export function createHomeButton(onClick: () => void, x = 20, y = 20): Konva.Group {
+    const button = new Konva.Group({ x, y });
 
     button.add(new Konva.Rect({
         width: 90,

@@ -2,6 +2,7 @@ import Konva from "konva";
 import type { View } from "../../types.ts";
 import { STAGE_HEIGHT, STAGE_WIDTH } from "../../constants.ts";
 
+
 export class MenuScreenView implements View {
     private group: Konva.Group;
 

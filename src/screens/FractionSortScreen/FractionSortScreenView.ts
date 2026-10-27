@@ -1,5 +1,6 @@
 import Konva from "konva";
 import type { View } from "../../types.ts";
+import { STAGE_HEIGHT,STAGE_WIDTH } from "../../constants.ts";
 import { createHomeButton } from "../../components/HomeButton.ts";
 
 export class FractionSortScreenView implements View {
@@ -11,7 +12,7 @@ export class FractionSortScreenView implements View {
         // add Konva shapes (background, game elements) to this.group here
 
         // Home button — added last so it's drawn on top of everything else
-        this.group.add(createHomeButton(onHomeClick));
+        this.group.add(createHomeButton(onHomeClick, STAGE_WIDTH - 50, STAGE_HEIGHT - 50));
     }
 
     show(): void { this.group.visible(true); this.group.getLayer()?.draw(); }

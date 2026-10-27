@@ -1,6 +1,7 @@
 import Konva from "konva";
 import type { ScreenSwitcher, Screen } from "./types.ts";
 import { STAGE_WIDTH, STAGE_HEIGHT } from "./constants.ts";
+import { saveScreen, loadScreen } from "./storage.ts";
 import { MenuScreenController } from "./screens/MenuScreen/MenuScreenController.ts";
 import { FractionSortScreenController } from "./screens/FractionSortScreen/FractionSortScreenController.ts";
 import { MainGameScreenController } from "./screens/MainGameScreen/MainGameScreenController.ts";
@@ -33,8 +34,9 @@ class App implements ScreenSwitcher {
 
 
     this.layer.draw();
-    this.menuController.show();
-    this.switchToScreen(this.loadSavedScreen());
+
+    // Reopen the last screen (falls back to the menu if nothing is saved)
+    this.switchToScreen(loadScreen());
   }
 
   switchToScreen(screen: Screen): void {
@@ -53,14 +55,6 @@ class App implements ScreenSwitcher {
       case "multidivgame": this.multidivController.show(); break;
       case "fractiongame": this.fractiongameController.show(); break;
     }
-  }
-
-  private loadSavedScreen(): Screen {
-    try {
-      const saved = localStorage.getItem(SCREEN_KEY);
-      if (saved) return JSON.parse(saved) as Screen;
-    } catch { /* bad or missing data */ }
-    return { type: "menu" };
   }
 }
 

@@ -7,7 +7,6 @@ import { FractionSortScreenController } from "./screens/FractionSortScreen/Fract
 import { MainGameScreenController } from "./screens/MainGameScreen/MainGameScreenController.ts";
 import { MultiplicationDivisionScreenController } from "./screens/MultiplicationDivisionScreen/MultiplicationDivisionScreenController.ts";
 
-const SCREEN_KEY = "currentScreen";
 
 class App implements ScreenSwitcher {
   private stage: Konva.Stage;
@@ -40,9 +39,7 @@ class App implements ScreenSwitcher {
   }
 
   switchToScreen(screen: Screen): void {
-    try {
-      localStorage.setItem(SCREEN_KEY, JSON.stringify(screen));
-    } catch { /* storage blocked – just don't persist */ }
+    saveScreen(screen);
 
     this.menuController.hide();
     this.maingameController.hide();

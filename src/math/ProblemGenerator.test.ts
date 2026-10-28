@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkAnswer, generateBatch, generateProblem, getLevelConfig, isWholeNumber, LEVELS, OPERATIONS } from "./ProblemGenerator.ts";
+import { checkAnswer, generateBatch, generateLevelProblem as generateProblem, getLevelConfig, isWholeNumber, LEVELS, OPERATIONS } from "./ProblemGenerator.ts";
 import type { DifficultyLevel, Operation } from "./ProblemGenerator.ts";
 
 function expectInRange(value: number, min: number, max: number): void {

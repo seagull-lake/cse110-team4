@@ -41,7 +41,7 @@ export function getLevelConfig(level: DifficultyLevel): LevelConfig {
   throw new RangeError("Level must be an integer from 1 to 5.");
 }
 
-//the test page uses this list to populate the difficulty dropdown. for ui
+// Default configurations for legacy level-based callers.
 export const LEVELS: LevelConfig[] = [];
 const levelNumbers: DifficultyLevel[] = [1, 2, 3, 4, 5];
 for (const level of levelNumbers) {

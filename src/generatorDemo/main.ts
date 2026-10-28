@@ -1,4 +1,4 @@
-import { checkAnswer, getLevelConfig, LEVELS, ProblemGenerator } from "../math/ProblemGenerator.ts";
+import { checkAnswer, getLevelConfig, LEVELS, generateBatch, isWholeNumber } from "../math/ProblemGenerator.ts";
 import type { DifficultyLevel, Operation, Problem } from "../math/ProblemGenerator.ts";
 import "./style.css";
 
@@ -7,7 +7,7 @@ function element<T extends HTMLElement>(id: string): T {
   if (!result) throw new Error(`Missing element: ${id}`);
   return result as T;
 }
-const generator = new ProblemGenerator();
+
 const operation = element<HTMLSelectElement>("operation");
 const level = element<HTMLSelectElement>("level");
 const answer = element<HTMLInputElement>("answer");
@@ -59,13 +59,13 @@ function renderSamples(): void {
   });
 }
 function generateSamples(): void {
-  samples = generator.generateBatch(...selected(), 10);
+  samples = generateBatch(...selected(), 10);
   renderSamples();
 }
 function reset(): void {
   index = 0;
   correct = 0;
-  problems = generator.generateBatch(...selected(), 5);
+  problems = generateBatch(...selected(), 5);
   const [op, selectedLevel] = selected();
   const config = getLevelConfig(selectedLevel);
   const range = ([min, max]: readonly [number, number]) => `${min.toLocaleString("en-US")}–${max.toLocaleString("en-US")}`;
@@ -79,7 +79,7 @@ function reset(): void {
 element<HTMLFormElement>("answer-form").addEventListener("submit", event => {
   event.preventDefault();
   if (solved) return;
-  if (!/^\d+$/.test(answer.value.trim())) {
+  if (!isWholeNumber(answer.value)) {
     feedback.textContent = "Enter a whole number, such as 24.";
     feedback.className = "retry";
     return;

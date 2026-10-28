@@ -7,6 +7,7 @@ describe("level progression", () => {
     const state = initialProgression(ADDITION_LEVELS);
     expect(progressCount(ADDITION_LEVELS, state)).toEqual({ completed: 0, total: 5 });
     expect(state.currentDifficulty).toBe(1);
+    expect(state.isCompleted).toBe(false);
     expect(state.levelId).toBe("addition");
     expect(startLevel(ADDITION_LEVELS, state, "addition").isActive).toBe(true);
   });
@@ -16,6 +17,7 @@ describe("level progression", () => {
     const completed = completeLevel(ADDITION_LEVELS, active, "addition");
     expect(progressCount(ADDITION_LEVELS, completed).completed).toBe(1);
     expect(completed.currentDifficulty).toBe(2);
+    expect(completed.isCompleted).toBe(false);
     expect(startLevel(ADDITION_LEVELS, completed, "addition").isActive).toBe(true);
   });
 
@@ -38,7 +40,9 @@ describe("level progression", () => {
       state = completeLevel(ADDITION_LEVELS, startLevel(ADDITION_LEVELS, state, id), id);
     }
     expect(progressCount(ADDITION_LEVELS, state)).toEqual({ completed: 5, total: 5 });
-    expect(state.currentDifficulty).toBe(6);
+    expect(state.currentDifficulty).toBe(5);
+    expect(state.isCompleted).toBe(true);
     expect(() => startLevel(ADDITION_LEVELS, state, "addition")).toThrow();
+    expect(() => completeLevel(ADDITION_LEVELS, state, "addition")).toThrow();
   });
 });

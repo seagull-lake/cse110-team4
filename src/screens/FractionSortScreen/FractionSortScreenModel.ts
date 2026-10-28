@@ -2,8 +2,9 @@
     To implment in this file:
     - Fraction Generator
     - Answer Checker
-    - Score Manager (get current score, compare with hgih score, and send it to storage)
+    - Score Manager (get current score, compare with high score, and send it to storage)
 */
+import { loadFractionHighScore, saveFractionHighScore } from "../../storage.ts";
 
 export interface Fraction {
     numerator: number;
@@ -13,13 +14,17 @@ export interface Fraction {
 
 export type Bin = "lesser" | "greater" | "equal to"
 
-export const FRACTION_COUNT = 11;   // 1 main + 10 draggable
+export const FRACTION_COUNT = 4;   // 1 main + 3 draggable
 export const CHOICE_COUNT = FRACTION_COUNT - 1;
 export const MAX_DENOMINATOR = 12;
+export const POINTS_PER_CORRECT = 50;
 
 export class FractionSortScreenModel {
-    //score
+    //scores
     private score = 0;
+    private highScore = loadFractionHighScore();
+    private round = 0;
+
 
     // list of fractions, main fraction in index 0, 
     // following fractions are the user draggable fractions (current count is 10)
@@ -68,9 +73,12 @@ export class FractionSortScreenModel {
     
     // New fractions + clear all placements (called at the start of every round)
     newRound(): void {
+        this.round++;
         this.generateFractions();
         this.placements = new Array(CHOICE_COUNT).fill(null);
     }
+
+    getRound(): number{ return this.round; }
 
     // Record where the user dropped a fraction
     setPlacement(choice_index: number, bin: Bin | null): void{
@@ -78,6 +86,11 @@ export class FractionSortScreenModel {
     }
 
     getPlacements(): (Bin | null)[] { return [...this.placements]; }
+
+    // How many choice fractions are not in a bin yet
+    getRemainingCount(): number {
+        return this.placements.filter(p => p === null).length;
+    }
 
     /*------ Answer Checker -------*/
 
@@ -102,14 +115,37 @@ export class FractionSortScreenModel {
         return this.placements.map((_, i) => this.isCorrect(i));
     }
 
+    // True only if every choice fraction is in the right bin
+    allCorrect(): boolean {
+        return this.getResults().every(r => r);
+    }
+
     // Check everything, add points, and return how many were correct this round
     submit(): number {
         const correct = this.getResults().filter(r => r).length;
-        this.score += correct;
-        return correct;
+        this.score += correct * POINTS_PER_CORRECT;
+        return correct * POINTS_PER_CORRECT;
     }
+
+    /*------ Score Manager ------*/
 
     //Score Getter Methods
     getScore(): number{ return this.score; }
-    resetScore(): void { this.score = 0; }
+    getHighScore(): number { return this.highScore; }
+
+    //fresh game
+    resetGame(): void { 
+        this.score = 0; 
+        this.round = 0;
+    }
+
+    // End of game: save a new high score. Returns true if this score is a new high score.
+    finishGame(): boolean {
+        if (this.score > this.highScore) {
+            this.highScore = this.score;
+            saveFractionHighScore(this.highScore);
+            return true;
+        }
+        return false;
+    }
 }

@@ -1,0 +1,9 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.local
+/agents.md
+/TODO.md
+/CODING_GUIDELINES.md
+/LOCAL_WORK_SUMMARY.md

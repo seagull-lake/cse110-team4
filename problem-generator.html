@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Problem Lab · Math Quest</title>
+  </head>
+  <body>
+    <main>
+      <header><a href="/">← Math Quest</a><span>GRADES 3–4 · GENERATOR TEST PAGE</span></header>
+      <section class="intro"><p class="eyebrow">A LITTLE PRACTICE. A BIG ADVENTURE.</p><h1>Problem Lab<span>＋</span></h1><p>Build your skills, one problem at a time. Pick a level and give it a try.</p></section>
+      <section class="controls" aria-label="Practice settings">
+        <label>Operation<select id="operation"><option value="addition">＋ Addition</option><option value="subtraction">− Subtraction</option><option value="multiplication">× Multiplication</option><option value="division">÷ Division</option></select></label>
+        <label>Difficulty<select id="level"></select></label>
+        <p id="rules"></p>
+      </section>
+      <section class="practice" aria-labelledby="practice-title">
+        <div class="card-top"><h2 id="practice-title">Your practice round</h2><span id="round-label"></span></div>
+        <progress id="progress" max="5" value="0" aria-label="Questions completed"></progress>
+        <p id="expression" class="expression"></p>
+        <form id="answer-form"><label for="answer">Your answer</label><div class="answer-row"><input id="answer" type="text" inputmode="numeric" autocomplete="off" maxlength="12" required aria-describedby="feedback" /><button id="check" type="submit">Check answer</button></div></form>
+        <p id="feedback" role="status" aria-live="polite"></p>
+        <div class="card-bottom"><span id="score"></span><button id="next" type="button" hidden>Next problem →</button><button id="restart" type="button" hidden>Try another round ↻</button></div>
+      </section>
+      <section class="preview" aria-labelledby="preview-title"><div class="card-top"><div><p class="eyebrow">TAKE A LOOK UNDER THE HOOD</p><h2 id="preview-title">Generator preview</h2></div><button id="batch" class="secondary" type="button">Generate 10 samples ↻</button></div><p>Independent samples for the selected operation and level. Repeats are possible.</p><label class="toggle"><input id="reveal" type="checkbox" /> Show answer key</label><div class="table-wrap"><table><thead><tr><th scope="col">#</th><th scope="col">Problem</th><th scope="col">Answer</th></tr></thead><tbody id="samples"></tbody></table></div></section>
+      <footer>Five practice levels · Whole numbers · No negative subtraction answers · Division without remainders</footer>
+    </main>
+    <script type="module" src="/src/generatorDemo/main.ts"></script>
+  </body>
+</html>

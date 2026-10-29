@@ -1,13 +1,12 @@
 import Konva from "konva";
 import type { ScreenSwitcher, Screen } from "./types.ts";
-import { STAGE_WIDTH, STAGE_HEIGHT } from "./constants.ts";
+import { STAGE_WIDTH, STAGE_HEIGHT, FONT_FAMILY } from "./constants.ts";
 import { saveScreen, loadScreen } from "./storage.ts";
 import { MenuScreenController } from "./screens/MenuScreen/MenuScreenController.ts";
 import { FractionSortScreenController } from "./screens/FractionSortScreen/FractionSortScreenController.ts";
 import { MainGameScreenController } from "./screens/MainGameScreen/MainGameScreenController.ts";
 import { MultiplicationDivisionScreenController } from "./screens/MultiplicationDivisionScreen/MultiplicationDivisionScreenController.ts";
 
-const SCREEN_KEY = "currentScreen";
 
 class App implements ScreenSwitcher {
   private stage: Konva.Stage;
@@ -34,15 +33,15 @@ class App implements ScreenSwitcher {
 
 
     this.layer.draw();
+    // Konva draws on a canvas, so redraw once the web font has loaded
+    document.fonts.load(`20px ${FONT_FAMILY}`).then(() => this.layer.draw());
 
     // Reopen the last screen (falls back to the menu if nothing is saved)
     this.switchToScreen(loadScreen());
   }
 
   switchToScreen(screen: Screen): void {
-    try {
-      localStorage.setItem(SCREEN_KEY, JSON.stringify(screen));
-    } catch { /* storage blocked – just don't persist */ }
+    saveScreen(screen);
 
     this.menuController.hide();
     this.maingameController.hide();

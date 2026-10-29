@@ -3,6 +3,12 @@ import {
     FractionSortScreenModel, FRACTION_COUNT, CHOICE_COUNT, MAX_DENOMINATOR,POINTS_PER_CORRECT
 } from "./FractionSortScreenModel.ts";
 
+// Fake random source that returns the given values in order, then repeats them
+function sequence(...values: number[]): () => number {
+    let i = 0;
+    return () => values[i++ % values.length];
+}
+
 // Build a model whose fractions are set by hand (main first), for exact answer tests
 function modelWith(...fracs: [number, number][]): FractionSortScreenModel {
     const model = new FractionSortScreenModel();
@@ -47,11 +53,11 @@ describe("Fraction generator", () => {
     });
 
     it("uses the random source (min and max)", () => {
-        const low = new FractionSortScreenModel(() => 0);
+        const low = new FractionSortScreenModel(sequence(0, 0, 0.5, 0.5, 0.9999, 0.9999, 0.3, 0.3));
         low.generateFractions();
         expect(low.getMainFraction()).toEqual({ numerator: 1, denominator: 2, value: 0.5 });
 
-        const high = new FractionSortScreenModel(() => 0.9999);
+        const high = new FractionSortScreenModel(sequence(0.9999, 0.9999, 0, 0, 0.5, 0.5, 0.3, 0.3));
         high.generateFractions();
         expect(high.getMainFraction().denominator).toBe(MAX_DENOMINATOR);
         expect(high.getMainFraction().numerator).toBe(MAX_DENOMINATOR - 1);

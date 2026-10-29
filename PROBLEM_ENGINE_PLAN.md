@@ -20,7 +20,7 @@ The interpreter selects exactly one arithmetic generator from `gameType`. Both g
 ## Shared results
 
 - `MainGameProblem`: `operand1`, `operand2`, and a numeric `answer`.
-- `MiniGameOneProblem`: `operand1`, `operand2`, and exactly four numeric answer options. Each option has an `isCorrect` flag. The generator must provide exactly one correct option and three incorrect options; the four values should be distinct.
+- `MiniGameOneProblem`: `operand1`, `operand2`, and a read-only array of numeric answer options. Each option has an `isCorrect` flag. The generator must provide exactly four distinct values, with exactly one correct option; these are runtime invariants rather than four separate tuple types.
 - Shared result types belong in `src/domain/problem.ts`, outside `src/problem-engine/` and outside individual screen models.
 - `ArithmeticProblemRequest` is a discriminated union: a `main-game` request maps to `MainGameProblem`; a `mini-game-1` request maps to `MiniGameOneProblem`.
 - A future `MiniGameTwoProblemRequest` may be introduced with the Fraction Sort contract. It is outside this PR and is not accepted by `ArithmeticProblemEngine`.
@@ -60,6 +60,6 @@ interface MiniGameOneProblemGenerator {
 
 1. Shared types compile without a browser, screen, or concrete generator.
 2. The engine and both generators have typed inputs and outputs.
-3. The two result shapes match the required games, including four mini-game choices.
+3. The two result shapes match the required games. The mini-game contract uses an array; the implementation must enforce four choices and one correct answer.
 4. Fraction Sort's existing types and generator remain untouched.
 5. No random generation, fake output, screen wiring, or grading is introduced.

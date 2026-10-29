@@ -27,19 +27,13 @@ export interface MainGameProblem extends ArithmeticOperands {
   readonly answer: number;
 }
 
-export interface MiniGameOneAnswerOption<Correct extends boolean = boolean> {
+export interface MiniGameOneAnswerOption {
   readonly value: number;
-  readonly isCorrect: Correct;
+  readonly isCorrect: boolean;
 }
 
-export type MiniGameOneAnswers =
-  | readonly [MiniGameOneAnswerOption<true>, MiniGameOneAnswerOption<false>, MiniGameOneAnswerOption<false>, MiniGameOneAnswerOption<false>]
-  | readonly [MiniGameOneAnswerOption<false>, MiniGameOneAnswerOption<true>, MiniGameOneAnswerOption<false>, MiniGameOneAnswerOption<false>]
-  | readonly [MiniGameOneAnswerOption<false>, MiniGameOneAnswerOption<false>, MiniGameOneAnswerOption<true>, MiniGameOneAnswerOption<false>]
-  | readonly [MiniGameOneAnswerOption<false>, MiniGameOneAnswerOption<false>, MiniGameOneAnswerOption<false>, MiniGameOneAnswerOption<true>];
-
 export interface MiniGameOneProblem extends ArithmeticOperands {
-  readonly answers: MiniGameOneAnswers;
+  readonly answers: readonly MiniGameOneAnswerOption[];
 }
 
 export type ArithmeticProblemResult = MainGameProblem | MiniGameOneProblem;

@@ -18,7 +18,7 @@ describe("adventure map model", () => {
   });
 
   it("rejects invalid configuration and completion before a level starts", () => {
-    expect(() => new AdventureMapScreenModel({ ...ADDITION_LEVELS, difficulty: [] })).toThrow();
+    expect(() => new AdventureMapScreenModel({ ...ADDITION_LEVELS, maxDifficulty: 0 })).toThrow();
     const model = new AdventureMapScreenModel();
     expect(() => model.completeActiveDifficulty(1)).toThrow();
     expect(model.getMapData().progression.currentDifficulty).toBe(1);

@@ -9,7 +9,9 @@ subsequent steps.
 `GameInterpreter` accepts the three generators through its constructor. Their input and output types are
 defined in the plain `Generators` interface in `types.ts`. Calling `generate(request)` selects
 exactly one generator and returns its problem and solution. The interpreter
-validates the request; each generator defines the numeric ranges for difficulty.
+validates the request, including a required positive integer `digits` count;
+each generator uses that count and the difficulty to choose its numeric ranges.
+Arithmetic games require `operation`; the fraction comparison game omits it.
 Game identifiers match the existing screen identifiers. Initial difficulty
 names are `easy`, `medium`, and `hard`.
 
@@ -23,24 +25,33 @@ function createProblem(generators: Generators) {
     return interpreter.generate({
         game: "multidivgame",
         difficulty: "medium",
+        digits: 2,
         operation: "division",
     });
 }
 ```
 
 Main-game problems contain operands, operation, and a numeric fill-in answer.
-Multiplication/division problems also contain four answer choices. Fraction
+Multiplication/division problems also contain four answer choices and an
+`isCorrect` tuple with four booleans in the same order. For example,
+`choices: [3, 6, 9, 12]`, `answer: 6`, and
+`isCorrect: [false, true, false, false]` mark the second option as correct.
+Generators must supply these flags by comparing each choice with the numeric answer;
+the interpreter passes them through with the problem. Fraction
 problems contain a reference fraction, choice fractions, and the expected bin
 for each choice (in matching order). Generator implementations must ensure that
 multiple-choice answers are unique and include the correct answer exactly once,
 and that fraction denominators are positive. Solutions should stay in the model
 for the future Validator; views should receive only the prompt and choices.
 
-Unsupported modules, difficulties, and operations throw before any generator is
-called. Missing generators fail at construction. Generator errors propagate to
+Unsupported modules, difficulties, operations, and invalid or missing digit counts
+throw before any generator is called. Missing or non-callable generators fail at
+construction. Generator errors propagate to
 the caller so controllers can decide how to report them.
 
 ## 简单说明
+
+### 游戏解释器
 
 `generate` 只有一个定义，不使用函数重载、泛型或类型映射。
 

@@ -1,28 +1,30 @@
-// 支持的游戏、难度和运算。
+// Supported game types, difficulties, and arithmetic operations.
 export type GameModule = "maingame" | "multidivgame" | "fractiongame";
 export type Difficulty = "easy" | "medium" | "hard";
 export type Operation = "addition" | "subtraction" | "multiplication" | "division";
 
-// 调用 generate 时传入的数据。分数游戏不需要 operation。
-export interface GameRequest {
+export interface GameRequest { // to be taken in
     game: GameModule;
     difficulty: Difficulty;
-    operation?: Operation;
+    digits: number;
+    operation?: Operation; // optional because fraction comprison dont need operation
 }
 
-export interface MainGameProblem {
+export interface MainGameProblem { // to be returned
     game: "maingame";
     operands: [number, number];
     operation: Operation;
     answer: number;
 }
 
-export interface MultiplicationDivisionProblem {
+export interface MultiplicationDivisionProblem {// to be returned
     game: "multidivgame";
     operands: [number, number];
     operation: "multiplication" | "division";
     answer: number;
     choices: [number, number, number, number];
+    // Match choices by index: true marks the correct option, false marks an incorrect option.
+    isCorrect: [boolean, boolean, boolean, boolean];
 }
 
 export interface Fraction {
@@ -32,19 +34,33 @@ export interface Fraction {
 
 export type FractionComparison = "lesser" | "greater" | "equal to";
 
-export interface FractionProblem {
+export interface FractionProblem {// to be returned
     game: "fractiongame";
     reference: Fraction;
     choices: Fraction[];
     answers: FractionComparison[];
 }
 
-// 返回的题目可以是这三种中的一种。
 export type GameProblem = MainGameProblem | MultiplicationDivisionProblem | FractionProblem;
 
-// 三个生成器都接收请求，然后返回各自的题目。
+// take in game setting and return a problem
+export interface MainGameGenerator {
+    generate(request: GameRequest): MainGameProblem;
+}
+
+// take in game setting and return a problem
+export interface MultiplicationDivisionGenerator {
+    generate(request: GameRequest): MultiplicationDivisionProblem;
+}
+
+// take in game setting and return a problem
+export interface FractionGenerator {
+    generate(request: GameRequest): FractionProblem;
+}
+
+// group the three generators for use by GameInterpreter.
 export interface Generators {
-    maingame: { generate(request: GameRequest): MainGameProblem };
-    multidivgame: { generate(request: GameRequest): MultiplicationDivisionProblem };
-    fractiongame: { generate(request: GameRequest): FractionProblem };
+    maingame: MainGameGenerator;
+    multidivgame: MultiplicationDivisionGenerator;
+    fractiongame: FractionGenerator;
 }

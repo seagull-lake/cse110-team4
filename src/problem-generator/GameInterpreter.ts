@@ -66,21 +66,11 @@ export class GameInterpreter {
         if (!Number.isSafeInteger(request.digits)) {
             throw new RangeError("Number of digits must be a positive safe integer.");
         }
-        if (request.digits < 1) {
+        for(let i = 0; i < DOMStringList.length; i++)
+        {
+           if (request.digits[i] < 1) {
             throw new RangeError("Number of digits must be a positive safe integer.");
-        }
-        // 3. Check that the difficulty is easy, medium, or hard.
-        let validDifficulty = false;
-        if (request.difficulty === "easy") {
-            validDifficulty = true;
-        } else if (request.difficulty === "medium") {
-            validDifficulty = true;
-        } else if (request.difficulty === "hard") {
-            validDifficulty = true;
-        }
-
-        if (!validDifficulty) {
-            throw new RangeError("Unsupported difficulty. Use easy, medium, or hard.");
+        } 
         }
 
         // 4. Main game: check the operation and pass the full request to its generator.

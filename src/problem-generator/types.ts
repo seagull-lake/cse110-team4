@@ -5,8 +5,7 @@ export type Operation = "addition" | "subtraction" | "multiplication" | "divisio
 
 export interface GameRequest { // to be taken in
     game: GameModule;
-    difficulty: Difficulty;
-    digits: number;
+    digits:[number,number];
     operation?: Operation; // optional because fraction comprison dont need operation
 }
 

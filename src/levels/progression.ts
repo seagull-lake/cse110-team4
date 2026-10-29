@@ -39,7 +39,7 @@ export function completeLevel(
   if (!state.isActive || id !== levelId(level)) {
     throw new Error("Only the active level can be completed.");
   }
-  if (state.currentDifficulty === level.difficulty.length) {
+  if (state.currentDifficulty === level.maxDifficulty) {
     return { ...state, isActive: false, isCompleted: true };
   }
   return { ...state, currentDifficulty: state.currentDifficulty + 1, isActive: false };
@@ -49,16 +49,16 @@ export function progressCount(level: LevelDefinition, state: ProgressionState): 
   completed: number; total: number;
 } {
   assertValidState(level, state);
-  return { completed: state.isCompleted ? level.difficulty.length : state.currentDifficulty - 1,
-    total: level.difficulty.length };
+  return { completed: state.isCompleted ? level.maxDifficulty : state.currentDifficulty - 1,
+    total: level.maxDifficulty };
 }
 
 function assertValidState(level: LevelDefinition, state: ProgressionState): void {
   if (state.levelId !== level.id ||
       !Number.isInteger(state.currentDifficulty) || state.currentDifficulty < 1 ||
-      state.currentDifficulty > level.difficulty.length ||
+      state.currentDifficulty > level.maxDifficulty ||
       (state.isActive && state.isCompleted) ||
-      (state.isCompleted && state.currentDifficulty !== level.difficulty.length)) {
+      (state.isCompleted && state.currentDifficulty !== level.maxDifficulty)) {
     throw new Error("Invalid progression state.");
   }
 }

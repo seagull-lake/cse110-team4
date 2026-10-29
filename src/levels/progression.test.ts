@@ -35,7 +35,7 @@ describe("level progression", () => {
 
   it("stops after the final difficulty", () => {
     let state = initialProgression(ADDITION_LEVELS);
-    for (let difficulty = 1; difficulty <= ADDITION_LEVELS.difficulty.length; difficulty++) {
+    for (let difficulty = 1; difficulty <= ADDITION_LEVELS.maxDifficulty; difficulty++) {
       const id = levelId(ADDITION_LEVELS);
       state = completeLevel(ADDITION_LEVELS, startLevel(ADDITION_LEVELS, state, id), id);
     }

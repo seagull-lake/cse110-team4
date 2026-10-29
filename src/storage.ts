@@ -2,7 +2,13 @@ import type { Screen } from "./types.ts";
 
 const PREFIX = "cse110-team4:";
 const SCREEN_KEY = PREFIX + "currentScreen";
-const FRACTION_HIGH_SCORE_KEY = PREFIX + "fractionHighScore";
+
+export type MiniGameId = "fraction-sort" | "multiplication-division";
+
+const HIGH_SCORE_KEYS: Record<MiniGameId, string> = {
+    "fraction-sort": PREFIX + "fractionHighScore",
+    "multiplication-division": PREFIX + "multiplicationDivisionHighScore",
+};
 
 /*------ Current screen ------*/
 
@@ -20,17 +26,18 @@ export function loadScreen(): Screen {
     return { type: "menu" };
 }
 
-/*------ Fraction Sort high score ------*/
+/*------ Mini-game high scores ------*/
 
-export function saveFractionHighScore(score: number): void {
+export function saveHighScore(gameId: MiniGameId, score: number): void {
     try {
-        localStorage.setItem(FRACTION_HIGH_SCORE_KEY, String(score));
+        //does it get erased when new highscore added?
+        localStorage.setItem(HIGH_SCORE_KEYS[gameId], String(score));
     } catch { /* storage full or blocked – skip saving */ }
 }
 
-export function loadFractionHighScore(): number {
+export function loadHighScore(gameId: MiniGameId): number {
     try {
-        const saved = Number(localStorage.getItem(FRACTION_HIGH_SCORE_KEY));
+        const saved = Number(localStorage.getItem(HIGH_SCORE_KEYS[gameId]));
         if (Number.isFinite(saved) && saved > 0) return saved;
     } catch { /* missing data, or no localStorage (e.g. in tests) */ }
     return 0;

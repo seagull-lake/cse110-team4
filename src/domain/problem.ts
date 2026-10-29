@@ -7,7 +7,6 @@ export interface ProblemRequest {
   readonly gameType: ProblemGameType;
   readonly operation: OperationType;
   readonly difficulty: number;
-  readonly operandCount: number;
 }
 
 /** Internal input passed from the dispatcher to an arithmetic generator. */

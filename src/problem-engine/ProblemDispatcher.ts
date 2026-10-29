@@ -1,60 +1,6 @@
-import {
-  ADDITION_LEVELS, DIVISION_LEVELS, MULTIPLICATION_LEVELS, SUBTRACTION_LEVELS,
-} from "../levels/levelConfig.ts";
-import type { LevelDefinition } from "../levels/levelConfig.ts";
-import type {
-  OperationType, ProblemRequest, ProblemResult, ResolvedProblemParameters,
-} from "../domain/problem.ts";
-import type { MainGameProblemGenerator } from "./MainGameProblemGenerator.ts";
-import type { MiniGameOneProblemGenerator } from "./MiniGameOneProblemGenerator.ts";
+import type { ProblemRequest, ProblemResult } from "../domain/problem.ts";
 
-const LEVELS_BY_OPERATION: ReadonlyMap<OperationType, LevelDefinition> = new Map([
-  ["addition", ADDITION_LEVELS],
-  ["subtraction", SUBTRACTION_LEVELS],
-  ["multiplication", MULTIPLICATION_LEVELS],
-  ["division", DIVISION_LEVELS],
-]);
-
-/** Routes arithmetic game requests after resolving digit counts from difficulty. */
-export class ProblemDispatcher {
-  private readonly mainGameGenerator: MainGameProblemGenerator;
-  private readonly miniGameOneGenerator: MiniGameOneProblemGenerator;
-
-  constructor(
-    mainGameGenerator: MainGameProblemGenerator,
-    miniGameOneGenerator: MiniGameOneProblemGenerator,
-  ) {
-    this.mainGameGenerator = mainGameGenerator;
-    this.miniGameOneGenerator = miniGameOneGenerator;
-  }
-
-  generate(request: ProblemRequest): ProblemResult {
-    const input = resolveProblemParameters(request);
-
-    if (request.gameType === "main-game") {
-      return this.mainGameGenerator.generate(input);
-    }
-    if (request.gameType === "mini-game-1") {
-      return this.miniGameOneGenerator.generate(input);
-    }
-    throw new RangeError("Unsupported problem game type.");
-  }
-}
-
-function resolveProblemParameters(request: ProblemRequest): ResolvedProblemParameters {
-  const level = LEVELS_BY_OPERATION.get(request.operation);
-  if (!level) throw new RangeError("Unsupported operation.");
-  if (!Number.isInteger(request.difficulty) || request.difficulty < 1 ||
-      request.difficulty > level.maxDifficulty) {
-    throw new RangeError("Difficulty is outside the configured range.");
-  }
-  if (!Number.isInteger(request.operandCount) || request.operandCount < 2) {
-    throw new RangeError("At least two operands are required.");
-  }
-
-  return {
-    operation: request.operation,
-    operandDigits: Array.from({ length: request.operandCount }, (_, index) =>
-      index % 2 === 0 ? Math.ceil((request.difficulty + 1) / 2) : Math.ceil(request.difficulty / 2)),
-  };
+/** Contract for routing a game request to the matching arithmetic generator. */
+export interface ProblemDispatcher {
+  generate(request: ProblemRequest): ProblemResult;
 }

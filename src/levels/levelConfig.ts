@@ -1,4 +1,6 @@
-export type LevelType = "addition" | "subtraction" | "division" | "multiplication";
+import type { OperationType } from "../domain/problem.ts";
+
+export type LevelType = OperationType;
 
 /** Operand widths, in decimal digits, for one difficulty. */
 export interface LevelDifficulty {

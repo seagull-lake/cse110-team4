@@ -2,46 +2,47 @@
 
 ## Goal and scope
 
-This PR defines the TypeScript contracts for an arithmetic problem engine. It does not generate problems, render a screen, grade a player's answer, or change navigation. The contracts must be usable by both game models without importing Konva or a concrete generator.
+This PR defines TypeScript contracts for the arithmetic engine used by the main game and mini-game 1. Fraction Sort (mini-game 2) keeps its separate generator and existing types in `FractionSortScreenModel`. This PR does not change Fraction Sort, generation, grading, or navigation.
 
 ## Inputs and routing
 
-The engine accepts one request with:
+The arithmetic engine accepts one request with:
 
 | Field | Type | Meaning |
 | --- | --- | --- |
 | `operand1Digits` | `number` | Decimal digit count for the first operand. |
 | `operand2Digits` | `number` | Decimal digit count for the second operand. |
 | `operation` | `OperationType` | Addition, subtraction, multiplication, or division. |
-| `gameType` | `GameType` | `main-game` or `mini-game-1`. |
+| `gameType` | `ArithmeticGameType` | `main-game` or `mini-game-1`. |
 
-The interpreter selects exactly one generator from `gameType`. Both generators receive the digit counts and operation. The game type is a routing field, not a mathematical rule. It is deliberately distinct from the existing `Screen` identifiers because the engine should not depend on navigation.
+The interpreter selects exactly one arithmetic generator from `gameType`. Both generators receive `ArithmeticProblemParameters`: the digit counts and operation. This request union does not include mini-game 2, whose fractions are generated separately. The game type is deliberately distinct from existing `Screen` identifiers because the engine should not depend on navigation.
 
 ## Shared results
 
 - `MainGameProblem`: `operand1`, `operand2`, and a numeric `answer`.
 - `MiniGameOneProblem`: `operand1`, `operand2`, and exactly four numeric answer options. Each option has an `isCorrect` flag. The generator must provide exactly one correct option and three incorrect options; the four values should be distinct.
-- The result types belong in `src/domain/problem.ts`, outside `src/problem-engine/` and outside individual screen models. Both models may import them without depending on an implementation.
-- The engine request type is a discriminated union. A `main-game` request maps to `MainGameProblem`; a `mini-game-1` request maps to `MiniGameOneProblem`.
+- Shared result types belong in `src/domain/problem.ts`, outside `src/problem-engine/` and outside individual screen models.
+- `ArithmeticProblemRequest` is a discriminated union: a `main-game` request maps to `MainGameProblem`; a `mini-game-1` request maps to `MiniGameOneProblem`.
+- A future `MiniGameTwoProblemRequest` may be introduced with the Fraction Sort contract. It is outside this PR and is not accepted by `ArithmeticProblemEngine`.
 
 ## Component design
 
-**Recommended:** three small components with separate contracts: `ProblemEngine` routes requests, `MainGameProblemGenerator` creates fill-in problems, and `MiniGameOneProblemGenerator` creates multiple-choice problems. The two generators may share private arithmetic helpers later. This keeps game-specific choice generation out of the main-game generator and makes routing testable without random numbers.
+**Recommended:** three small arithmetic components with separate contracts: `ArithmeticProblemEngine` routes requests, `MainGameProblemGenerator` creates fill-in problems, and `MiniGameOneProblemGenerator` creates multiple-choice problems. The two generators may share private arithmetic helpers later. Fraction Sort's generator stays inside its Model.
 
 A single class would be shorter initially, but it would combine dispatch, arithmetic generation, and multiple-choice construction. Three components are a better fit if the games evolve independently. For this PR, only the interfaces and method signatures are added; no concrete classes or placeholder results are needed.
 
 ```ts
-interface ProblemEngine {
+interface ArithmeticProblemEngine {
   generate(request: MainGameProblemRequest): MainGameProblem;
   generate(request: MiniGameOneProblemRequest): MiniGameOneProblem;
 }
 
 interface MainGameProblemGenerator {
-  generate(input: ProblemParameters): MainGameProblem;
+  generate(input: ArithmeticProblemParameters): MainGameProblem;
 }
 
 interface MiniGameOneProblemGenerator {
-  generate(input: ProblemParameters): MiniGameOneProblem;
+  generate(input: ArithmeticProblemParameters): MiniGameOneProblem;
 }
 ```
 
@@ -60,4 +61,5 @@ interface MiniGameOneProblemGenerator {
 1. Shared types compile without a browser, screen, or concrete generator.
 2. The engine and both generators have typed inputs and outputs.
 3. The two result shapes match the required games, including four mini-game choices.
-4. No random generation, fake output, screen wiring, or grading is introduced.
+4. Fraction Sort's existing types and generator remain untouched.
+5. No random generation, fake output, screen wiring, or grading is introduced.

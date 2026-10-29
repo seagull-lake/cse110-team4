@@ -1,5 +1,5 @@
-import type { MainGameProblem, ProblemParameters } from "../domain/problem.ts";
+import type { ArithmeticProblemParameters, MainGameProblem } from "../domain/problem.ts";
 
 export interface MainGameProblemGenerator {
-  generate(input: ProblemParameters): MainGameProblem;
+  generate(input: ArithmeticProblemParameters): MainGameProblem;
 }

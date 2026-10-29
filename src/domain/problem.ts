@@ -1,45 +1,45 @@
 export type OperationType = "addition" | "subtraction" | "multiplication" | "division";
 
-export type GameType = "main-game" | "mini-game-1";
+export type ArithmeticGameType = "main-game" | "mini-game-1";
 
-export interface ProblemParameters {
+export interface ArithmeticProblemParameters {
   readonly operand1Digits: number;
   readonly operand2Digits: number;
   readonly operation: OperationType;
 }
 
-export interface MainGameProblemRequest extends ProblemParameters {
+export interface MainGameProblemRequest extends ArithmeticProblemParameters {
   readonly gameType: "main-game";
 }
 
-export interface MiniGameOneProblemRequest extends ProblemParameters {
+export interface MiniGameOneProblemRequest extends ArithmeticProblemParameters {
   readonly gameType: "mini-game-1";
 }
 
-export type ProblemRequest = MainGameProblemRequest | MiniGameOneProblemRequest;
+export type ArithmeticProblemRequest = MainGameProblemRequest | MiniGameOneProblemRequest;
 
-export interface ProblemOperands {
+export interface ArithmeticOperands {
   readonly operand1: number;
   readonly operand2: number;
 }
 
-export interface MainGameProblem extends ProblemOperands {
+export interface MainGameProblem extends ArithmeticOperands {
   readonly answer: number;
 }
 
-export interface AnswerOption<Correct extends boolean = boolean> {
+export interface MiniGameOneAnswerOption<Correct extends boolean = boolean> {
   readonly value: number;
   readonly isCorrect: Correct;
 }
 
 export type MiniGameOneAnswers =
-  | readonly [AnswerOption<true>, AnswerOption<false>, AnswerOption<false>, AnswerOption<false>]
-  | readonly [AnswerOption<false>, AnswerOption<true>, AnswerOption<false>, AnswerOption<false>]
-  | readonly [AnswerOption<false>, AnswerOption<false>, AnswerOption<true>, AnswerOption<false>]
-  | readonly [AnswerOption<false>, AnswerOption<false>, AnswerOption<false>, AnswerOption<true>];
+  | readonly [MiniGameOneAnswerOption<true>, MiniGameOneAnswerOption<false>, MiniGameOneAnswerOption<false>, MiniGameOneAnswerOption<false>]
+  | readonly [MiniGameOneAnswerOption<false>, MiniGameOneAnswerOption<true>, MiniGameOneAnswerOption<false>, MiniGameOneAnswerOption<false>]
+  | readonly [MiniGameOneAnswerOption<false>, MiniGameOneAnswerOption<false>, MiniGameOneAnswerOption<true>, MiniGameOneAnswerOption<false>]
+  | readonly [MiniGameOneAnswerOption<false>, MiniGameOneAnswerOption<false>, MiniGameOneAnswerOption<false>, MiniGameOneAnswerOption<true>];
 
-export interface MiniGameOneProblem extends ProblemOperands {
+export interface MiniGameOneProblem extends ArithmeticOperands {
   readonly answers: MiniGameOneAnswers;
 }
 
-export type ProblemResult = MainGameProblem | MiniGameOneProblem;
+export type ArithmeticProblemResult = MainGameProblem | MiniGameOneProblem;

@@ -9,11 +9,12 @@ subsequent steps.
 `GameInterpreter` accepts the three generators through its constructor. Their input and output types are
 defined in the plain `Generators` interface in `types.ts`. Calling `generate(request)` selects
 exactly one generator and returns its problem and solution. The interpreter
-validates the request, including a required positive integer `digits` count;
-each generator uses that count and the difficulty to choose its numeric ranges.
+validates the request, including a required `digits` pair of positive safe integers.
+For example, `[2, 1]` requests a two-digit first operand and a one-digit second
+operand. Each generator uses these counts to choose its numeric ranges.
 Arithmetic games require `operation`; the fraction comparison game omits it.
-Game identifiers match the existing screen identifiers. Initial difficulty
-names are `easy`, `medium`, and `hard`.
+Game identifiers match the existing screen identifiers. Requests do not require
+a `difficulty` field.
 
 ```ts
 import { GameInterpreter } from "./GameInterpreter.ts";
@@ -24,8 +25,7 @@ function createProblem(generators: Generators) {
     const interpreter = new GameInterpreter(generators);
     return interpreter.generate({
         game: "multidivgame",
-        difficulty: "medium",
-        digits: 2,
+        digits: [2, 1],
         operation: "division",
     });
 }
@@ -44,7 +44,7 @@ multiple-choice answers are unique and include the correct answer exactly once,
 and that fraction denominators are positive. Solutions should stay in the model
 for the future Validator; views should receive only the prompt and choices.
 
-Unsupported modules, difficulties, operations, and invalid or missing digit counts
+Unsupported modules, operations, and invalid or missing digit counts
 throw before any generator is called. Missing or non-callable generators fail at
 construction. Generator errors propagate to
 the caller so controllers can decide how to report them.
@@ -55,9 +55,9 @@ the caller so controllers can decide how to report them.
 
 `generate` 只有一个定义，不使用函数重载、泛型或类型映射。
 
-1. 检查难度。
+1. 检查输入是否包含两个合法的数字位数。
 2. 用 `if / else` 判断 `request.game`。
-3. 把请求交给对应生成器，难度规则由该生成器处理。
+3. 检查运算类型，把完整请求交给对应生成器。
 4. 返回生成器给出的题目。
 
 例如 `game: "multidivgame"` 会调用

@@ -40,8 +40,9 @@ export class GameInterpreter {
 
     /**
      * Request a problem using the supplied game settings.
-     * @param request An object containing digits (number of digits), game (game type),
-     * difficulty, and operation (arithmetic operation).
+     * @param request An object containing digits (a pair of digit counts), game (game type),
+     * and operation (arithmetic operation). For example, [2, 1] requests a two-digit
+     * first operand and a one-digit second operand. No difficulty field is required.
      * The main game supports all four operations; the multiplication/division game supports
      * only multiplication and division. Omit operation for the fraction comparison game.
      * @returns The selected generator's problem and correct answer, typed as GameProblem.
@@ -61,25 +62,31 @@ export class GameInterpreter {
             throw new TypeError("A game request is required.");
         }
 
-        // 2. Require a positive safe integer: 1 means one digit, 2 means two digits.
+        // 2. Require exactly two digit counts, one for each operand.
         // The generator determines the actual numeric ranges.
-        if (!Number.isSafeInteger(request.digits)) {
-            throw new RangeError("Number of digits must be a positive safe integer.");
+        if (!Array.isArray(request.digits)) {
+            throw new RangeError("Digits must be an array of two positive safe integers.");
         }
-        for(let i = 0; i < DOMStringList.length; i++)
-        {
-           if (request.digits[i] < 1) {
-            throw new RangeError("Number of digits must be a positive safe integer.");
-        } 
+        if (request.digits.length !== 2) {
+            throw new RangeError("Digits must contain exactly two digit counts.");
+        }
+        for (let i = 0; i < request.digits.length; i++) {
+            // Each count must be a whole number greater than zero.
+            if (!Number.isSafeInteger(request.digits[i])) {
+                throw new RangeError("Each digit count must be a positive safe integer.");
+            }
+            if (request.digits[i] < 1) {
+                throw new RangeError("Each digit count must be a positive safe integer.");
+            }
         }
 
-        // 4. Main game: check the operation and pass the full request to its generator.
+        // 3. Main game: check the operation and pass the full request to its generator.
         // Each return sends the generator's result back to the caller and ends this method.
         if (request.game === "maingame") {
             if (request.operation === "addition") {
-                return this.generators.maingame.generate(request); //generate a maingame addition problem(take in request, which contains game type, difficult level, digits, and operation(optional))
+                return this.generators.maingame.generate(request);
             } else if (request.operation === "subtraction") {
-                return this.generators.maingame.generate(request);//generate a maingame subtraction problem(take in request, which contains game type, difficult level, digits, and operation(optional))
+                return this.generators.maingame.generate(request);
             } else if (request.operation === "multiplication") {
                 return this.generators.maingame.generate(request);
             } else if (request.operation === "division") {

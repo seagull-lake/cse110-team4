@@ -13,6 +13,13 @@ export class MultiplicationDivisionScreenController extends ScreenController {
         this.screenSwitcher = screenSwitcher;
         this.model = new MultiplicationDivisionScreenModel();
         this.view = new MultiplicationDivisionScreenView(() => this.handleHomeClick());
+        this.view.updateScore(this.model.getScore());
+    }
+
+    recordAnswer(isCorrect: boolean, points: number): number {
+        const awardedPoints = this.model.recordAnswer(isCorrect, points);
+        this.view.updateScore(this.model.getScore());
+        return awardedPoints;
     }
 
     private handleHomeClick(): void {

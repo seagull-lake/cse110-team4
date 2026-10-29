@@ -18,22 +18,16 @@ export interface MiniGameOneProblemRequest extends ArithmeticProblemParameters {
 
 export type ArithmeticProblemRequest = MainGameProblemRequest | MiniGameOneProblemRequest;
 
-export interface ArithmeticOperands {
+export interface MainGameProblem {
   readonly operand1: number;
   readonly operand2: number;
-}
-
-export interface MainGameProblem extends ArithmeticOperands {
   readonly answer: number;
 }
 
-export interface MiniGameOneAnswerOption {
-  readonly value: number;
-  readonly isCorrect: boolean;
-}
-
-export interface MiniGameOneProblem extends ArithmeticOperands {
-  readonly answers: readonly MiniGameOneAnswerOption[];
+export interface MiniGameOneProblem {
+  readonly operand1: number;
+  readonly operand2: number;
+  readonly answers: readonly { readonly value: number; readonly isCorrect: boolean }[];
 }
 
 export type ArithmeticProblemResult = MainGameProblem | MiniGameOneProblem;

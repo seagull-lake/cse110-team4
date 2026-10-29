@@ -35,9 +35,9 @@ const BUTTON = { width: 170, height: 45, x: STAGE_WIDTH - PAD - 170, y: STAGE_HE
 
 // Order of the bins on screen, left to right (matches the mockup)
 const BIN_ORDER: { bin: Bin; symbol: string; label: string }[] = [
-    { bin: "greater", symbol: ">", label: "Greater than" },
-    { bin: "equal to", symbol: "=", label: "Equal to" },
     { bin: "lesser", symbol: "<", label: "Less than" },
+    { bin: "equal to", symbol: "=", label: "Equal to" },
+    { bin: "greater", symbol: ">", label: "Greater than" },
 ];
 
 export class FractionSortScreenView implements View {
@@ -63,7 +63,7 @@ export class FractionSortScreenView implements View {
     private mainDenominator: Konva.Text;
 
     // tray
-    private statusText: Konva.Text;       // "3 fractions remaining" / "Correct Answer" / "Wrong Answer!"
+    private statusText: Konva.Text;       // "3 fractions remaining" / "Correct Answer" / "Wrong Answer"
     private totalText: Konva.Text;        // "TOTAL POINTS: 50" after submit
     private placeholders: Konva.Group;    // "Empty" boxes left behind in the tray
     private tilesGroup: Konva.Group;      // draggable fraction tiles (rebuilt every round)
@@ -270,7 +270,7 @@ export class FractionSortScreenView implements View {
         });
 
         this.statusText
-            .text(allCorrect ? "Correct Answer" : "Wrong Answer!")
+            .text(allCorrect ? "Correct Answer" : "Wrong Answer")
             .fill(allCorrect ? COLORS.correct : COLORS.wrong)
             .fontSize(12)
             .fontStyle("bold");

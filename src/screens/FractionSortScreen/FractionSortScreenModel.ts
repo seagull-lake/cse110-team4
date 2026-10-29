@@ -56,11 +56,20 @@ export class FractionSortScreenModel {
         return {numerator:numerator, denominator:denominator, value:numerator/denominator};
     }
 
-    // Generate Fractions and add them to the list of fractions
-    generateFractions():void{
+    // Generate Fractions and add them to the list of fractions (NO DUPLICATES ALLOWED)
+    generateFractions():void {
         this.fractions = [];
-        for (let i = 0; i < FRACTION_COUNT; i++){
-            this.fractions.push(this.makeFraction());
+        const seenFractions = new Set<string>();
+
+        while(this.fractions.length < FRACTION_COUNT){
+            const fractionToAdd = this.makeFraction();
+            const fractionKey = `${fractionToAdd.numerator}/${fractionToAdd.denominator}`;
+
+            // If the generated fraction is not a duplicate, use it
+            if(!seenFractions.has(fractionKey)){
+                seenFractions.add(fractionKey);
+                this.fractions.push(fractionToAdd);
+            }
         }
     }
 

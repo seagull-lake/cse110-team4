@@ -2,9 +2,8 @@
     To implment in this file:
     - Fraction Generator
     - Answer Checker
-    - Score Manager (get current score, compare with high score, and send it to storage)
 */
-import { loadFractionHighScore, saveFractionHighScore } from "../../storage.ts";
+import { MiniGameScoreManager } from "../../scoreManager.ts";
 
 export interface Fraction {
     numerator: number;
@@ -20,9 +19,7 @@ export const MAX_DENOMINATOR = 12;
 export const POINTS_PER_CORRECT = 50;
 
 export class FractionSortScreenModel {
-    //scores
-    private score = 0;
-    private highScore = loadFractionHighScore();
+    private readonly scoreManager = new MiniGameScoreManager("fraction-sort");
     private round = 0;
 
 
@@ -132,29 +129,30 @@ export class FractionSortScreenModel {
     // Check everything, add points, and return how many were correct this round
     submit(): number {
         const correct = this.getResults().filter(r => r).length;
-        this.score += correct * POINTS_PER_CORRECT;
-        return correct * POINTS_PER_CORRECT;
+        const points = correct * POINTS_PER_CORRECT;
+        this.scoreManager.addPoints(points);
+        return points;
     }
 
     /*------ Score Manager ------*/
 
     //Score Getter Methods
-    getScore(): number{ return this.score; }
-    getHighScore(): number { return this.highScore; }
+    getScore(): number { 
+        return this.scoreManager.getScore(); 
+    }
+    
+    getHighScore(): number { 
+        return this.scoreManager.getHighScore(); 
+    }
 
     //fresh game
     resetGame(): void { 
-        this.score = 0; 
+        this.scoreManager.reset();
         this.round = 0;
     }
 
     // End of game: save a new high score. Returns true if this score is a new high score.
     finishGame(): boolean {
-        if (this.score > this.highScore) {
-            this.highScore = this.score;
-            saveFractionHighScore(this.highScore);
-            return true;
-        }
-        return false;
+        return this.scoreManager.finishGame();
     }
 }

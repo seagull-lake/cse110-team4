@@ -2,10 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import type { MainGameProblem, MiniGameOneProblem } from "../domain/problem.ts";
 import { ProblemDispatcher } from "./ProblemDispatcher.ts";
 
-const mainGameProblem: MainGameProblem = { operand1: 12, operand2: 3, answer: 15 };
+const mainGameProblem: MainGameProblem = { operands: [12, 3], answer: 15 };
 const miniGameOneProblem: MiniGameOneProblem = {
-  operand1: 12,
-  operand2: 3,
+  operands: [12, 3],
   answers: [
     { value: 15, isCorrect: true },
     { value: 14, isCorrect: false },
@@ -25,13 +24,15 @@ function setup() {
 }
 
 describe("ProblemDispatcher", () => {
-  it("routes a main-game request with digit counts derived from difficulty", () => {
+  it("routes a main-game request with digit counts derived for each operand", () => {
     const { dispatcher, mainGameGenerator, miniGameOneGenerator } = setup();
 
-    expect(dispatcher.generate({ gameType: "main-game", operation: "addition", difficulty: 4 }))
+    expect(dispatcher.generate({
+      gameType: "main-game", operation: "addition", difficulty: 4, operandCount: 3,
+    }))
       .toBe(mainGameProblem);
     expect(mainGameGenerator.generate).toHaveBeenCalledExactlyOnceWith({
-      operation: "addition", operand1Digits: 3, operand2Digits: 2,
+      operation: "addition", operandDigits: [3, 2, 3],
     });
     expect(miniGameOneGenerator.generate).not.toHaveBeenCalled();
   });
@@ -40,12 +41,14 @@ describe("ProblemDispatcher", () => {
     const { dispatcher, mainGameGenerator, miniGameOneGenerator } = setup();
 
     for (const operation of ["addition", "subtraction", "multiplication", "division"] as const) {
-      expect(dispatcher.generate({ gameType: "mini-game-1", operation, difficulty: 5 }))
+      expect(dispatcher.generate({
+        gameType: "mini-game-1", operation, difficulty: 5, operandCount: 2,
+      }))
         .toBe(miniGameOneProblem);
     }
     expect(miniGameOneGenerator.generate).toHaveBeenCalledTimes(4);
     expect(miniGameOneGenerator.generate).toHaveBeenLastCalledWith({
-      operation: "division", operand1Digits: 3, operand2Digits: 3,
+      operation: "division", operandDigits: [3, 3],
     });
     expect(mainGameGenerator.generate).not.toHaveBeenCalled();
   });
@@ -54,17 +57,20 @@ describe("ProblemDispatcher", () => {
     const { dispatcher, mainGameGenerator, miniGameOneGenerator } = setup();
 
     expect(() => dispatcher.generate({
-      gameType: "fraction-sort" as "main-game", operation: "addition", difficulty: 1,
+      gameType: "fraction-sort" as "main-game", operation: "addition", difficulty: 1, operandCount: 2,
     })).toThrow("Unsupported problem game type");
     expect(() => dispatcher.generate({
-      gameType: "main-game", operation: "power" as "addition", difficulty: 1,
+      gameType: "main-game", operation: "power" as "addition", difficulty: 1, operandCount: 2,
     })).toThrow("Unsupported operation");
     expect(() => dispatcher.generate({
-      gameType: "main-game", operation: "addition", difficulty: 0,
+      gameType: "main-game", operation: "addition", difficulty: 0, operandCount: 2,
     })).toThrow("Difficulty is outside the configured range");
     expect(() => dispatcher.generate({
-      gameType: "main-game", operation: "addition", difficulty: 6,
+      gameType: "main-game", operation: "addition", difficulty: 6, operandCount: 2,
     })).toThrow("Difficulty is outside the configured range");
+    expect(() => dispatcher.generate({
+      gameType: "main-game", operation: "addition", difficulty: 1, operandCount: 1,
+    })).toThrow("At least two operands are required");
     expect(mainGameGenerator.generate).not.toHaveBeenCalled();
     expect(miniGameOneGenerator.generate).not.toHaveBeenCalled();
   });

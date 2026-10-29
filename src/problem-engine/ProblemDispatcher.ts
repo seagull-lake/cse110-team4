@@ -48,10 +48,13 @@ function resolveProblemParameters(request: ProblemRequest): ResolvedProblemParam
       request.difficulty > level.maxDifficulty) {
     throw new RangeError("Difficulty is outside the configured range.");
   }
+  if (!Number.isInteger(request.operandCount) || request.operandCount < 2) {
+    throw new RangeError("At least two operands are required.");
+  }
 
   return {
     operation: request.operation,
-    operand1Digits: Math.ceil((request.difficulty + 1) / 2),
-    operand2Digits: Math.ceil(request.difficulty / 2),
+    operandDigits: Array.from({ length: request.operandCount }, (_, index) =>
+      index % 2 === 0 ? Math.ceil((request.difficulty + 1) / 2) : Math.ceil(request.difficulty / 2)),
   };
 }

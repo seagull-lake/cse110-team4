@@ -8,9 +8,15 @@ export interface ProblemDifficultyConfig {
   miniGameOne: { [difficulty: number]: readonly [number, number] };
 }
 
-// Starter difficulty. The level owners will add the remaining entries.
+// Main-game operand counts are fixed; level owners will tune the digit counts.
 export const problemDifficultyConfig: ProblemDifficultyConfig = {
-  mainGame: { 1: [1, 1] },
+  mainGame: {
+    1: [1, 1],
+    2: [1, 1],
+    3: [1, 1],
+    4: [1, 1, 1],
+    5: [1, 1, 1],
+  },
   miniGameOne: { 1: [1, 1] },
 };
 

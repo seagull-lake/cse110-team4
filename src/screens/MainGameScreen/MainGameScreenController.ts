@@ -1,5 +1,6 @@
 import { ScreenController } from "../../types.ts";
 import type { ScreenSwitcher } from "../../types.ts";
+import type { LevelType } from "../../levels/levelConfig.ts";
 import { MainGameScreenModel } from "./MainGameScreenModel.ts";
 import { MainGameScreenView } from "./MainGameScreenView.ts";
 
@@ -12,7 +13,14 @@ export class MainGameScreenController extends ScreenController {
         super();
         this.screenSwitcher = screenSwitcher;
         this.model = new MainGameScreenModel();
-        this.view = new MainGameScreenView(() => this.handleHomeClick());
+        this.view = new MainGameScreenView(this.model.getTopics(),
+                                           (topic) => this.handleTopicClick(topic),
+                                           () => this.handleHomeClick());
+    }
+
+    private handleTopicClick(topic: LevelType): void {
+        // #29 will switch to this topic's adventure map
+        this.model.selectTopic(topic);
     }
 
     private handleHomeClick(): void {

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { ProblemDispatcher } from "./ProblemDispatcher.ts";
 import { MainGameProblemGenerator } from "./MainGameProblemGenerator.ts";
-import type { ProblemDifficultyConfig } from "./ProblemDispatcher.ts";
+import type { ProblemDifficultyConfig } from "../levels/levelConfig.ts";
 
 const config: ProblemDifficultyConfig = {
   mainGame: { 1: [1, 1], 2: [2, 1, 1] },

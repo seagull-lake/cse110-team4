@@ -13,6 +13,24 @@ export interface LevelDefinition {
 
 export const MAX_DIFFICULTY = 5;
 
+/** Each array contains the digit count for each operand at that difficulty. */
+export interface ProblemDifficultyConfig {
+  mainGame: { [difficulty: number]: readonly number[] };
+  miniGameOne: { [difficulty: number]: readonly [number, number] };
+}
+
+// Main-game operand counts are fixed; level owners will tune the digit counts.
+export const problemDifficultyConfig: ProblemDifficultyConfig = {
+  mainGame: {
+    1: [1, 1],
+    2: [1, 1],
+    3: [1, 1],
+    4: [1, 1, 1],
+    5: [1, 1, 1],
+  },
+  miniGameOne: { 1: [1, 1] },
+};
+
 export const ADDITION_LEVELS: LevelDefinition = {
   id: "addition",
   type: "addition",

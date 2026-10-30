@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ADDITION_LEVELS, MULTIPLICATION_LEVELS } from "../../levels/levelConfig.ts";
+import { MainGameProblemGenerator } from "../../problem-engine/MainGameProblemGenerator.ts";
+import { ProblemDispatcher } from "../../problem-engine/ProblemDispatcher.ts";
 import { AdventureMapScreenModel } from "./AdventureMapScreenModel.ts";
 
 describe("adventure map model", () => {
@@ -15,6 +17,36 @@ describe("adventure map model", () => {
     const model = new AdventureMapScreenModel(MULTIPLICATION_LEVELS);
     expect(model.getMapData().level).toBe(MULTIPLICATION_LEVELS);
     expect(model.getMapData().progression.levelId).toBe("multiplication");
+  });
+
+  it("exposes the shared operand digits for all five map difficulties", () => {
+    const difficulties = new AdventureMapScreenModel().getMapData().difficulties;
+    expect(difficulties).toEqual([
+      { difficulty: 1, operandDigits: [1, 1] },
+      { difficulty: 2, operandDigits: [1, 1] },
+      { difficulty: 3, operandDigits: [1, 1] },
+      { difficulty: 4, operandDigits: [1, 1, 1] },
+      { difficulty: 5, operandDigits: [1, 1, 1] },
+    ]);
+  });
+
+  it("keeps displayed stages aligned with generated main-game problems", () => {
+    const map = new AdventureMapScreenModel(MULTIPLICATION_LEVELS);
+    const dispatcher = new ProblemDispatcher(
+      new MainGameProblemGenerator(() => 0),
+      { generate: () => { throw new Error("Unexpected minigame request"); } },
+    );
+
+    for (const stage of map.getMapData().difficulties) {
+      const problem = dispatcher.generate({
+        gameType: "main-game",
+        operation: map.getMapData().level.type,
+        difficulty: map.startCurrentDifficulty(),
+      });
+      expect(problem.operands.map(operand => String(operand).length)).toEqual(stage.operandDigits);
+      map.completeActiveDifficulty(stage.difficulty);
+    }
+    expect(map.getMapData().progression.isCompleted).toBe(true);
   });
 
   it("rejects invalid configuration and completion before a level starts", () => {

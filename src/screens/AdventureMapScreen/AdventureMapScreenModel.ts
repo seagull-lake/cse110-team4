@@ -1,4 +1,4 @@
-import { ADDITION_LEVELS, validateLevelDefinition } from "../../levels/levelConfig.ts";
+import { ADDITION_LEVELS, problemDifficultyConfig, validateLevelDefinition } from "../../levels/levelConfig.ts";
 import type { LevelDefinition } from "../../levels/levelConfig.ts";
 import { completeLevel, initialProgression, startLevel } from "../../levels/progression.ts";
 import type { ProgressionState } from "../../levels/progression.ts";
@@ -7,6 +7,10 @@ import type { ProgressionState } from "../../levels/progression.ts";
 export interface AdventureMapData {
   readonly level: LevelDefinition;
   readonly progression: ProgressionState;
+  readonly difficulties: readonly {
+    readonly difficulty: number;
+    readonly operandDigits: readonly number[];
+  }[];
 }
 
 export class AdventureMapScreenModel {
@@ -20,7 +24,11 @@ export class AdventureMapScreenModel {
   }
 
   getMapData(): AdventureMapData {
-    return { level: this.level, progression: this.state };
+    const difficulties = Array.from({ length: this.level.maxDifficulty }, (_, index) => ({
+      difficulty: index + 1,
+      operandDigits: problemDifficultyConfig.mainGame[index + 1],
+    }));
+    return { level: this.level, progression: this.state, difficulties };
   }
 
   startCurrentDifficulty(): number {

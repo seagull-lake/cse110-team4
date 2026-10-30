@@ -37,10 +37,13 @@ describe("ProblemDispatcher", () => {
     });
   });
 
-  it("uses the starter configuration by default", () => {
+  it.each([
+    [1, 2], [2, 2], [3, 2], [4, 3], [5, 3],
+  ])("generates %s difficulty with %s operands", (difficulty, operandCount) => {
     const dispatcher = new ProblemDispatcher(new MainGameProblemGenerator(() => 0), setup().miniGame);
-    expect(dispatcher.generate({ gameType: "main-game", difficulty: 1, operation: "addition" }))
-      .toMatchObject({ operands: [1, 1], answer: 2 });
+    const result = dispatcher.generate({ gameType: "main-game", difficulty, operation: "addition" });
+    expect(result.operands).toHaveLength(operandCount);
+    expect(result).toMatchObject({ answer: operandCount });
   });
 
   it.each(["main-game", "mini-game-1"] as const)("rejects unconfigured %s difficulties", gameType => {

@@ -102,6 +102,18 @@ export class MultiplicationDivisionScreenView implements View {
         ///////////////////////////////////////////////////////////////////////
         //////////////////////////// Game Group End ///////////////////////////
         ///////////////////////////////////////////////////////////////////////
+        // add Konva shapes (background, game elements) to this.group here
+        this.scoreText = new Konva.Text({
+            x: 0,
+            y: 20,
+            width: STAGE_WIDTH - 30,
+            text: "Points: 0",
+            fontSize: 20,
+            fontFamily: "Arial",
+            fill: "#3b2f0b",
+            align: "right",
+        });
+        this.group.add(this.scoreText);
 
 
 
@@ -149,6 +161,11 @@ export class MultiplicationDivisionScreenView implements View {
         this.timerText.text(`Time: ${minutes}:${seconds}`);
         this.timerBar.width(TIMER_BAR_WIDTH * s / totalSeconds);
         this.redraw();
+    }
+
+    updateScore(score: number): void {
+        this.scoreText.text(`Points: ${score}`);
+        this.group.getLayer()?.draw();
     }
 
     show(): void { this.group.visible(true); this.group.getLayer()?.draw(); }

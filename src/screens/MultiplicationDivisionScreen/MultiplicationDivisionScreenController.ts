@@ -81,6 +81,14 @@ export class MultiplicationDivisionScreenController extends ScreenController {
 
     private handlePlayAgain(): void {
         this.startGame();
+        this.view = new MultiplicationDivisionScreenView(() => this.handleHomeClick());
+        this.view.updateScore(this.model.getScore());
+    }
+
+    recordAnswer(isCorrect: boolean, points: number): number {
+        const awardedPoints = this.model.recordAnswer(isCorrect, points);
+        this.view.updateScore(this.model.getScore());
+        return awardedPoints;
     }
 
     private handleHomeClick(): void {

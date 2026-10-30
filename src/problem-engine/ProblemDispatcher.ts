@@ -1,17 +1,27 @@
 import type { ProblemRequest, ProblemResult } from "../domain/problem.ts";
 import type { MainGameProblemGenerator } from "./MainGameProblemGenerator.ts";
 import type { MiniGameOneProblemGenerator } from "./MiniGameOneProblemGenerator.ts";
-import { problemDifficultyConfig } from "./problemDifficultyConfig.ts";
-import type { ProblemDifficultyConfig } from "./problemDifficultyConfig.ts";
+
+/** Each array contains the digit count of each operand. */
+export interface ProblemDifficultyConfig {
+  mainGame: { [difficulty: number]: readonly number[] };
+  miniGameOne: { [difficulty: number]: readonly [number, number] };
+}
+
+// Starter difficulty. The level owners will add the remaining entries.
+export const problemDifficultyConfig: ProblemDifficultyConfig = {
+  mainGame: { 1: [1, 1] },
+  miniGameOne: { 1: [1, 1] },
+};
 
 /** Resolves difficulty parameters and routes requests to the matching generator. */
 export class ProblemDispatcher {
-  private readonly mainGame: Pick<MainGameProblemGenerator, "generate">;
+  private readonly mainGame: MainGameProblemGenerator;
   private readonly miniGameOne: MiniGameOneProblemGenerator;
   private readonly config: ProblemDifficultyConfig;
 
   constructor(
-    mainGame: Pick<MainGameProblemGenerator, "generate">,
+    mainGame: MainGameProblemGenerator,
     miniGameOne: MiniGameOneProblemGenerator,
     config: ProblemDifficultyConfig = problemDifficultyConfig,
   ) {
@@ -27,13 +37,19 @@ export class ProblemDispatcher {
     switch (request.gameType) {
       case "main-game": {
         const operandDigits = this.config.mainGame[request.difficulty];
-        if (!operandDigits) throw new Error(`Unconfigured main-game difficulty: ${request.difficulty}`);
+        if (!operandDigits) {
+          throw new Error(`Unconfigured main-game difficulty: ${request.difficulty}`);
+        }
         return this.mainGame.generate({ operandDigits, operation: request.operation });
       }
       case "mini-game-1": {
         const operandDigits = this.config.miniGameOne[request.difficulty];
-        if (!operandDigits) throw new Error(`Unconfigured mini-game-1 difficulty: ${request.difficulty}`);
-        if (operandDigits.length !== 2) throw new Error("Mini-game-1 requires exactly two operands.");
+        if (!operandDigits) {
+          throw new Error(`Unconfigured mini-game-1 difficulty: ${request.difficulty}`);
+        }
+        if (operandDigits.length !== 2) {
+          throw new Error("Mini-game-1 requires exactly two operands.");
+        }
         return this.miniGameOne.generate({ operandDigits, operation: "multiplication" });
       }
       default:

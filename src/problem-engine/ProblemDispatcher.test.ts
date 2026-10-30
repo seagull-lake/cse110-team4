@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { ProblemDispatcher } from "./ProblemDispatcher.ts";
 import { MainGameProblemGenerator } from "./MainGameProblemGenerator.ts";
-import type { ProblemDifficultyConfig } from "./problemDifficultyConfig.ts";
+import type { ProblemDifficultyConfig } from "./ProblemDispatcher.ts";
 
 const config: ProblemDifficultyConfig = {
   mainGame: { 1: [1, 1], 2: [2, 1, 1] },
@@ -32,7 +32,9 @@ describe("ProblemDispatcher", () => {
     expect(miniGame.generate).toHaveBeenCalledExactlyOnceWith({
       operation: "multiplication", operandDigits: [2, 1],
     });
-    expect(result).toBe(miniGame.generate.mock.results[0].value);
+    expect(result).toEqual({
+      operands: [10, 1], answers: [{ value: 10, isCorrect: true }],
+    });
   });
 
   it("uses the starter configuration by default", () => {

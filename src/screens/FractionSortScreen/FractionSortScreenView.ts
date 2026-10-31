@@ -3,17 +3,18 @@ import type { View } from "../../types.ts";
 import { STAGE_HEIGHT,STAGE_WIDTH } from "../../constants.ts";
 import { createHomeButton } from "../../components/HomeButton.ts";
 import type { Bin, Fraction } from "./FractionSortScreenModel.ts";
+import { FONT_FAMILY, TITLE_COLOR, BUTTON_TEXT_COLOR } from "../../constants.ts";
 
-const FONT = "Arial";                // swap for your Google Font once it's loaded in index.html
+const FONT = FONT_FAMILY;                // swap for your Google Font once it's loaded in index.html
 const COLORS = {
     background: "#fdf3dc",
-    text: "#3b2f0b",
+    text: TITLE_COLOR,
     muted: "#8a7f6a",
     divider: "#ffffff",
     tray: "#ffffff",
     bin: "#3b6b5e",
     tile: "#3b6b5e",
-    tileText: "#ffffff",
+    tileText: BUTTON_TEXT_COLOR,
     correct: "#3f9a5b",
     wrong: "#c8473d",
     button: "#fbe7a9",

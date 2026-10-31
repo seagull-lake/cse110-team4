@@ -1,8 +1,8 @@
 import type { MainGameProblem, OperationType, ResolvedProblemParameters } from "../domain/problem.ts";
 
-/** One addition column, starting at the ones place (placeValue = 1). */
+// One addition column, starting at the ones place (placeValue = 1). 
 export interface AdditionColumn {
-  readonly placeValue: number;
+  readonly placeValue: number; 
   readonly leftDigit: number;
   readonly rightDigit: number;
   readonly carryIn: number;
@@ -11,7 +11,7 @@ export interface AdditionColumn {
   readonly carryOut: number;
 }
 
-/** One calculation in the order needed to solve the problem. */
+// One calculation in the order needed to solve the problem. 
 export interface SolutionStep {
   readonly operation: OperationType;
   readonly leftOperand: number;
@@ -27,11 +27,11 @@ export interface SolvedMainGameProblem extends MainGameProblem {
   };
 }
 
-/** Generates arithmetic questions from parameters passed by the dispatcher. */
+// Generates arithmetic questions from parameters passed by the dispatcher. 
 export class MainGameProblemGenerator {
   private readonly random: () => number;
 
-  // Sets the random number source. Tests can supply one for predictable questions.
+  //goal is to generate random number
   constructor(random: () => number = Math.random) {
     this.random = random;
   }
@@ -41,7 +41,7 @@ export class MainGameProblemGenerator {
     if (input.operandDigits.length < 2) {
       throw new Error("A problem requires at least two operands.");
     }
-    //limit digit counts so JavaScript can represent every generated integer exactly.
+    
     for (const digits of input.operandDigits) {
       if (!Number.isInteger(digits) || digits < 1 || digits > 15) {
         throw new Error("Operand digit counts must be integers from 1 to 15.");
@@ -81,7 +81,6 @@ export class MainGameProblemGenerator {
         default:
           throw new Error("Unsupported operation.");
       }
-
       steps.push({
         operation: input.operation,
         leftOperand,

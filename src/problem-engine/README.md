@@ -28,8 +28,6 @@ Main game screen
 ### Current implementation
 
 - `MainGameProblemGenerator.ts` implements problem and solution generation.
-- `ProblemDispatcher.ts` declares an interface; it does not implement routing yet.
-- The Problem Interpreter and the mapping from IDs such as `A1` to parameters are not implemented yet. Current level definitions use operation IDs such as `addition` and a separate difficulty value.
 - `MainGameScreenModel.ts` is a placeholder. The controller creates the model and view, and the view displays a Home button. The screen does not call the generator, display questions, or check answers yet.
 - The shared `MainGameProblem` type contains only `operands` and `answer`. The generator returns `SolvedMainGameProblem`, which adds `solution`. Future dispatcher integration needs to preserve this type so callers can access solution steps.
 

@@ -4,8 +4,15 @@ import {
     ADDITION_LEVELS, SUBTRACTION_LEVELS, MULTIPLICATION_LEVELS, DIVISION_LEVELS,
 } from "../../levels/levelConfig.ts";
 import type { LevelType } from "../../levels/levelConfig.ts";
+import { MainGameProblemGenerator } from "../../problem-engine/MainGameProblemGenerator.ts";
+import { ProblemDispatcher } from "../../problem-engine/ProblemDispatcher.ts";
 
 describe("MainGameScreenModel topics", () => {
+    const dispatcher = new ProblemDispatcher(
+        new MainGameProblemGenerator(() => 0),
+        { generate: () => { throw new Error("Unexpected minigame request"); } },
+    );
+
     it("lists the 4 topics in Figma order", () => {
         const model = new MainGameScreenModel();
         expect(model.getTopics().map((t) => t.label))
@@ -36,5 +43,24 @@ describe("MainGameScreenModel topics", () => {
         const model = new MainGameScreenModel();
         expect(() => model.selectTopic("fractions" as LevelType)).toThrow();
         expect(model.getSelectedTopic()).toBeNull();
+    });
+
+    it("generates a problem for the selected topic and difficulty", () => {
+        const model = new MainGameScreenModel();
+        model.selectTopic("addition");
+        expect(model.generateProblem(4, dispatcher)).toMatchObject({ operands: [1, 1, 1], answer: 3 });
+
+        model.selectTopic("multiplication");
+        expect(model.generateProblem(1, dispatcher)).toMatchObject({ operands: [1, 1], answer: 1 });
+    });
+
+    it("rejects requests before topic selection or with invalid difficulty", () => {
+        const model = new MainGameScreenModel();
+        expect(() => model.generateProblem(1, dispatcher)).toThrow("Choose a topic");
+
+        model.selectTopic("division");
+        expect(() => model.generateProblem(0, dispatcher)).toThrow("Difficulty must be a positive integer");
+        expect(() => model.generateProblem(6, dispatcher)).toThrow("Unconfigured main-game difficulty");
+        expect(model.getSelectedTopic()).toBe("division");
     });
 });

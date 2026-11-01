@@ -1,39 +1,34 @@
 # Main Game
 
-The main game generates arithmetic questions and their solutions. A solution contains the final answer and the intermediate calculations. Addition also records each column's digits and carries so the screen can explain the calculation as a vertical sum.
+The main-game problem engine generates arithmetic questions and their solutions. A solution contains the final answer and the intermediate calculations. Addition also records each column's digits and carries so the screen can explain the calculation as a vertical sum.
 
 ## Pipeline
 
-The intended flow is:
+The implemented model-to-generator flow is:
 
 ```text
-Level selection
-    | Level ID, such as "A1" (Addition Level 1)
+MainGameScreenModel
+    | Selected operation and requested difficulty
     v
-Problem Interpreter
-    | Resolves the operation and operand digit counts
-    v
-Dispatcher
-    | Calls the appropriate generator with those parameters
+ProblemDispatcher
+    | Looks up operand digits for the difficulty
     v
 MainGameProblemGenerator.generate(parameters)
     | Generates operands and calculates the solution
     v
-Problem + solution
-    | Operands, calculation steps, addition carries, final answer
-    v
-Main game screen
+MainGameScreenModel.generateProblem(...)
+    | Returns operands and answer
 ```
 
 ### Current implementation
 
-- `MainGameProblemGenerator.ts` implements problem and solution generation.
-- `MainGameScreenModel.ts` is a placeholder. The controller creates the model and view, and the view displays a Home button. The screen does not call the generator, display questions, or check answers yet.
-- The shared `MainGameProblem` type contains only `operands` and `answer`. The generator returns `SolvedMainGameProblem`, which adds `solution`. Future dispatcher integration needs to preserve this type so callers can access solution steps.
+- `MainGameProblemGenerator.ts` implements problem and solution generation. `ProblemDispatcher.ts` selects operand digits and routes the request.
+- `MainGameScreenModel.ts` stores the selected topic and can request a problem from a dispatcher supplied by its caller. The controller currently handles topic selection only; it does not generate or display problems or check answers.
+- `generateProblem` returns the shared `MainGameProblem` type (`operands` and `answer`). The generator also produces `solution`, but the dispatcher and model do not expose it in their return types yet.
 
 ## Generator input
 
-The generator receives `ResolvedProblemParameters`, rather than a level ID:
+The dispatcher passes `ResolvedProblemParameters` to the generator:
 
 ```ts
 {

@@ -19,8 +19,8 @@ export class MainGameScreenController extends ScreenController {
     }
 
     private handleTopicClick(topic: LevelType): void {
-        // #29 will switch to this topic's adventure map
         this.model.selectTopic(topic);
+        this.screenSwitcher.switchToScreen({ type: "adventuremap", topic });
     }
 
     private handleHomeClick(): void {

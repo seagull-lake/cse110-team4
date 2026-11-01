@@ -1,4 +1,5 @@
 import type { Group } from "konva/lib/Group";
+import type { LevelType } from "./levels/levelConfig.ts";
 
 export interface View {
     getGroup(): Group;
@@ -10,6 +11,7 @@ export interface View {
 export type Screen =
     { type: "menu" } |
     { type: "maingame" } |
+    { type: "adventuremap"; topic: LevelType } |
     { type: "fractiongame" } |
     { type: "multidivgame"};
 

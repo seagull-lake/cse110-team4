@@ -1,26 +1,23 @@
 import { MiniGameScoreManager } from "../../scoreManager.ts";
 
-const COMBO_THRESHOLD = 2;
-const COMBO_MULTIPLIER = 2;
+export const MAX_COMBO_MULTIPLIER = 10;
+
+export interface Problem {
+    firstOperand: number;
+    operator: string;
+    secondOperand: number;
+    choices: number[];
+    answer: number;
+}
 
 export class MultiplicationDivisionScreenModel {
     private readonly scoreManager = new MiniGameScoreManager("multiplication-division");
     private correctStreak = 0;
+    private round = 0;
+    private currentProblem: Problem | null = null;
 
-    addPoints(points: number): void {
-        this.scoreManager.addPoints(points);
-    }
-
-    recordAnswer(isCorrect: boolean, points: number): number {
-        if (!isCorrect) {
-            this.correctStreak = 0;
-            return 0;
-        }
-
-        this.correctStreak++;
-        const awardedPoints = points * (this.correctStreak >= COMBO_THRESHOLD ? COMBO_MULTIPLIER : 1);
-        this.scoreManager.addPoints(awardedPoints);
-        return awardedPoints;
+    getRound(): number {
+        return this.round;
     }
 
     getCombo(): number {
@@ -35,9 +32,33 @@ export class MultiplicationDivisionScreenModel {
         return this.scoreManager.getHighScore();
     }
 
+    newRound(problem: Problem): void {
+        this.round++;
+        this.currentProblem = problem;
+    }
+
+    isCorrectChoice(index: number): boolean {
+        if (this.currentProblem === null) return false;
+        return this.currentProblem.choices[index] === this.currentProblem.answer;
+    }
+
+    recordAnswer(isCorrect: boolean, points: number): number {
+        if (!isCorrect) {
+            this.correctStreak = 0;
+            return 0;
+        }
+
+        this.correctStreak++;
+        const multiplier = Math.min(this.correctStreak, MAX_COMBO_MULTIPLIER);
+        const awardedPoints = points * multiplier;
+        this.scoreManager.addPoints(awardedPoints);
+        return awardedPoints;
+    }
+
     resetGame(): void {
         this.scoreManager.reset();
         this.correctStreak = 0;
+        this.round = 0;
     }
 
     finishGame(): boolean {

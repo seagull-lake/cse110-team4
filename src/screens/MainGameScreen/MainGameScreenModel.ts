@@ -2,6 +2,8 @@ import {
     ADDITION_LEVELS, SUBTRACTION_LEVELS, MULTIPLICATION_LEVELS, DIVISION_LEVELS,
 } from "../../levels/levelConfig.ts";
 import type { LevelDefinition, LevelType } from "../../levels/levelConfig.ts";
+import type { MainGameProblem } from "../../domain/problem.ts";
+import type { ProblemDispatcher } from "../../problem-engine/ProblemDispatcher.ts";
 
 export interface Topic {
     readonly label: string;
@@ -36,5 +38,20 @@ export class MainGameScreenModel {
 
     getSelectedTopic(): LevelType | null {
         return this.selectedTopic;
+    }
+
+    generateProblem(difficulty: number, dispatcher: ProblemDispatcher): MainGameProblem {
+        if (this.selectedTopic === null) {
+            throw new Error("Choose a topic before generating a problem.");
+        }
+        const problem = dispatcher.generate({
+            gameType: "main-game",
+            operation: this.selectedTopic,
+            difficulty,
+        });
+        if (!("answer" in problem)) {
+            throw new Error("Expected a main-game problem.");
+        }
+        return problem;
     }
 }

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { MainGameScreenModel } from "./MainGameScreenModel.ts";
 import {
     ADDITION_LEVELS, SUBTRACTION_LEVELS, MULTIPLICATION_LEVELS, DIVISION_LEVELS,
@@ -8,10 +8,12 @@ import { MainGameProblemGenerator } from "../../problem-engine/MainGameProblemGe
 import { ProblemDispatcher } from "../../problem-engine/ProblemDispatcher.ts";
 
 describe("MainGameScreenModel topics", () => {
-    const dispatcher = new ProblemDispatcher(
-        new MainGameProblemGenerator(() => 0),
-        { generate: () => { throw new Error("Unexpected minigame request"); } },
-    );
+    function createDispatcher(): ProblemDispatcher {
+        return new ProblemDispatcher(
+            new MainGameProblemGenerator(() => 0),
+            { generate: () => { throw new Error("Unexpected minigame request"); } },
+        );
+    }
 
     it("lists the 4 topics in Figma order", () => {
         const model = new MainGameScreenModel();
@@ -45,22 +47,55 @@ describe("MainGameScreenModel topics", () => {
         expect(model.getSelectedTopic()).toBeNull();
     });
 
-    it("generates a problem for the selected topic and difficulty", () => {
+    it.each([
+        ["addition", 2],
+        ["subtraction", 0],
+        ["multiplication", 1],
+        ["division", 1],
+    ] as const)("generates a %s problem for the selected topic", (operation, answer) => {
         const model = new MainGameScreenModel();
-        model.selectTopic("addition");
-        expect(model.generateProblem(4, dispatcher)).toMatchObject({ operands: [1, 1, 1], answer: 3 });
+        const dispatcher = createDispatcher();
+        const generate = vi.spyOn(dispatcher, "generate");
+        model.selectTopic(operation);
 
-        model.selectTopic("multiplication");
-        expect(model.generateProblem(1, dispatcher)).toMatchObject({ operands: [1, 1], answer: 1 });
+        expect(model.generateProblem(1, dispatcher)).toMatchObject({ operands: [1, 1], answer });
+        expect(generate).toHaveBeenCalledExactlyOnceWith({
+            gameType: "main-game", operation, difficulty: 1,
+        });
     });
 
-    it("rejects requests before topic selection or with invalid difficulty", () => {
+    it.each([
+        [1, 2], [2, 2], [3, 2], [4, 3], [5, 3],
+    ])("uses the configured operand count at difficulty %i", (difficulty, operandCount) => {
         const model = new MainGameScreenModel();
-        expect(() => model.generateProblem(1, dispatcher)).toThrow("Choose a topic");
+        model.selectTopic("addition");
+        const problem = model.generateProblem(difficulty, createDispatcher());
+        expect(problem.operands).toHaveLength(operandCount);
+        expect(problem.answer).toBe(operandCount);
+    });
 
+    it("uses a newly selected topic for the next problem", () => {
+        const model = new MainGameScreenModel();
+        const dispatcher = createDispatcher();
+        model.selectTopic("addition");
+        expect(model.generateProblem(1, dispatcher).answer).toBe(2);
+        model.selectTopic("subtraction");
+        expect(model.generateProblem(1, dispatcher).answer).toBe(0);
+    });
+
+    it("does not call the dispatcher before topic selection", () => {
+        const model = new MainGameScreenModel();
+        const dispatcher = createDispatcher();
+        const generate = vi.spyOn(dispatcher, "generate");
+        expect(() => model.generateProblem(1, dispatcher)).toThrow("Choose a topic");
+        expect(generate).not.toHaveBeenCalled();
+    });
+
+    it.each([0, -1, 1.5, NaN, 6])("rejects invalid or unconfigured difficulty %s", difficulty => {
+        const model = new MainGameScreenModel();
+        const dispatcher = createDispatcher();
         model.selectTopic("division");
-        expect(() => model.generateProblem(0, dispatcher)).toThrow("Difficulty must be a positive integer");
-        expect(() => model.generateProblem(6, dispatcher)).toThrow("Unconfigured main-game difficulty");
+        expect(() => model.generateProblem(difficulty, dispatcher)).toThrow();
         expect(model.getSelectedTopic()).toBe("division");
     });
 });

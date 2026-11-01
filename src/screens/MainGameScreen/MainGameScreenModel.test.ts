@@ -1,11 +1,20 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { MainGameScreenModel } from "./MainGameScreenModel.ts";
 import {
     ADDITION_LEVELS, SUBTRACTION_LEVELS, MULTIPLICATION_LEVELS, DIVISION_LEVELS,
 } from "../../levels/levelConfig.ts";
 import type { LevelType } from "../../levels/levelConfig.ts";
+import { MainGameProblemGenerator } from "../../problem-engine/MainGameProblemGenerator.ts";
+import { ProblemDispatcher } from "../../problem-engine/ProblemDispatcher.ts";
 
 describe("MainGameScreenModel topics", () => {
+    function createDispatcher(): ProblemDispatcher {
+        return new ProblemDispatcher(
+            new MainGameProblemGenerator(() => 0),
+            { generate: () => { throw new Error("Unexpected minigame request"); } },
+        );
+    }
+
     it("lists the 4 topics in Figma order", () => {
         const model = new MainGameScreenModel();
         expect(model.getTopics().map((t) => t.label))
@@ -36,5 +45,57 @@ describe("MainGameScreenModel topics", () => {
         const model = new MainGameScreenModel();
         expect(() => model.selectTopic("fractions" as LevelType)).toThrow();
         expect(model.getSelectedTopic()).toBeNull();
+    });
+
+    it.each([
+        ["addition", 2],
+        ["subtraction", 0],
+        ["multiplication", 1],
+        ["division", 1],
+    ] as const)("generates a %s problem for the selected topic", (operation, answer) => {
+        const model = new MainGameScreenModel();
+        const dispatcher = createDispatcher();
+        const generate = vi.spyOn(dispatcher, "generate");
+        model.selectTopic(operation);
+
+        expect(model.generateProblem(1, dispatcher)).toMatchObject({ operands: [1, 1], answer });
+        expect(generate).toHaveBeenCalledExactlyOnceWith({
+            gameType: "main-game", operation, difficulty: 1,
+        });
+    });
+
+    it.each([
+        [1, 2], [2, 2], [3, 2], [4, 3], [5, 3],
+    ])("uses the configured operand count at difficulty %i", (difficulty, operandCount) => {
+        const model = new MainGameScreenModel();
+        model.selectTopic("addition");
+        const problem = model.generateProblem(difficulty, createDispatcher());
+        expect(problem.operands).toHaveLength(operandCount);
+        expect(problem.answer).toBe(operandCount);
+    });
+
+    it("uses a newly selected topic for the next problem", () => {
+        const model = new MainGameScreenModel();
+        const dispatcher = createDispatcher();
+        model.selectTopic("addition");
+        expect(model.generateProblem(1, dispatcher).answer).toBe(2);
+        model.selectTopic("subtraction");
+        expect(model.generateProblem(1, dispatcher).answer).toBe(0);
+    });
+
+    it("does not call the dispatcher before topic selection", () => {
+        const model = new MainGameScreenModel();
+        const dispatcher = createDispatcher();
+        const generate = vi.spyOn(dispatcher, "generate");
+        expect(() => model.generateProblem(1, dispatcher)).toThrow("Choose a topic");
+        expect(generate).not.toHaveBeenCalled();
+    });
+
+    it.each([0, -1, 1.5, NaN, 6])("rejects invalid or unconfigured difficulty %s", difficulty => {
+        const model = new MainGameScreenModel();
+        const dispatcher = createDispatcher();
+        model.selectTopic("division");
+        expect(() => model.generateProblem(difficulty, dispatcher)).toThrow();
+        expect(model.getSelectedTopic()).toBe("division");
     });
 });

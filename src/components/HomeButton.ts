@@ -1,4 +1,5 @@
 import Konva from "konva";
+import { FONT_FAMILY, TITLE_COLOR } from "../constants";
 
 /**
  * Shared Home button — reuse in any screen's view:
@@ -10,7 +11,7 @@ export function createHomeButton(onClick: () => void, x = 20, y = 20): Konva.Gro
     button.add(new Konva.Rect({
         width: 90,
         height: 40,
-        fill: "#444",
+        fill: TITLE_COLOR,
         cornerRadius: 8,
     }));
 
@@ -19,7 +20,7 @@ export function createHomeButton(onClick: () => void, x = 20, y = 20): Konva.Gro
         height: 40,
         text: "Home",
         fontSize: 18,
-        fontFamily: "Arial",
+        fontFamily: FONT_FAMILY,
         fill: "white",
         align: "center",
         verticalAlign: "middle",

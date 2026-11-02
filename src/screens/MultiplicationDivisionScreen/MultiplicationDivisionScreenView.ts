@@ -12,6 +12,7 @@ const COLORS = {
     choice: "#3b6b5e",
     choiceText: BUTTON_TEXT_COLOR,   // was "#ffffff"
     correct: "#3f9a5b",
+    wrong: "#c8473d",
     divider: "#ffffff",
     finalScoreText: "#3b6b5e",
     highlight: "#e0a030",
@@ -60,6 +61,7 @@ export class MultiplicationDivisionScreenView implements View {
 
     // Answer Choices
     private choiceTexts: Konva.Text[] = [];
+    private choiceBoxes: Konva.Rect[] = [];
 
     // Game Over Scoring
     private finalScoreText: Konva.Text;
@@ -168,7 +170,9 @@ export class MultiplicationDivisionScreenView implements View {
         for (let i = 0; i < CHOICE_COUNT; i++) {
             const { x, y } = this.choicePosition(i);
             const box = new Konva.Group({ x, y });
-            box.add(new Konva.Rect({ width: CHOICE.width, height: CHOICE.height, fill: COLORS.choice, cornerRadius: CHOICE.radius }));
+            const background = new Konva.Rect({ width: CHOICE.width, height: CHOICE.height, fill: COLORS.choice, cornerRadius: CHOICE.radius });
+            box.add(background);
+            this.choiceBoxes.push(background);
             const label = this.text("?", 0, 0, 28, { width: CHOICE.width, height: CHOICE.height, align: "center", verticalAlign: "middle", fill: COLORS.choiceText });
             box.add(label);
             box.on("click", () => onChoiceClick(i));
@@ -238,7 +242,26 @@ export class MultiplicationDivisionScreenView implements View {
     }
 
     showEarned(points: number): void {
-        this.earnedText.text(points > 0 ? `+${points}` : "");
+        this.earnedText.text(points > 0 ? `+${points}` : "").fill(COLORS.correct);
+        this.redraw();
+    }
+
+    // Shown in place of the "+points" text after a wrong answer
+    showIncorrect(): void {
+        this.earnedText.text("Incorrect").fill(COLORS.wrong);
+        this.redraw();
+    }
+
+    // Colors the picked choice red and the correct choice green
+    showWrongAnswer(chosenIndex: number, correctIndex: number): void {
+        this.choiceBoxes[chosenIndex]?.fill(COLORS.wrong);
+        this.choiceBoxes[correctIndex]?.fill(COLORS.correct);
+        this.redraw();
+    }
+
+    // Puts every choice back to its normal color for the next question
+    resetChoiceColors(): void {
+        this.choiceBoxes.forEach(box => box.fill(COLORS.choice));
         this.redraw();
     }
 

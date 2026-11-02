@@ -37,6 +37,11 @@ export class MultiplicationDivisionScreenModel {
         this.currentProblem = problem;
     }
 
+     getCorrectChoiceIndex(): number {
+        if (this.currentProblem === null) return -1;
+        return this.currentProblem.choices.indexOf(this.currentProblem.answer);
+    }
+
     isCorrectChoice(index: number): boolean {
         if (this.currentProblem === null) return false;
         return this.currentProblem.choices[index] === this.currentProblem.answer;

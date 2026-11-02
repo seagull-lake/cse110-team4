@@ -40,7 +40,10 @@ export class ProblemDispatcher {
         if (operandDigits.length !== 2) {
           throw new Error("Mini-game-1 requires exactly two operands.");
         }
-        return this.miniGameOne.generate({ operandDigits, operation: "multiplication" });
+        if (request.operation !== "multiplication" && request.operation !== "division") {
+          throw new Error(`Mini-game-1 does not support ${request.operation}.`);
+        }
+        return this.miniGameOne.generate({ operandDigits, operation: request.operation });
       }
       default:
         throw new Error("Unsupported game type.");

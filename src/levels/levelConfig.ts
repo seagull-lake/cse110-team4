@@ -55,6 +55,19 @@ export const MULTIPLICATION_LEVELS: LevelDefinition = {
   maxDifficulty: MAX_DIFFICULTY,
 };
 
+const LEVELS_BY_TYPE: Record<LevelType, LevelDefinition> = {
+  addition: ADDITION_LEVELS,
+  subtraction: SUBTRACTION_LEVELS,
+  multiplication: MULTIPLICATION_LEVELS,
+  division: DIVISION_LEVELS,
+};
+
+export function getLevelDefinition(type: LevelType): LevelDefinition {
+  const level = LEVELS_BY_TYPE[type];
+  if (!level) throw new Error(`Unknown level type: ${type}`);
+  return level;
+}
+
 export function validateLevelDefinition(level: LevelDefinition): void {
   if (!level.id.trim()) throw new Error("Level ID must be non-empty.");
   if (!["addition", "subtraction", "division", "multiplication"].includes(level.type)) {

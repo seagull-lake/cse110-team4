@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { ADDITION_LEVELS, MULTIPLICATION_LEVELS } from "../../levels/levelConfig.ts";
+import { ADDITION_LEVELS, MULTIPLICATION_LEVELS, getLevelDefinition } from "../../levels/levelConfig.ts";
+import type { LevelType } from "../../levels/levelConfig.ts";
 import { MainGameProblemGenerator } from "../../problem-engine/MainGameProblemGenerator.ts";
 import { ProblemDispatcher } from "../../problem-engine/ProblemDispatcher.ts";
 import { AdventureMapScreenModel } from "./AdventureMapScreenModel.ts";
@@ -47,6 +48,12 @@ describe("adventure map model", () => {
       map.completeActiveDifficulty(stage.difficulty);
     }
     expect(map.getMapData().progression.isCompleted).toBe(true);
+  });
+
+  it("looks up each topic's level definition", () => {
+    expect(new AdventureMapScreenModel(getLevelDefinition("multiplication")).getMapData().level)
+      .toBe(MULTIPLICATION_LEVELS);
+    expect(() => getLevelDefinition("fractions" as LevelType)).toThrow("Unknown level type");
   });
 
   it("rejects invalid configuration and completion before a level starts", () => {

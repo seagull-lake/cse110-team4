@@ -26,15 +26,23 @@ describe("ProblemDispatcher", () => {
     expect(miniGame.generate).not.toHaveBeenCalled();
   });
 
-  it("forces multiplication with two configured operands for the minigame", () => {
+  it.each(["multiplication", "division"] as const)(
+    "passes %s to the minigame with two configured operands", operation => {
+      const { dispatcher, miniGame } = setup();
+      const result = dispatcher.generate({ gameType: "mini-game-1", difficulty: 2, operation });
+      expect(miniGame.generate).toHaveBeenCalledExactlyOnceWith({
+        operation, operandDigits: [2, 1],
+      });
+      expect(result).toEqual({
+        operands: [10, 1], answers: [{ value: 10, isCorrect: true }],
+      });
+    });
+
+  it.each(["addition", "subtraction"] as const)("rejects %s for the minigame", operation => {
     const { dispatcher, miniGame } = setup();
-    const result = dispatcher.generate({ gameType: "mini-game-1", difficulty: 2, operation: "addition" });
-    expect(miniGame.generate).toHaveBeenCalledExactlyOnceWith({
-      operation: "multiplication", operandDigits: [2, 1],
-    });
-    expect(result).toEqual({
-      operands: [10, 1], answers: [{ value: 10, isCorrect: true }],
-    });
+    expect(() => dispatcher.generate({ gameType: "mini-game-1", difficulty: 1, operation }))
+      .toThrow(`Mini-game-1 does not support ${operation}.`);
+    expect(miniGame.generate).not.toHaveBeenCalled();
   });
 
   it.each([

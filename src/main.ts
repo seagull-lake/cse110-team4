@@ -6,6 +6,7 @@ import { MenuScreenController } from "./screens/MenuScreen/MenuScreenController.
 import { FractionSortScreenController } from "./screens/FractionSortScreen/FractionSortScreenController.ts";
 import { MainGameScreenController } from "./screens/MainGameScreen/MainGameScreenController.ts";
 import { MultiplicationDivisionScreenController } from "./screens/MultiplicationDivisionScreen/MultiplicationDivisionScreenController.ts";
+import { AdventureMapScreenController } from "./screens/AdventureMapScreen/AdventureMapScreenController.ts";
 
 
 class App implements ScreenSwitcher {
@@ -15,6 +16,7 @@ class App implements ScreenSwitcher {
   private fractiongameController: FractionSortScreenController;
   private maingameController: MainGameScreenController;
   private multidivController: MultiplicationDivisionScreenController;
+  private adventureMapController: AdventureMapScreenController;
 
   constructor(container: string) {
     this.stage = new Konva.Stage({ container, width: STAGE_WIDTH, height: STAGE_HEIGHT });
@@ -25,11 +27,13 @@ class App implements ScreenSwitcher {
     this.fractiongameController = new FractionSortScreenController(this);
     this.maingameController = new MainGameScreenController(this);
     this.multidivController = new MultiplicationDivisionScreenController(this);
+    this.adventureMapController = new AdventureMapScreenController(this);
 
     this.layer.add(this.menuController.getView().getGroup());
     this.layer.add(this.fractiongameController.getView().getGroup());
     this.layer.add(this.maingameController.getView().getGroup());
     this.layer.add(this.multidivController.getView().getGroup());
+    this.layer.add(this.adventureMapController.getView().getGroup());
 
 
     this.layer.draw();
@@ -47,10 +51,15 @@ class App implements ScreenSwitcher {
     this.maingameController.hide();
     this.multidivController.hide();
     this.fractiongameController.hide();
+    this.adventureMapController.hide();
 
     switch (screen.type) {
       case "menu": this.menuController.show(); break;
       case "maingame": this.maingameController.show(); break;
+      case "adventuremap":
+        this.adventureMapController.setTopic(screen.topic);
+        this.adventureMapController.show();
+        break;
       case "multidivgame": this.multidivController.show(); break;
       case "fractiongame": this.fractiongameController.show(); break;
     }

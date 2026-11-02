@@ -35,6 +35,7 @@ export class MainGameProblemGenerator {
   constructor(random: () => number = Math.random) {
     this.random = random;
   }
+  // adds digits from right to left, recording the result digit and carry for each column.
   private getAdditionColumns(left: number, right: number): AdditionColumn[] {
     const columns: AdditionColumn[] = [];
     let carry = 0;
@@ -123,6 +124,6 @@ export class MainGameProblemGenerator {
     return { operands, answer, solution: { steps, finalAnswer: answer } };
   }
 
-  // Adds digits from right to left, recording the result digit and carry for each column.
+  
   
 }

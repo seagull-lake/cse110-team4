@@ -35,6 +35,35 @@ export class MainGameProblemGenerator {
   constructor(random: () => number = Math.random) {
     this.random = random;
   }
+  private getAdditionColumns(left: number, right: number): AdditionColumn[] {
+    const columns: AdditionColumn[] = [];
+    let carry = 0;
+    let placeValue = 1;
+
+    while (left > 0 || right > 0 || carry > 0) {
+      const leftDigit = left % 10;
+      const rightDigit = right % 10;
+      const total = leftDigit + rightDigit + carry;
+      const carryOut = Math.floor(total / 10);
+
+      columns.push({
+        placeValue,
+        leftDigit,
+        rightDigit,
+        carryIn: carry,
+        total,
+        resultDigit: total % 10,
+        carryOut,
+      });
+
+      left = Math.floor(left / 10);
+      right = Math.floor(right / 10);
+      carry = carryOut;
+      placeValue *= 10;
+    }
+
+    return columns;
+  }
 
   // Creates the operands, records the calculation steps, and returns the final answer.
   generate(input: ResolvedProblemParameters): SolvedMainGameProblem {
@@ -56,6 +85,7 @@ export class MainGameProblemGenerator {
       const operand = minimum + Math.floor(this.random() * (maximum - minimum + 1));
       operands.push(operand);
     }
+
 
     // Start with the first operand, then apply the operation from left to right.
     const steps: SolutionStep[] = [];
@@ -94,33 +124,5 @@ export class MainGameProblemGenerator {
   }
 
   // Adds digits from right to left, recording the result digit and carry for each column.
-  private getAdditionColumns(left: number, right: number): AdditionColumn[] {
-    const columns: AdditionColumn[] = [];
-    let carry = 0;
-    let placeValue = 1;
-
-    while (left > 0 || right > 0 || carry > 0) {
-      const leftDigit = left % 10;
-      const rightDigit = right % 10;
-      const total = leftDigit + rightDigit + carry;
-      const carryOut = Math.floor(total / 10);
-
-      columns.push({
-        placeValue,
-        leftDigit,
-        rightDigit,
-        carryIn: carry,
-        total,
-        resultDigit: total % 10,
-        carryOut,
-      });
-
-      left = Math.floor(left / 10);
-      right = Math.floor(right / 10);
-      carry = carryOut;
-      placeValue *= 10;
-    }
-
-    return columns;
-  }
+  
 }

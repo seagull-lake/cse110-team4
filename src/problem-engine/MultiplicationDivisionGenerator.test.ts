@@ -67,15 +67,46 @@ describe("MultiplicationDivisionGenerator", () => {
     });
   });
 
-  describe.each(["multiplication"] as const)("%s over many questions", operation => {
+  describe("division", () => {
+    it("builds the dividend from the answer so it divides evenly", () => {
+      // divisor: 1 + 0.5 * 12 → 7, answer: 0.5 * 13 → 6
+      const problem = generate("division", sequence(0.5, 0.5));
+      expect(problem.operands).toEqual([42, 7]);
+      expect(correctValue(problem)).toBe(6);
+      expectValidChoices(problem);
+    });
+
+    it("never divides by 0, even at the lowest random value", () => {
+      const problem = generate("division", () => 0);
+      expect(problem.operands).toEqual([0, 1]);
+      expect(correctValue(problem)).toBe(0);
+      expectValidChoices(problem);
+    });
+
+    it("handles the largest question, 144 ÷ 12", () => {
+      const problem = generate("division", () => 0.999999);
+      expect(problem.operands).toEqual([144, 12]);
+      expect(correctValue(problem)).toBe(12);
+      expectValidChoices(problem);
+    });
+  });
+
+  describe.each(["multiplication", "division"] as const)("%s over many questions", operation => {
     const random = seeded(110);
     const problems = Array.from({ length: 500 }, () => generate(operation, random));
 
     it("keeps numbers in the 0–12 range and follows the choice rules", () => {
       for (const problem of problems) {
         const [left, right] = problem.operands;
-        expect([left, right].every(n => n >= MIN_NUMBER && n <= MAX_NUMBER)).toBe(true);
-        expect(correctValue(problem)).toBe(left * right);
+        if (operation === "multiplication") {
+          expect([left, right].every(n => n >= MIN_NUMBER && n <= MAX_NUMBER)).toBe(true);
+          expect(correctValue(problem)).toBe(left * right);
+        } else {
+          expect(right).toBeGreaterThanOrEqual(1);
+          expect(right).toBeLessThanOrEqual(MAX_NUMBER);
+          expect(correctValue(problem)).toBe(left / right);
+          expect(correctValue(problem)).toBeLessThanOrEqual(MAX_NUMBER);
+        }
         expectValidChoices(problem);
       }
     });
@@ -86,7 +117,7 @@ describe("MultiplicationDivisionGenerator", () => {
     });
   });
 
-  it.each(["multiplication"] as const)("gives the same %s question for the same random source", operation => {
+  it.each(["multiplication", "division"] as const)("gives the same %s question for the same random source", operation => {
     expect(generate(operation, seeded(7))).toEqual(generate(operation, seeded(7)));
   });
 
@@ -96,7 +127,7 @@ describe("MultiplicationDivisionGenerator", () => {
     expect(problem.operands).toEqual([12, 12]);
   });
 
-  it.each(["addition", "subtraction", "division"] as const)("rejects %s", operation => {
+  it.each(["addition", "subtraction"] as const)("rejects %s", operation => {
     expect(() => generate(operation, () => 0)).toThrow(`Mini Game #1 does not support ${operation}.`);
   });
 

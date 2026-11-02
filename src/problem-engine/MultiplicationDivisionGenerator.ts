@@ -39,6 +39,12 @@ export class MultiplicationDivisionGenerator implements MiniGameOneProblemGenera
         const right = this.randomInt(MIN_NUMBER, MAX_NUMBER);
         return { operands: [left, right], answer: left * right };
       }
+      case "division": {
+        // Pick the answer first so the division always comes out even, e.g. 42 ÷ 7 = 6.
+        const divisor = this.randomInt(MIN_NUMBER + 1, MAX_NUMBER);
+        const answer = this.randomInt(MIN_NUMBER, MAX_NUMBER);
+        return { operands: [divisor * answer, divisor], answer };
+      }
       default:
         throw new Error(`Mini Game #1 does not support ${operation}.`);
     }

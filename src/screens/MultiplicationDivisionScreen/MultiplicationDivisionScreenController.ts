@@ -1,7 +1,8 @@
 // Imports
 import { ScreenController } from "../../types.ts";
 import type { ScreenSwitcher } from "../../types.ts";
-import { MultiplicationDivisionScreenModel, type Problem } from "./MultiplicationDivisionScreenModel.ts";
+import { MultiplicationDivisionScreenModel } from "./MultiplicationDivisionScreenModel.ts";
+import { MultiplicationDivisionProblems } from "./MultiplicationDivisionProblems.ts";
 import { MultiplicationDivisionScreenView } from "./MultiplicationDivisionScreenView.ts";
 
 // Constants
@@ -12,6 +13,7 @@ export class MultiplicationDivisionScreenController extends ScreenController {
     private model: MultiplicationDivisionScreenModel;
     private view: MultiplicationDivisionScreenView;
     private screenSwitcher: ScreenSwitcher;
+    private problems = new MultiplicationDivisionProblems();
 
     // Timer
     private timer: ReturnType<typeof setInterval> | null = null;
@@ -67,20 +69,11 @@ export class MultiplicationDivisionScreenController extends ScreenController {
     }
 
     private startRound(): void {
-        const problem = this.makeProblem(); // change to problem generator once done
+        const problem = this.problems.next();
         this.model.newRound(problem);
         this.view.updateRound(this.model.getRound());
         this.view.showProblem(problem.firstOperand, problem.operator, problem.secondOperand);
         this.view.showChoices(problem.choices);
-    }
-
-    // TEMP stand-in until real problem generator is done
-    private makeProblem(): Problem {
-        const a = 2 + Math.floor(Math.random() * 11);
-        const b = 2 + Math.floor(Math.random() * 11);
-        const answer = a * b;
-        const choices = [answer, answer + 2, answer - 3, answer + 10].sort(() => Math.random() - 0.5);
-        return { firstOperand: a, operator: "x", secondOperand: b, choices, answer };
     }
 
     private recordAnswer(isCorrect: boolean, points: number): number {

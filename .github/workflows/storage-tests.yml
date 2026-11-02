@@ -30,4 +30,4 @@ jobs:
       - name: Run storage unit tests
         run: >-
           npm test -- --run --cache=false
-          src/storage/Storage.test.ts
+          src/Storage.test.ts

@@ -30,5 +30,4 @@ jobs:
       - name: Run Mini Game 2 unit tests
         run: >-
           npm test -- --run --cache=false
-          src/screens/FractionSortingScreen/FractionSortingScreenModel.test.ts
-          src/screens/FractionSortingScreen/FractionSortingProblems.test.ts
+          src/screens/FractionSortScreen/FractionSortScreenModel.test.ts

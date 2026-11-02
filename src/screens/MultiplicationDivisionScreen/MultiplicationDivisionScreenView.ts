@@ -1,24 +1,24 @@
 // Imports
 import Konva from "konva";
 import type { View } from "../../types.ts";
-import { STAGE_HEIGHT,STAGE_WIDTH } from "../../constants.ts";
+import { STAGE_HEIGHT, STAGE_WIDTH, FONT_FAMILY, TITLE_COLOR, BUTTON_TEXT_COLOR } from "../../constants.ts";
 import { createHomeButton } from "../../components/HomeButton.ts";
 
 // Constants
-const FONT = "Arial";                // swap for your Google Font once it's loaded in index.html
+const FONT = FONT_FAMILY;
 const COLORS = {
     background: "#fdf3dc",
     button: "#fbe7a9",
     choice: "#3b6b5e",
-    choiceText: "#ffffff",
+    choiceText: BUTTON_TEXT_COLOR,   // was "#ffffff"
     correct: "#3f9a5b",
     divider: "#ffffff",
     finalScoreText: "#3b6b5e",
     highlight: "#e0a030",
     muted: "#8a7f6a",
-    text: "#3b2f0b",
-    timerOutline: "#3b2f0b",
-    timerRemaining: "#3b2f0b",
+    text: TITLE_COLOR,               // was "#3b2f0b"
+    timerOutline: TITLE_COLOR,       // was "#3b2f0b"
+    timerRemaining: TITLE_COLOR,     // was "#3b2f0b"
     timerUsed: "#ffffff",
 };
 const PAD = 30;                      // left/right margin

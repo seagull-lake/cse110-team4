@@ -8,6 +8,7 @@ import { MultiplicationDivisionScreenView } from "./MultiplicationDivisionScreen
 // Constants
 const GAME_SECONDS = 60;
 const POINTS_PER_CORRECT = 50;
+const WRONG_FEEDBACK_MS = 800;   // how long the wrong/correct answers stay highlighted after a miss
 
 export class MultiplicationDivisionScreenController extends ScreenController {
     private model: MultiplicationDivisionScreenModel;
@@ -18,6 +19,9 @@ export class MultiplicationDivisionScreenController extends ScreenController {
     // Timer
     private timer: ReturnType<typeof setInterval> | null = null;
     private timeLeft = GAME_SECONDS;
+
+    // Wrong-answer feedback: while set, clicks are ignored until the next question appears
+    private feedbackTimeout: ReturnType<typeof setTimeout> | null = null;
 
     constructor(screenSwitcher: ScreenSwitcher) {
         super();
@@ -69,6 +73,7 @@ export class MultiplicationDivisionScreenController extends ScreenController {
     }
 
     private startRound(): void {
+        this.view.resetChoiceColors();
         const problem = this.problems.next();
         this.model.newRound(problem);
         this.view.updateRound(this.model.getRound());
@@ -93,6 +98,15 @@ export class MultiplicationDivisionScreenController extends ScreenController {
             clearInterval(this.timer);
             this.timer = null;
         }
+        this.clearFeedback();
+    }
+
+    // Cancels a pending "move to next question" after a wrong answer
+    private clearFeedback(): void {
+        if (this.feedbackTimeout !== null) {
+            clearTimeout(this.feedbackTimeout);
+            this.feedbackTimeout = null;
+        }
     }
 
     /*------ View callbacks ------*/
@@ -107,15 +121,30 @@ export class MultiplicationDivisionScreenController extends ScreenController {
     }
 
     private handleChoiceClick(index: number): void {
+        // Ignore clicks while the wrong-answer feedback is showing or after time is up
+        if (this.feedbackTimeout !== null || this.timer === null) return;
+
         // Correct Answer Behavior
         if (this.model.isCorrectChoice(index)) {
             const earned = this.recordAnswer(true, POINTS_PER_CORRECT);
             this.refreshCombo();
             this.view.showEarned(earned);
             this.startRound();
+            return;
         }
 
-        // TODO: Wrong Answer Behavior
+        // Wrong Answer Behavior: no points, combo resets to 0,
+        // show the picked answer in red and the right answer in green, then move on.
+        // The 1-minute timer keeps running during the feedback.
+        this.recordAnswer(false, POINTS_PER_CORRECT);
+        this.refreshCombo();
+        this.view.showIncorrect();
+        this.view.showWrongAnswer(index, this.model.getCorrectChoiceIndex());
+        this.feedbackTimeout = setTimeout(() => {
+            this.feedbackTimeout = null;
+            this.view.showEarned(0);   // clear "Incorrect" when the next question 
+            this.startRound();
+        }, WRONG_FEEDBACK_MS);
     }
     
     /*------ Helpers ------*/

@@ -101,6 +101,28 @@ describe("Multiplication and Division scoring", () => {
         expect(model.getRound()).toBe(0);
     });
 
+    it("reports where the correct answer is so a wrong answer can show it", () => {
+        const model = new MultiplicationDivisionScreenModel();
+        expect(model.getCorrectChoiceIndex()).toBe(-1);   // no round yet
+
+        model.newRound(sampleProblem);
+        expect(model.getCorrectChoiceIndex()).toBe(1);
+
+        model.newRound({ ...sampleProblem, choices: [10, 14, 7, 12] });
+        expect(model.getCorrectChoiceIndex()).toBe(3);
+    });
+
+    it("keeps the score unchanged after a wrong answer", () => {
+        const model = new MultiplicationDivisionScreenModel();
+        model.newRound(sampleProblem);
+        model.recordAnswer(true, 50);
+
+        model.recordAnswer(model.isCorrectChoice(0), 50);   // wrong
+
+        expect(model.getScore()).toBe(50);
+        expect(model.getCombo()).toBe(0);
+    });
+
     it("treats every choice as wrong before a round has started", () => {
         const model = new MultiplicationDivisionScreenModel();
         expect(model.isCorrectChoice(0)).toBe(false);

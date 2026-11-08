@@ -43,6 +43,27 @@ export interface MultiplicationRow {
   readonly additionColumns?: readonly AdditionColumn[];
 }
 
+// One visible box: partial quotient on top, then starting amount - product = amount left.
+export interface DivisionBox {
+  readonly placeValue: number;
+  readonly partialQuotient: number;
+  readonly startingAmount: number;
+  readonly amountSubtracted: number;
+  readonly remainingAmount: number;
+  readonly runningQuotient: number;
+}
+
+// Data for the box-method screen. Quotient and remainder are separate from the decimal answer.
+export interface DivisionBoxMethod {
+  readonly dividend: number;
+  readonly divisor: number;
+  readonly boxes: readonly DivisionBox[];
+  readonly partialQuotients: readonly number[];
+  readonly quotientDigits: readonly number[];
+  readonly quotient: number;
+  readonly remainder: number;
+}
+
 // One calculation in the order needed to solve the problem. 
 export interface SolutionStep {
   readonly operation: OperationType;
@@ -52,6 +73,7 @@ export interface SolutionStep {
   readonly additionColumns?: readonly AdditionColumn[];
   readonly subtractionColumns?: readonly SubtractionColumn[];
   readonly multiplicationRows?: readonly MultiplicationRow[];
+  readonly divisionBoxMethod?: DivisionBoxMethod;
 }
 
 export interface SolvedMainGameProblem extends MainGameProblem {
@@ -170,7 +192,7 @@ export class MainGameProblemGenerator {
       let carry = 0;
       let placeValue = multiplierPlaceValue;
 
-      // Each row starts with a fresh carry. The place value includes the row's shift.
+      //each row starts with a fresh carry. The place value includes the row's shift.
       while (remainingLeft > 0 || carry > 0) {
         const leftDigit = remainingLeft % 10;
         const total = leftDigit * multiplierDigit + carry;
@@ -189,15 +211,13 @@ export class MainGameProblemGenerator {
         carry = carryOut;
         placeValue *= 10;
       }
-
-      // For 97 x 12, the rows are 97 x 2 = 194 and 97 x 1 x 10 = 970.
+      //for 97 x 12, the rows are 97 x 2 = 194 and 97 x 1 x 10 = 970.
       const partialProduct = left * multiplierDigit * multiplierPlaceValue;
       let additionColumns: AdditionColumn[] | undefined;
       if (rows.length > 0) {
         additionColumns = this.getAdditionColumns(runningTotal, partialProduct);
       }
       runningTotal += partialProduct;
-
       rows.push({
         multiplierDigit,
         multiplierPlaceValue,
@@ -210,8 +230,65 @@ export class MainGameProblemGenerator {
       right = Math.floor(right / 10);
       multiplierPlaceValue *= 10;
     }
-
     return rows;
+  }
+
+  //breaks division into place-value boxes, recording the product and remainder at each step.
+  private getDivisionBoxMethod(dividend: number, divisor: number): DivisionBoxMethod {
+    if (!Number.isFinite(dividend) || dividend < 0 || !Number.isFinite(divisor) || divisor <= 0) {
+      throw new Error("Division boxes require a non-negative dividend and a positive divisor.");
+    }
+
+    const boxes: DivisionBox[] = [];
+    const partialQuotients: number[] = [];
+    const quotientDigits: number[] = [];
+    const quotient = Math.floor(dividend / divisor);
+    let remainingQuotient = quotient;
+    let remainingAmount = dividend;
+    let runningQuotient = 0;
+    let placeValue = 1;
+
+    
+    while (placeValue * 10 <= quotient) {//because we want to start with the largest place value, not the smallest
+      placeValue *= 10;
+    }
+
+    while (placeValue >= 1) {
+      const digit = Math.floor(remainingQuotient / placeValue);
+      quotientDigits.push(digit);
+      remainingQuotient -= digit * placeValue;
+
+      //
+      if (digit > 0) {
+        const partialQuotient = digit * placeValue;
+        const startingAmount = remainingAmount;
+        const amountSubtracted = divisor * partialQuotient;
+        remainingAmount -= amountSubtracted;
+        runningQuotient += partialQuotient;
+
+        boxes.push({
+          placeValue,
+          partialQuotient,
+          startingAmount,
+          amountSubtracted,
+          remainingAmount,
+          runningQuotient,
+        });
+        partialQuotients.push(partialQuotient);
+      }
+
+      placeValue = Math.floor(placeValue / 10);
+    }
+
+    return {
+      dividend,
+      divisor,
+      boxes,
+      partialQuotients,
+      quotientDigits,
+      quotient,
+      remainder: remainingAmount,
+    };
   }
 
   // Creates the operands, records the calculation steps, and returns the final answer.
@@ -244,6 +321,7 @@ export class MainGameProblemGenerator {
       let additionColumns: AdditionColumn[] | undefined;
       let subtractionColumns: SubtractionColumn[] | undefined;
       let multiplicationRows: MultiplicationRow[] | undefined;
+      let divisionBoxMethod: DivisionBoxMethod | undefined;
       switch (input.operation) {
         case "addition":
           additionColumns = this.getAdditionColumns(leftOperand, operand);
@@ -263,6 +341,7 @@ export class MainGameProblemGenerator {
           answer *= operand;
           break;
         case "division":
+          divisionBoxMethod = this.getDivisionBoxMethod(leftOperand, operand);
           answer /= operand;
           break;
         default:
@@ -276,6 +355,7 @@ export class MainGameProblemGenerator {
         additionColumns,
         subtractionColumns,
         multiplicationRows,
+        divisionBoxMethod,
       });
     }
     return { operands, answer, solution: { steps, finalAnswer: answer } };

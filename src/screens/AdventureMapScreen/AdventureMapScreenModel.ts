@@ -26,7 +26,7 @@ export class AdventureMapScreenModel {
   getMapData(): AdventureMapData {
     const difficulties = Array.from({ length: this.level.maxDifficulty }, (_, index) => ({
       difficulty: index + 1,
-      operandDigits: problemDifficultyConfig.mainGame[index + 1],
+      operandDigits: problemDifficultyConfig.mainGame[this.level.type][index + 1],
     }));
     return { level: this.level, progression: this.state, difficulties };
   }

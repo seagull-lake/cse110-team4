@@ -20,14 +20,14 @@ describe("adventure map model", () => {
     expect(model.getMapData().progression.levelId).toBe("multiplication");
   });
 
-  it("exposes the shared operand digits for all five map difficulties", () => {
+  it("exposes the addition operand digits for all five map difficulties", () => {
     const difficulties = new AdventureMapScreenModel().getMapData().difficulties;
     expect(difficulties).toEqual([
       { difficulty: 1, operandDigits: [1, 1] },
-      { difficulty: 2, operandDigits: [1, 1] },
-      { difficulty: 3, operandDigits: [1, 1] },
-      { difficulty: 4, operandDigits: [1, 1, 1] },
-      { difficulty: 5, operandDigits: [1, 1, 1] },
+      { difficulty: 2, operandDigits: [2, 2] },
+      { difficulty: 3, operandDigits: [3, 3] },
+      { difficulty: 4, operandDigits: [3, 3, 3] },
+      { difficulty: 5, operandDigits: [5, 5, 5] },
     ]);
   });
 

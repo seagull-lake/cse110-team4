@@ -3,8 +3,9 @@ import { ProblemDispatcher } from "./ProblemDispatcher.ts";
 import { MainGameProblemGenerator } from "./MainGameProblemGenerator.ts";
 import type { ProblemDifficultyConfig } from "../levels/levelConfig.ts";
 
+const digits = { 1: [1, 1], 2: [2, 1, 1] };
 const config: ProblemDifficultyConfig = {
-  mainGame: { 1: [1, 1], 2: [2, 1, 1] },
+  mainGame: { addition: digits, subtraction: digits, multiplication: digits, division: digits },
   miniGameOne: { 1: [1, 1], 2: [2, 1] },
 };
 
@@ -46,12 +47,23 @@ describe("ProblemDispatcher", () => {
   });
 
   it.each([
-    [1, 2], [2, 2], [3, 2], [4, 3], [5, 3],
-  ])("generates %s difficulty with %s operands", (difficulty, operandCount) => {
+    [1, [1, 1], 2], [2, [10, 10], 20], [3, [100, 100], 200],
+    [4, [100, 100, 100], 300], [5, [10000, 10000, 10000], 30000],
+  ])("addition difficulty %s uses its configured operands", (difficulty, operands, answer) => {
     const dispatcher = new ProblemDispatcher(new MainGameProblemGenerator(() => 0), setup().miniGame);
-    const result = dispatcher.generate({ gameType: "main-game", difficulty, operation: "addition" });
-    expect(result.operands).toHaveLength(operandCount);
-    expect(result).toMatchObject({ answer: operandCount });
+    expect(dispatcher.generate({ gameType: "main-game", difficulty, operation: "addition" }))
+      .toMatchObject({ operands, answer });
+  });
+
+  it("looks up main-game digits by operation", () => {
+    const dispatcher = new ProblemDispatcher(
+      new MainGameProblemGenerator(() => 0), setup().miniGame,
+      { mainGame: { ...config.mainGame, multiplication: { 1: [2, 2] } }, miniGameOne: { 1: [1, 1] } },
+    );
+    expect(dispatcher.generate({ gameType: "main-game", difficulty: 1, operation: "addition" }).operands)
+      .toEqual([1, 1]);
+    expect(dispatcher.generate({ gameType: "main-game", difficulty: 1, operation: "multiplication" }).operands)
+      .toEqual([10, 10]);
   });
 
   it.each(["main-game", "mini-game-1"] as const)("rejects unconfigured %s difficulties", gameType => {

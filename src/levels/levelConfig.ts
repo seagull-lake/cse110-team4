@@ -13,20 +13,23 @@ export interface LevelDefinition {
 
 export const MAX_DIFFICULTY = 5;
 
+/** Digit count for each operand, keyed by difficulty (1-5). */
+export type OperandDigitsByDifficulty = { [difficulty: number]: readonly number[] };
+
 /** Each array contains the digit count for each operand at that difficulty. */
 export interface ProblemDifficultyConfig {
-  mainGame: { [difficulty: number]: readonly number[] };
+  mainGame: Record<OperationType, OperandDigitsByDifficulty>;
   miniGameOne: { [difficulty: number]: readonly [number, number] };
 }
 
-// Main-game operand counts are fixed; level owners will tune the digit counts.
+// Main-game difficulty per operation. Each array is one problem: one entry per operand,
+// each number is that operand's digit count. For division it is [dividend, divisor].
 export const problemDifficultyConfig: ProblemDifficultyConfig = {
   mainGame: {
-    1: [1, 1],
-    2: [1, 1],
-    3: [1, 1],
-    4: [1, 1, 1],
-    5: [1, 1, 1],
+    addition:       { 1: [1, 1], 2: [2, 2], 3: [3, 3], 4: [3, 3, 3], 5: [5, 5, 5] },
+    subtraction:    { 1: [2, 1], 2: [3, 2], 3: [3, 3], 4: [4, 4],    5: [5, 4, 4] },
+    multiplication: { 1: [1, 1], 2: [2, 1], 3: [2, 2], 4: [3, 2],    5: [5, 3] },
+    division:       { 1: [2, 1], 2: [3, 1], 3: [3, 2], 4: [4, 2],    5: [5, 3] },
   },
   miniGameOne: { 1: [1, 1] },
 };

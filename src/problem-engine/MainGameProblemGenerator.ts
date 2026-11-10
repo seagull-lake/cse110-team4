@@ -1,5 +1,6 @@
 import type { MainGameProblem, OperationType, ResolvedProblemParameters } from "../domain/problem.ts";
-
+export const MAX_DIVISION_BOXES = 5;
+export const MAX_DIVISION_QUOTIENT = 9999;
 // One addition column, starting at the ones place (placeValue = 1). 
 export interface AdditionColumn {
   readonly placeValue: number; 
@@ -51,6 +52,8 @@ export interface DivisionBox {
   readonly amountSubtracted: number;
   readonly remainingAmount: number;
   readonly runningQuotient: number;
+  // The fifth box can combine the remaining quotient places into one subtraction.
+  readonly isCombined?: boolean;
 }
 
 // Data for the box-method screen. Quotient and remainder are separate from the decimal answer.
@@ -258,9 +261,17 @@ export class MainGameProblemGenerator {
       quotientDigits.push(digit);
       remainingQuotient -= digit * placeValue;
 
-      //
-      if (digit > 0) {
-        const partialQuotient = digit * placeValue;
+      // Continue collecting answer digits after the fifth box has finished the calculation.
+      if (digit > 0 && boxes.length < MAX_DIVISION_BOXES) {
+        let partialQuotient = digit * placeValue;
+        let isCombined: boolean | undefined;
+
+        // Use the final available box for all remaining quotient places.
+        if (boxes.length === MAX_DIVISION_BOXES - 1 && remainingQuotient > 0) {
+          partialQuotient += remainingQuotient;
+          isCombined = true;
+        }
+
         const startingAmount = remainingAmount;
         const amountSubtracted = divisor * partialQuotient;
         remainingAmount -= amountSubtracted;
@@ -273,6 +284,7 @@ export class MainGameProblemGenerator {
           amountSubtracted,
           remainingAmount,
           runningQuotient,
+          isCombined,
         });
         partialQuotients.push(partialQuotient);
       }
@@ -291,7 +303,26 @@ export class MainGameProblemGenerator {
     };
   }
 
-  // Creates the operands, records the calculation steps, and returns the final answer.
+  // Uses the first two digit counts to pick a divisor and quotient, then builds the dividend.
+  private getDivisionOperands(operandDigits: readonly number[]): number[] {
+    const minimumDividend = 10 ** (operandDigits[0] - 1);
+    const maximumDividend = 10 ** operandDigits[0] - 1;
+    // The divisor must allow a correctly sized dividend with a quotient no larger than 9999.
+    const minimumDivisor = Math.max(10 ** (operandDigits[1] - 1),Math.ceil(minimumDividend / MAX_DIVISION_QUOTIENT));
+    const maximumDivisor = Math.min(10 ** operandDigits[1] - 1, maximumDividend);
+    if (minimumDivisor > maximumDivisor) {
+      throw new Error("Division digit counts cannot produce an exact division with a quotient from 1 to 9999.");
+    }
+    const divisor = minimumDivisor + Math.floor(this.random() * (maximumDivisor - minimumDivisor + 1));
+    // Limit the quotient so divisor * quotient stays inside the requested dividend range.
+    const minimumQuotient = Math.ceil(minimumDividend / divisor);
+    const maximumQuotient = Math.min(MAX_DIVISION_QUOTIENT, Math.floor(maximumDividend / divisor));
+    const quotient = minimumQuotient + Math.floor(this.random() * (maximumQuotient - minimumQuotient + 1));
+    const dividend = divisor * quotient;
+    return [dividend, divisor];
+  }
+  
+  //creates the operands, records the calculation steps, and returns the final answer.
   generate(input: ResolvedProblemParameters): SolvedMainGameProblem {
     if (input.operandDigits.length < 2) {
       throw new Error("A problem requires at least two operands.");
@@ -302,17 +333,19 @@ export class MainGameProblemGenerator {
         throw new Error("Operand digit counts must be integers from 1 to 15.");
       }
     }
-
-    const operands: number[] = [];
-    for (const digits of input.operandDigits) {
-      // For example, two digits gives a range from 10 to 99.
-      const minimum = 10 ** (digits - 1);
-      const maximum = 10 ** digits - 1;
-      const operand = minimum + Math.floor(this.random() * (maximum - minimum + 1));
-      operands.push(operand);
+    let operands: number[] = [];
+    if (input.operation === "division") {
+      operands = this.getDivisionOperands(input.operandDigits);
+    } else {
+      for (const digits of input.operandDigits) {
+        // For example, two digits gives a range from 10 to 99.
+        const minimum = 10 ** (digits - 1);
+        const maximum = 10 ** digits - 1;
+        const operand = minimum + Math.floor(this.random() * (maximum - minimum + 1));
+        operands.push(operand);
+      }
     }
-
-    // Start with the first operand, then apply the operation from left to right.
+    //start with the first operand, then apply the operation from left to right.
     const steps: SolutionStep[] = [];
     let answer = operands[0];
     for (let i = 1; i < operands.length; i++) {
@@ -360,7 +393,4 @@ export class MainGameProblemGenerator {
     }
     return { operands, answer, solution: { steps, finalAnswer: answer } };
   }
-
-  
-  
 }

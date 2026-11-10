@@ -26,9 +26,9 @@ export class ProblemDispatcher {
     }
     switch (request.gameType) {
       case "main-game": {
-        const operandDigits = this.config.mainGame[request.difficulty];
+        const operandDigits = this.config.mainGame[request.operation]?.[request.difficulty];
         if (!operandDigits) {
-          throw new Error(`Unconfigured main-game difficulty: ${request.difficulty}`);
+          throw new Error(`Unconfigured main-game difficulty: ${request.operation} ${request.difficulty}`);
         }
         return this.mainGame.generate({ operandDigits, operation: request.operation });
       }

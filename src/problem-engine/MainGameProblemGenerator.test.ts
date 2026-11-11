@@ -105,6 +105,93 @@ describe("MainGameProblemGenerator", () => {
     expect(problem.solution.finalAnswer).toBe(27);
   });
 
+  it("records carries across unequal digit counts for 97 + 128", () => {
+    const values = [0.97, 0.032];
+    const generator = new MainGameProblemGenerator(() => values.shift()!);
+    const problem = generator.generate({ operation: "addition", operandDigits: [2, 3] });
+
+    expect(problem.operands).toEqual([97, 128]);
+    expect(problem.solution.finalAnswer).toBe(225);
+    expect(problem.solution.steps[0].additionColumns).toEqual([
+      { placeValue: 1, leftDigit: 7, rightDigit: 8, carryIn: 0, total: 15, resultDigit: 5, carryOut: 1 },
+      { placeValue: 10, leftDigit: 9, rightDigit: 2, carryIn: 1, total: 12, resultDigit: 2, carryOut: 1 },
+      { placeValue: 100, leftDigit: 0, rightDigit: 1, carryIn: 1, total: 2, resultDigit: 2, carryOut: 0 },
+    ]);
+  });
+
+  it("records borrowing for 32 - 17", () => {
+    const values = [0.25, 0.08];
+    const generator = new MainGameProblemGenerator(() => values.shift()!);
+    const problem = generator.generate({ operation: "subtraction", operandDigits: [2, 2] });
+
+    expect(problem.operands).toEqual([32, 17]);
+    expect(problem.answer).toBe(15);
+    expect(problem.solution.finalAnswer).toBe(15);
+    expect(problem.solution.steps[0].subtractionColumns).toEqual([
+      { placeValue: 1, leftDigit: 2, rightDigit: 7, borrowIn: 0, borrowOut: 1, total: 5, resultDigit: 5 },
+      { placeValue: 10, leftDigit: 3, rightDigit: 1, borrowIn: 1, borrowOut: 0, total: 1, resultDigit: 1 },
+    ]);
+  });
+
+  it("records borrowing across zero digits for 1000 - 1", () => {
+    const problem = new MainGameProblemGenerator(() => 0).generate({
+      operation: "subtraction", operandDigits: [4, 1],
+    });
+
+    expect(problem.answer).toBe(999);
+    expect(problem.solution.steps[0].subtractionColumns).toEqual([
+      { placeValue: 1, leftDigit: 0, rightDigit: 1, borrowIn: 0, borrowOut: 1, total: 9, resultDigit: 9 },
+      { placeValue: 10, leftDigit: 0, rightDigit: 0, borrowIn: 1, borrowOut: 1, total: 9, resultDigit: 9 },
+      { placeValue: 100, leftDigit: 0, rightDigit: 0, borrowIn: 1, borrowOut: 1, total: 9, resultDigit: 9 },
+      { placeValue: 1000, leftDigit: 1, rightDigit: 0, borrowIn: 1, borrowOut: 0, total: 0, resultDigit: 0 },
+    ]);
+  });
+
+  it("records a zero answer when subtracting equal operands", () => {
+    const problem = new MainGameProblemGenerator(() => 0).generate({
+      operation: "subtraction", operandDigits: [2, 2],
+    });
+
+    expect(problem.operands).toEqual([10, 10]);
+    expect(problem.answer).toBe(0);
+    expect(problem.solution.finalAnswer).toBe(0);
+    expect(problem.solution.steps[0].subtractionColumns).toEqual([
+      { placeValue: 1, leftDigit: 0, rightDigit: 0, borrowIn: 0, borrowOut: 0, total: 0, resultDigit: 0 },
+      { placeValue: 10, leftDigit: 1, rightDigit: 1, borrowIn: 0, borrowOut: 0, total: 0, resultDigit: 0 },
+    ]);
+  });
+
+  it("keeps the negative sign while recording larger - smaller for 3 - 10", () => {
+    const values = [0.25, 0];
+    const generator = new MainGameProblemGenerator(() => values.shift()!);
+    const problem = generator.generate({ operation: "subtraction", operandDigits: [1, 2] });
+
+    expect(problem.answer).toBe(-7);
+    expect(problem.solution.steps[0]).toMatchObject({ leftOperand: 3, rightOperand: 10, result: -7 });
+    expect(problem.solution.steps[0].subtractionColumns).toEqual([
+      { placeValue: 1, leftDigit: 0, rightDigit: 3, borrowIn: 0, borrowOut: 1, total: 7, resultDigit: 7 },
+      { placeValue: 10, leftDigit: 1, rightDigit: 0, borrowIn: 1, borrowOut: 0, total: 0, resultDigit: 0 },
+    ]);
+  });
+
+  it("uses magnitude addition when the running subtraction answer is negative", () => {
+    const values = [0.25, 0, 0.2];
+    const generator = new MainGameProblemGenerator(() => values.shift()!);
+    const problem = generator.generate({ operation: "subtraction", operandDigits: [1, 2, 1] });
+
+    expect(problem.operands).toEqual([3, 10, 2]);
+    expect(problem.solution.steps).toHaveLength(2);
+    expect(problem.solution.steps[0].result).toBe(-7);
+    expect(problem.solution.steps[1]).toMatchObject({
+      operation: "subtraction", leftOperand: -7, rightOperand: 2, result: -9,
+    });
+    expect(problem.solution.steps[1].subtractionColumns).toBeUndefined();
+    expect(problem.solution.steps[1].additionColumns).toEqual([
+      { placeValue: 1, leftDigit: 7, rightDigit: 2, carryIn: 0, total: 9, resultDigit: 9, carryOut: 0 },
+    ]);
+    expect(problem.solution.finalAnswer).toBe(-9);
+  });
+
   it("records multiplication carries and shifted rows for 97 x 12", () => {
     const values = [0.97, 0.025];
     const generator = new MainGameProblemGenerator(() => values.shift()!);
@@ -438,6 +525,81 @@ describe("MainGameProblemGenerator", () => {
       }
       expect(problem.answer).toBe(problem.solution.steps[problem.solution.steps.length - 1].result);
     }
+  });
+
+  it.each([
+    { level: 1, operandDigits: [2, 1] },
+    { level: 2, operandDigits: [3, 1] },
+    { level: 3, operandDigits: [3, 2] },
+    { level: 4, operandDigits: [4, 2] },
+    { level: 5, operandDigits: [5, 3] },
+  ])("honors the division digit configuration for level $level", ({ operandDigits }) => {
+    for (const random of [0, 0.999999]) {
+      const problem = new MainGameProblemGenerator(() => random).generate({
+        operation: "division", operandDigits,
+      });
+      const division = problem.solution.steps[0].divisionBoxMethod;
+      if (division === undefined) {
+        throw new Error("Expected division boxes.");
+      }
+
+      expect(problem.operands).toHaveLength(2);
+      expect(String(problem.operands[0]).length).toBe(operandDigits[0]);
+      expect(String(problem.operands[1]).length).toBe(operandDigits[1]);
+      expect(problem.operands[0]).toBe(problem.operands[1] * problem.answer);
+      expect(Number.isInteger(problem.answer)).toBe(true);
+      expect(problem.answer).toBeGreaterThanOrEqual(1);
+      expect(problem.answer).toBeLessThanOrEqual(9999);
+      expect(division.quotient).toBe(problem.answer);
+      expect(division.remainder).toBe(0);
+      expect(division.boxes.length).toBeLessThanOrEqual(4);
+    }
+  });
+
+  it("chooses a divisor large enough for a five-digit dividend and a four-digit quotient", () => {
+    const problem = new MainGameProblemGenerator(() => 0).generate({
+      operation: "division", operandDigits: [5, 1],
+    });
+
+    expect(problem.operands).toEqual([10000, 2]);
+    expect(problem.answer).toBe(5000);
+    expect(problem.solution.steps[0].divisionBoxMethod).toMatchObject({ quotient: 5000, remainder: 0 });
+  });
+
+  it.each([0, -1, 1.5, NaN, Infinity, 16])("rejects invalid division digit count %s", (digits) => {
+    const generator = new MainGameProblemGenerator(() => 0);
+    expect(() => generator.generate({
+      operation: "division", operandDigits: [digits, 1],
+    })).toThrow("Operand digit counts");
+    expect(() => generator.generate({
+      operation: "division", operandDigits: [2, digits],
+    })).toThrow("Operand digit counts");
+  });
+
+  it("does not change frozen division input", () => {
+    const input = Object.freeze({
+      operation: "division" as const,
+      operandDigits: Object.freeze([5, 2, 1]),
+    });
+    const problem = new MainGameProblemGenerator(() => 0).generate(input);
+
+    expect(input).toEqual({ operation: "division", operandDigits: [5, 2, 1] });
+    expect(problem.operands).toEqual([10000, 10]);
+    expect(problem.answer).toBe(1000);
+  });
+
+  it("keeps operands and solution records independent between questions", () => {
+    const generator = new MainGameProblemGenerator(() => 0);
+    const first = generator.generate({ operation: "addition", operandDigits: [2, 1] });
+    const second = generator.generate({ operation: "division", operandDigits: [3, 1] });
+
+    expect(first).toMatchObject({ operands: [10, 1], answer: 11, solution: { finalAnswer: 11 } });
+    expect(second).toMatchObject({ operands: [100, 1], answer: 100, solution: { finalAnswer: 100 } });
+    expect(second.operands).not.toBe(first.operands);
+    expect(second.solution.steps).not.toBe(first.solution.steps);
+    expect(second.solution.steps[0]).not.toBe(first.solution.steps[0]);
+    expect(first.solution.steps[0].divisionBoxMethod).toBeUndefined();
+    expect(second.solution.steps[0].additionColumns).toBeUndefined();
   });
 
   it.each([{ operandDigits: [] }, { operandDigits: [1] }])("rejects too few operands: $operandDigits", ({ operandDigits }) => {

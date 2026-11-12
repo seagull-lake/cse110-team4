@@ -53,12 +53,46 @@ export function progressCount(level: LevelDefinition, state: ProgressionState): 
     total: level.maxDifficulty };
 }
 
-function assertValidState(level: LevelDefinition, state: ProgressionState): void {
-  if (state.levelId !== level.id ||
-      !Number.isInteger(state.currentDifficulty) || state.currentDifficulty < 1 ||
-      state.currentDifficulty > level.maxDifficulty ||
-      (state.isActive && state.isCompleted) ||
-      (state.isCompleted && state.currentDifficulty !== level.maxDifficulty)) {
-    throw new Error("Invalid progression state.");
+/** How the map shows one difficulty. */
+export type LevelStatus = "completed" | "current" | "locked";
+
+/** Completed below the current difficulty (or everywhere once all are done), locked above it. */
+export function getLevelStatus(state: ProgressionState, difficulty: number): LevelStatus {
+  if (state.isCompleted || difficulty < state.currentDifficulty) return "completed";
+  return difficulty === state.currentDifficulty ? "current" : "locked";
+}
+
+/** The same progress as lists: which difficulties are done, which one is next, which are locked. */
+export interface ProgressSummary {
+  readonly completed: readonly number[];
+  /** Null once every difficulty is completed. */
+  readonly current: number | null;
+  readonly locked: readonly number[];
+}
+
+export function getProgressSummary(level: LevelDefinition, state: ProgressionState): ProgressSummary {
+  assertValidState(level, state);
+  const completed: number[] = [];
+  const locked: number[] = [];
+  let current: number | null = null;
+  for (let difficulty = 1; difficulty <= level.maxDifficulty; difficulty++) {
+    const status = getLevelStatus(state, difficulty);
+    if (status === "completed") completed.push(difficulty);
+    else if (status === "current") current = difficulty;
+    else locked.push(difficulty);
   }
+  return { completed, current, locked };
+}
+
+/** True when the state is consistent with the level (used before trusting saved data). */
+export function isValidProgression(level: LevelDefinition, state: ProgressionState): boolean {
+  return state.levelId === level.id &&
+    Number.isInteger(state.currentDifficulty) && state.currentDifficulty >= 1 &&
+    state.currentDifficulty <= level.maxDifficulty &&
+    !(state.isActive && state.isCompleted) &&
+    !(state.isCompleted && state.currentDifficulty !== level.maxDifficulty);
+}
+
+function assertValidState(level: LevelDefinition, state: ProgressionState): void {
+  if (!isValidProgression(level, state)) throw new Error("Invalid progression state.");
 }

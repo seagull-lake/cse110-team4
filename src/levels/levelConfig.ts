@@ -65,6 +65,11 @@ const LEVELS_BY_TYPE: Record<LevelType, LevelDefinition> = {
   division: DIVISION_LEVELS,
 };
 
+/** Every operation's definition, in a stable order (used to check progress across all topics). */
+export function getAllLevelDefinitions(): readonly LevelDefinition[] {
+  return Object.values(LEVELS_BY_TYPE);
+}
+
 export function getLevelDefinition(type: LevelType): LevelDefinition {
   const level = LEVELS_BY_TYPE[type];
   if (!level) throw new Error(`Unknown level type: ${type}`);

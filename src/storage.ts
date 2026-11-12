@@ -1,4 +1,8 @@
 import type { Screen } from "./types.ts";
+import { getAllLevelDefinitions } from "./levels/levelConfig.ts";
+import type { LevelDefinition } from "./levels/levelConfig.ts";
+import { initialProgression, isValidProgression } from "./levels/progression.ts";
+import type { ProgressionState } from "./levels/progression.ts";
 
 const PREFIX = "cse110-team4:";
 const SCREEN_KEY = PREFIX + "currentScreen";
@@ -41,6 +45,47 @@ export function loadHighScore(gameId: MiniGameId): number {
         if (Number.isFinite(saved) && saved > 0) return saved;
     } catch { /* missing data, or no localStorage (e.g. in tests) */ }
     return 0;
+}
+
+/*------ Level progression (one entry per topic) ------*/
+
+const progressionKey = (level: LevelDefinition) => `${PREFIX}progression:${level.id}`;
+
+/**
+ * Saves how far the player got in one topic. Only currentDifficulty and isCompleted are kept
+ * (isActive is temporary); completed and locked levels are worked out from them.
+ * An inconsistent state is ignored so it can't overwrite good saved data.
+ */
+export function saveProgression(level: LevelDefinition, state: ProgressionState): void {
+    if (!isValidProgression(level, state)) return;
+    try {
+        localStorage.setItem(progressionKey(level), JSON.stringify({
+            currentDifficulty: state.currentDifficulty,
+            isCompleted: state.isCompleted,
+        }));
+    } catch { /* storage full or blocked – skip saving */ }
+}
+
+/** Loads a topic's saved progress; missing, corrupted or inconsistent data starts at the beginning. */
+export function loadProgression(level: LevelDefinition): ProgressionState {
+    try {
+        const saved: unknown = JSON.parse(localStorage.getItem(progressionKey(level)) ?? "null");
+        if (typeof saved === "object" && saved !== null) {
+            const { currentDifficulty, isCompleted } = saved as Record<string, unknown>;
+            if (typeof currentDifficulty === "number" && typeof isCompleted === "boolean") {
+                const state: ProgressionState = {
+                    currentDifficulty, isActive: false, isCompleted, levelId: level.id,
+                };
+                if (isValidProgression(level, state)) return state;
+            }
+        }
+    } catch { /* missing or corrupted data, or no localStorage (e.g. in tests) */ }
+    return initialProgression(level);
+}
+
+/** True only when every topic is finished. Worked out from each topic's save, never stored itself. */
+export function areAllTopicsCompleted(): boolean {
+    return getAllLevelDefinitions().every(level => loadProgression(level).isCompleted);
 }
 
 /*------ Reset ------*/

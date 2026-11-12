@@ -1,24 +1,29 @@
 import { ScreenController } from "../../types.ts";
 import type { ScreenSwitcher } from "../../types.ts";
 import type { LevelType } from "../../levels/levelConfig.ts";
-import { MainProblemScreenModel } from "./MainProblemScreenModel.ts";
+import type { ProblemDispatcher } from "../../problem-engine/ProblemDispatcher.ts";
+import { MainProblemScreenModel, createProblemDispatcher } from "./MainProblemScreenModel.ts";
+import { getProblemLayout } from "./MainProblemLayout.ts";
 import { MainProblemScreenView } from "./MainProblemScreenView.ts";
 
 export class MainProblemScreenController extends ScreenController {
   private model: MainProblemScreenModel | null = null;
   private readonly view: MainProblemScreenView;
   private readonly screenSwitcher: ScreenSwitcher;
+  private readonly dispatcher: ProblemDispatcher;
 
-  constructor(screenSwitcher: ScreenSwitcher) {
+  constructor(screenSwitcher: ScreenSwitcher, dispatcher: ProblemDispatcher = createProblemDispatcher()) {
     super();
     this.screenSwitcher = screenSwitcher;
+    this.dispatcher = dispatcher;
     this.view = new MainProblemScreenView(() => this.handleHomeClick(), () => this.handleBackClick());
   }
 
-  /** Opens the level clicked on the adventure map. */
+  /** Opens the level clicked on the adventure map with a new problem for it. */
   setLevel(topic: LevelType, difficulty: number): void {
-    this.model = new MainProblemScreenModel(topic, difficulty);
+    this.model = new MainProblemScreenModel(topic, difficulty, this.dispatcher);
     this.view.setTitle(this.model.getTitle());
+    this.view.setProblem(getProblemLayout(topic, this.model.getProblem()));
   }
 
   private handleHomeClick(): void {

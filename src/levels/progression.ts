@@ -62,6 +62,12 @@ export function getLevelStatus(state: ProgressionState, difficulty: number): Lev
   return difficulty === state.currentDifficulty ? "current" : "locked";
 }
 
+/** True when the difficulty exists for this level and can be played (completed or current, not locked). */
+export function isLevelUnlocked(level: LevelDefinition, state: ProgressionState, difficulty: number): boolean {
+  return Number.isInteger(difficulty) && difficulty >= 1 && difficulty <= level.maxDifficulty &&
+    getLevelStatus(state, difficulty) !== "locked";
+}
+
 /** The same progress as lists: which difficulties are done, which one is next, which are locked. */
 export interface ProgressSummary {
   readonly completed: readonly number[];

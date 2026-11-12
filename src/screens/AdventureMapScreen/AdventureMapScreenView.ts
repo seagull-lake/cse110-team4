@@ -37,15 +37,29 @@ const COLORS = {
   startText: TITLE_COLOR,
 };
 
+/** Calls the handler on click and shows a pointer cursor while hovering (if clickable). */
+function onClick(shape: Konva.Group, handler: () => void, showPointer: boolean): void {
+  const setCursor = (cursor: string) => { document.body.style.cursor = cursor; };
+  shape.on("click tap", () => { setCursor("default"); handler(); });
+  if (!showPointer) return;
+  shape.on("mouseenter", () => setCursor("pointer"));
+  shape.on("mouseleave", () => setCursor("default"));
+}
+
 /** Draws the topic's map from the data it is given; where things go is decided in AdventureMapLayout. */
 export class AdventureMapScreenView implements View {
   private readonly group = new Konva.Group({ visible: false });
   private readonly title: Konva.Text;
   // Everything on the map except the title and Home button; rebuilt whenever the data changes
-  private readonly mapGroup = new Konva.Group({ listening: false });
+  private readonly mapGroup = new Konva.Group();
   private data: AdventureMapData | null = null;
+  private readonly onLevelClick: (difficulty: number) => void;
+  private readonly onStartClick: () => void;
 
-  constructor(onHomeClick: () => void) {
+  /** Clicks are only reported; the controller decides whether a level can be opened. */
+  constructor(onHomeClick: () => void, onLevelClick: (difficulty: number) => void, onStartClick: () => void) {
+    this.onLevelClick = onLevelClick;
+    this.onStartClick = onStartClick;
     this.title = new Konva.Text({
       x: 0, y: 90, width: STAGE_WIDTH, align: "center", text: "",
       fontSize: 50, fontFamily: FONT, fill: TITLE_COLOR,
@@ -126,6 +140,8 @@ export class AdventureMapScreenView implements View {
         fill: level.status === "current" ? COLORS.currentText : COLORS.lockedText,
       }));
     }
+    // Only unlocked levels get the pointer cursor; every click is still reported to the controller
+    onClick(node, () => this.onLevelClick(level.difficulty), level.status !== "locked");
     return node;
   }
 
@@ -175,7 +191,7 @@ export class AdventureMapScreenView implements View {
     return badge;
   }
 
-  // Shows the current level; it does nothing when clicked yet (playing a level comes later)
+  // Opens the current level
   private addStartButton(label: string): void {
     const button = new Konva.Group({ x: START_BUTTON.x, y: START_BUTTON.y });
     button.add(new Konva.Rect({
@@ -186,6 +202,7 @@ export class AdventureMapScreenView implements View {
       width: START_BUTTON.width, height: START_BUTTON.height, align: "center", verticalAlign: "middle",
       text: label, fontSize: 24, fontFamily: FONT, fill: COLORS.startText,
     }));
+    onClick(button, this.onStartClick, true);
     this.mapGroup.add(button);
   }
 

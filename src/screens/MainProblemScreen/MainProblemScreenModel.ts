@@ -15,6 +15,7 @@ export class MainProblemScreenModel {
   private readonly level: LevelDefinition;
   private readonly difficulty: number;
   private readonly problem: MainGameProblem;
+  private answerCorrect = false;
 
   constructor(topic: LevelType, difficulty: number, dispatcher: ProblemDispatcher = createProblemDispatcher()) {
     this.level = getLevelDefinition(topic);
@@ -34,6 +35,16 @@ export class MainProblemScreenModel {
   getTopic(): LevelType { return this.level.type; }
   getDifficulty(): number { return this.difficulty; }
   getProblem(): MainGameProblem { return this.problem; }
+
+  /** Returns true only when every entered answer character matches the generated answer. */
+  checkAnswer(digits: readonly string[]): boolean {
+    const expected = String(this.problem.answer);
+    this.answerCorrect = digits.length === expected.length &&
+      Array.from(expected, (digit, index) => digits[index] === digit).every(Boolean);
+    return this.answerCorrect;
+  }
+
+  canContinue(): boolean { return this.answerCorrect; }
 
   /** e.g. "Addition – Level 3" */
   getTitle(): string {

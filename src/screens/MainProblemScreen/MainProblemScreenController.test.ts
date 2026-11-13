@@ -7,27 +7,46 @@ import { MainProblemScreenController } from "./MainProblemScreenController.ts";
 const view = vi.hoisted(() => ({
   onHomeClick: () => {},
   onBackClick: () => {},
+  onSubmitClick: () => {},
+  onContinueClick: () => {},
   title: "",
   layout: null as ProblemLayout | null,
+  enteredAnswer: [] as string[],
+  correctAnswerShown: false,
   visible: false,
 }));
 
 vi.mock("./MainProblemScreenView.ts", () => ({
   MainProblemScreenView: class {
-    constructor(onHomeClick: () => void, onBackClick: () => void) {
+    constructor(
+      onHomeClick: () => void,
+      onBackClick: () => void,
+      onSubmitClick: () => void,
+      onContinueClick: () => void,
+    ) {
       view.onHomeClick = onHomeClick;
       view.onBackClick = onBackClick;
+      view.onSubmitClick = onSubmitClick;
+      view.onContinueClick = onContinueClick;
     }
     setTitle(title: string) { view.title = title; }
-    setProblem(layout: ProblemLayout) { view.layout = layout; }
+    setProblem(layout: ProblemLayout) {
+      view.layout = layout;
+      view.enteredAnswer = Array.from({ length: layout.answer.cellXs.length }, () => "");
+      view.correctAnswerShown = false;
+    }
+    getEnteredAnswer() { return view.enteredAnswer; }
+    showCorrectAnswer() { view.correctAnswerShown = true; }
     show() { view.visible = true; }
     hide() { view.visible = false; }
   },
 }));
 
-function setup() {
+function setup(dispatcher?: { generate: () => unknown }) {
   const screens: Screen[] = [];
-  const controller = new MainProblemScreenController({ switchToScreen: screen => screens.push(screen) });
+  const controller = new MainProblemScreenController(
+    { switchToScreen: screen => screens.push(screen) }, dispatcher as never,
+  );
   return { controller, screens };
 }
 
@@ -90,5 +109,24 @@ describe("main problem screen controller", () => {
     expect(view.visible).toBe(true);
     controller.hide();
     expect(view.visible).toBe(false);
+  });
+
+  it("only shows correct feedback and continues after a fully correct submission", () => {
+    const { controller, screens } = setup({
+      generate: () => ({ operands: [482, 315], answer: 797 }),
+    });
+    controller.setLevel("addition", 1);
+    view.enteredAnswer = ["7", "9", "8"];
+    view.onSubmitClick();
+    expect(view.correctAnswerShown).toBe(false);
+
+    view.onContinueClick();
+    expect(screens).toEqual([]);
+
+    view.enteredAnswer = ["7", "9", "7"];
+    view.onSubmitClick();
+    expect(view.correctAnswerShown).toBe(true);
+    view.onContinueClick();
+    expect(screens).toEqual([{ type: "adventuremap", topic: "addition" }]);
   });
 });

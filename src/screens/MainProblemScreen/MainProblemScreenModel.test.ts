@@ -46,4 +46,15 @@ describe("the problem a level asks for", () => {
     const model = new MainProblemScreenModel("addition", 3, { generate: () => problem } as never);
     expect(model.getProblem()).toBe(problem);
   });
+
+  it("only accepts a complete correct answer and only then allows continuing", () => {
+    const model = new MainProblemScreenModel(
+      "addition", 1, { generate: () => ({ operands: [482, 315], answer: 797 }) } as never,
+    );
+
+    expect(model.checkAnswer(["7", "9", "8"])).toBe(false);
+    expect(model.canContinue()).toBe(false);
+    expect(model.checkAnswer(["7", "9", "7"])).toBe(true);
+    expect(model.canContinue()).toBe(true);
+  });
 });

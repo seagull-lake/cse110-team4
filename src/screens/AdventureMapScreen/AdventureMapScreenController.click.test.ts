@@ -10,7 +10,7 @@ const view = vi.hoisted(() => ({
 
 vi.mock("./AdventureMapScreenView.ts", () => ({
   AdventureMapScreenView: class {
-    constructor(_onHomeClick: () => void, onLevelClick: (difficulty: number) => void, onStartClick: () => void) {
+    constructor(_onHomeClick: () => void, onLevelClick: (difficulty: number) => void, onStartClick: () => void, _onBackClick: () => void) {
       view.onLevelClick = onLevelClick;
       view.onStartClick = onStartClick;
     }

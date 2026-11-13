@@ -1,7 +1,7 @@
 import Konva from "konva";
 import type { View } from "../../types.ts";
 import type { LevelType } from "../../levels/levelConfig.ts";
-import { STAGE_WIDTH, FONT_FAMILY, TITLE_COLOR } from "../../constants.ts";
+import { STAGE_WIDTH, STAGE_HEIGHT, FONT_FAMILY, TITLE_COLOR, BUTTON_COLOR, BUTTON_TEXT_COLOR } from "../../constants.ts";
 import { createHomeButton } from "../../components/HomeButton.ts";
 import type { AdventureMapData } from "./AdventureMapScreenModel.ts";
 import {
@@ -13,6 +13,7 @@ import type { LevelLayout } from "./AdventureMapLayout.ts";
 
 // Constants
 const FONT = FONT_FAMILY;
+const BACK_BUTTON = { width: 150, height: 40 };
 const COLORS = {
   panel: "#F4E8CB",
   path: "#10B981",
@@ -57,7 +58,12 @@ export class AdventureMapScreenView implements View {
   private readonly onStartClick: () => void;
 
   /** Clicks are only reported; the controller decides whether a level can be opened. */
-  constructor(onHomeClick: () => void, onLevelClick: (difficulty: number) => void, onStartClick: () => void) {
+  constructor(
+    onHomeClick: () => void,
+    onLevelClick: (difficulty: number) => void,
+    onStartClick: () => void,
+    onBackClick: () => void,
+  ) {
     this.onLevelClick = onLevelClick;
     this.onStartClick = onStartClick;
     this.title = new Konva.Text({
@@ -67,11 +73,25 @@ export class AdventureMapScreenView implements View {
     this.group.add(this.title);
     this.group.add(this.mapGroup);
 
-    // Shared Home button, same as every other screen
+    // Shared Home button (bottom-left) and Back to topics next to it
     this.group.add(createHomeButton(onHomeClick));
+    this.group.add(this.makeBackButton(onBackClick));
 
     // Card sizes are measured from the text, so rebuild once the web font has loaded
     document.fonts.load(`20px ${FONT}`).then(() => this.redraw()).catch(() => {});
+  }
+
+  private makeBackButton(onClick: () => void): Konva.Group {
+    const button = new Konva.Group({ x: 140, y: STAGE_HEIGHT - 62 });
+    button.add(new Konva.Rect({ ...BACK_BUTTON, fill: BUTTON_COLOR, cornerRadius: 8 }));
+    button.add(new Konva.Text({
+      ...BACK_BUTTON, text: "Back to topics", fontSize: 18, fontFamily: FONT_FAMILY,
+      fill: BUTTON_TEXT_COLOR, align: "center", verticalAlign: "middle",
+    }));
+    button.on("click", onClick);
+    button.on("mouseenter", () => (document.body.style.cursor = "pointer"));
+    button.on("mouseleave", () => (document.body.style.cursor = "default"));
+    return button;
   }
 
   setTopic(topic: LevelType, data: AdventureMapData): void {

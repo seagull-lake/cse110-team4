@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { STAGE_HEIGHT, STAGE_WIDTH } from "../../constants.ts";
-import { CELL_WIDTH, PROBLEM_TOP, ROW_HEIGHT, getProblemLayout } from "./MainProblemLayout.ts";
+import { BOX_CELL, CELL_WIDTH, PROBLEM_TOP, ROW_HEIGHT, getProblemLayout } from "./MainProblemLayout.ts";
 import type { Cell, ProblemLayout } from "./MainProblemLayout.ts";
 import { MainProblemScreenModel } from "./MainProblemScreenModel.ts";
+import { solvedDivision } from "./testProblems.ts";
 
 /** The text of each row, read left to right, e.g. ["482", "+315"]. */
 function rows(layout: ProblemLayout): string[] {
@@ -74,29 +75,83 @@ describe("column layout (addition, subtraction, multiplication)", () => {
   });
 });
 
-describe("division layout", () => {
-  const layout = getProblemLayout("division", { operands: [9044, 38], answer: 238 });
+describe("division layout (box method)", () => {
+  // 9044 ÷ 38 = 238: three steps (200, 30, 8), so three boxes
+  const layout = getProblemLayout("division", solvedDivision(9044, 38));
+  if (layout.kind !== "division") throw new Error("expected a division layout");
+  const [divisorTens, divisorOnes] = layout.cells;
+  const dividend = layout.cells.slice(2, 6);
+  /** The fields of one box: partial quotient, product, amount left. */
+  const boxFields = (box: number) => layout.steps.slice(box * 3, box * 3 + 3);
+  const right = (box: number) => layout.boxes[box].x + layout.boxes[box].width;
 
-  it("writes divisor, then dividend, on one row", () => {
-    expect(rows(layout)).toEqual(["389044"]);
-    const divisorRight = layout.cells[1].x + CELL_WIDTH;
-    expect(layout.cells[2].x).toBe(divisorRight + CELL_WIDTH); // one cell left free for the bracket
+  it("uses one box per step of the generator's box method", () => {
+    expect(layout.boxes).toHaveLength(3);
+    expect(layout.steps).toHaveLength(9);
   });
 
-  it("puts the bracket between them and the bar over the dividend", () => {
-    if (layout.kind !== "division") throw new Error("expected a division layout");
-    const dividendLeft = layout.cells[2].x;
-    expect(layout.bracket.x).toBeLessThan(dividendLeft);
-    expect(layout.bracket.x).toBeGreaterThan(layout.cells[1].x + CELL_WIDTH - 1);
-    expect(layout.bar.x1).toBe(layout.bracket.x);
-    expect(layout.bar.x2).toBe(layout.cells.at(-1)!.x + CELL_WIDTH);
-    expect(layout.bar.y).toBeLessThan(layout.cells[0].y);
+  it("writes the divisor left of the boxes and the dividend in the first box", () => {
+    expect([divisorTens, divisorOnes, ...dividend].map(cell => cell.text).join("")).toBe("389044");
+    const [first] = layout.boxes;
+    expect(divisorOnes.x + BOX_CELL.width).toBeLessThanOrEqual(first.x);
+    for (const cell of dividend) {
+      expect(cell.x).toBeGreaterThanOrEqual(first.x);
+      expect(cell.x + BOX_CELL.width).toBeLessThanOrEqual(right(0));
+    }
   });
 
-  it("leaves the row above the dividend free for the quotient, right-aligned", () => {
-    expect(layout.answer.y).toBeLessThan(layout.cells[0].y);
+  it("puts the boxes side by side", () => {
+    layout.boxes.slice(1).forEach((box, index) => expect(box.x).toBe(right(index)));
+  });
+
+  it("has a field for each number of each box, sized to the right answer", () => {
+    // 9044 − 7600 = 1444, 1444 − 1140 = 304, 304 − 304 = 0
+    expect(boxFields(0).map(field => field.cellXs.length)).toEqual([3, 4, 4]); // 200, 7600, 1444
+    expect(boxFields(1).map(field => field.cellXs.length)).toEqual([2, 4, 3]); // 30, 1140, 304
+    expect(boxFields(2).map(field => field.cellXs.length)).toEqual([1, 3, 1]); // 8, 304, 0
+  });
+
+  it("puts the partial quotient above the box, and the product and amount left inside it", () => {
+    layout.boxes.forEach((box, index) => {
+      const [quotient, product, remaining] = boxFields(index);
+      expect(quotient.y + BOX_CELL.height).toBeLessThanOrEqual(box.y);
+      expect(product.y).toBeGreaterThan(box.y);
+      expect(remaining.y).toBeGreaterThan(product.y);
+      expect(remaining.y + BOX_CELL.height).toBeLessThanOrEqual(box.y + box.height);
+      for (const field of [quotient, product, remaining]) {
+        expect(field.cellXs[0]).toBeGreaterThanOrEqual(box.x);
+        expect(field.cellXs.at(-1)! + BOX_CELL.width).toBeLessThanOrEqual(right(index));
+      }
+    });
+  });
+
+  it("writes a minus in front of every product and a line above every amount left", () => {
+    const minuses = layout.cells.filter(cell => cell.text === "−");
+    expect(minuses).toHaveLength(3);
+    minuses.forEach((minus, box) => expect(minus.x + BOX_CELL.width).toBe(boxFields(box)[1].cellXs[0]));
+    layout.lines.forEach((line, box) => expect(line.y).toBeLessThan(boxFields(box)[2].y));
+  });
+
+  it("starts every later box with what was left in the box before", () => {
+    expect(layout.carried.map(copy => copy.from)).toEqual([2, 5]);
+    expect(layout.carried[0].cellXs).toHaveLength(4); // 1444
+    expect(layout.carried[1].y).toBe(dividend[0].y);
+  });
+
+  it("puts the answer boxes under the division boxes, right-aligned, with a label", () => {
+    const [first] = layout.boxes;
+    expect(layout.answer.y).toBeGreaterThan(first.y + first.height);
     expect(layout.answer.cellXs).toHaveLength(3);
-    expect(layout.answer.cellXs.at(-1)).toBe(layout.cells.at(-1)!.x);
+    expect(layout.answer.cellXs.at(-1)! + CELL_WIDTH).toBe(right(2));
+    expect(layout.answerLabel.right).toBeLessThan(layout.answer.cellXs[0]);
+  });
+
+  it("is centered on the screen", () => {
+    expect(divisorTens.x + right(2)).toBeCloseTo(STAGE_WIDTH, 0);
+  });
+
+  it("needs the generator's box method steps", () => {
+    expect(() => getProblemLayout("division", { operands: [9044, 38], answer: 238 })).toThrow("box method");
   });
 
   it("rejects a division problem without exactly two numbers", () => {
@@ -114,11 +169,19 @@ describe("every real level fits on the screen", () => {
     for (let round = 0; round < 50; round++) {
       const model = new MainProblemScreenModel(topic, difficulty);
       const layout = getProblemLayout(topic, model.getProblem());
-      for (const x of [...layout.cells.map(cell => cell.x), ...layout.answer.cellXs]) {
+      const shapes = [
+        ...layout.cells.map(cell => ({ ...cell, width: layout.cellSize.width, height: layout.cellSize.height })),
+        ...layout.answer.cellXs.map(x => ({ x, y: layout.answer.y, width: CELL_WIDTH, height: ROW_HEIGHT })),
+        ...(layout.kind === "division" ? [
+          ...layout.boxes,
+          ...[...layout.steps, ...layout.carried].flatMap(field => field.cellXs.map(x => ({ x, y: field.y, ...BOX_CELL }))),
+        ] : []),
+      ];
+      for (const { x, y, width, height } of shapes) {
         expect(x).toBeGreaterThanOrEqual(0);
-        expect(x + CELL_WIDTH).toBeLessThanOrEqual(STAGE_WIDTH);
+        expect(x + width).toBeLessThanOrEqual(STAGE_WIDTH);
+        expect(y + height).toBeLessThanOrEqual(bottomLimit);
       }
-      expect(Math.max(...layout.cells.map(cell => cell.y), layout.answer.y) + ROW_HEIGHT).toBeLessThanOrEqual(bottomLimit);
     }
   });
 });

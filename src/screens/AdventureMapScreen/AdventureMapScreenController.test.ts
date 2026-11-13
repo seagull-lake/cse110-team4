@@ -5,13 +5,22 @@ import { AdventureMapScreenController } from "./AdventureMapScreenController.ts"
 // Konva can't draw text in tests, so the view is replaced with one that records what it was told
 const view = vi.hoisted(() => ({
   onHomeClick: () => {},
+  onBackClick: () => {},
   topic: "",
   visible: false,
 }));
 
 vi.mock("./AdventureMapScreenView.ts", () => ({
   AdventureMapScreenView: class {
-    constructor(onHomeClick: () => void) { view.onHomeClick = onHomeClick; }
+    constructor(
+      onHomeClick: () => void,
+      _onLevelClick: (difficulty: number) => void,
+      _onStartClick: () => void,
+      onBackClick: () => void,
+    ) {
+      view.onHomeClick = onHomeClick;
+      view.onBackClick = onBackClick;
+    }
     setTopic(topic: string) { view.topic = topic; }
     show() { view.visible = true; }
     hide() { view.visible = false; }
@@ -38,6 +47,14 @@ describe("adventure map screen controller", () => {
     view.onHomeClick();
     expect(screens).toEqual([{ type: "menu" }]);
   });
+
+  it.each(["addition", "subtraction", "multiplication", "division"] as const)(
+    "goes back to the topic selection screen on Back to topics from the %s map", (topic) => {
+      const { controller, screens } = setup();
+      controller.setTopic(topic);
+      view.onBackClick();
+      expect(screens).toEqual([{ type: "maingame" }]);
+    });
 
   it("follows the screen lifecycle", () => {
     const { controller } = setup();

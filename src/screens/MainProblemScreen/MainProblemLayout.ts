@@ -23,7 +23,12 @@ export interface Rect { x: number; y: number; width: number; height: number }
 /** How big the problem's digits are drawn. */
 export interface CellSize { width: number; height: number; fontSize: number }
 
-const COLUMN_CELL: CellSize = { width: CELL_WIDTH, height: ROW_HEIGHT, fontSize: DIGIT_FONT_SIZE };
+export const COLUMN_CELL: CellSize = { width: CELL_WIDTH, height: ROW_HEIGHT, fontSize: DIGIT_FONT_SIZE };
+/** Multiplication with partial products has more rows, so its digits are a little smaller. */
+export const COMPACT_CELL: CellSize = { width: 40, height: 44, fontSize: 36 };
+/** The carry / borrow boxes above the columns are shorter than a row of digits. */
+const CARRY_HEIGHT = 36;
+const CARRY_FONT_SIZE = 22;
 /** Division digits are smaller so the boxes (3 at most on any level) fit side by side. */
 export const BOX_CELL: CellSize = { width: 30, height: 38, fontSize: 26 };
 /** Space between a box's edge and the numbers in it. */
@@ -31,18 +36,25 @@ export const BOX_PADDING = 8;
 /** Rows inside a box: the amount, minus the product, and what is left (with a line above it). */
 export const BOX_ROWS = 3;
 
-/** Addition, subtraction and multiplication: numbers stacked, right-aligned, line underneath. */
+/**
+ * Addition, subtraction and multiplication: numbers stacked, right-aligned, line underneath.
+ * Carry / borrow boxes sit above the columns; multiplication's partial products sit under the
+ * line, with a second line before the answer.
+ */
 export interface ColumnLayout {
   kind: "column";
   cellSize: CellSize;
   cells: Cell[];
   line: HorizontalLine;
-  /** Where the answer boxes go: their top and the left edge of each box, right-aligned. */
-  answer: { y: number; cellXs: number[] };
+  /** The line under the partial products (multiplication with a 2+ digit multiplier). */
+  secondLine?: HorizontalLine;
+  /** The step fields in the model's order: carries / borrows, or partial products. */
+  steps: FieldLayout[];
+  answer: FieldLayout;
 }
 
-/** Where one field's input boxes go: their top and the left edge of each, right-aligned. */
-export interface FieldLayout { y: number; cellXs: number[] }
+/** Where one field's input boxes go: their top, the left edge of each (right-aligned), and their size. */
+export interface FieldLayout { y: number; cellXs: number[]; size: CellSize }
 
 /**
  * Division, box method: the divisor on the left, then one box per step. Above each box the student
@@ -76,31 +88,55 @@ function cellsEndingAt(rightEdge: number, count: number, width = CELL_WIDTH): nu
 }
 
 function getColumnLayout(type: LevelType, problem: MainGameProblem): ColumnLayout {
+  const fields = getAnswerFields(type, problem);
+  const columnFields = fields.filter(field => field.kind === "carry" || field.kind === "borrow");
+  const partialProducts = fields.filter(field => field.kind === "partialProduct");
+  const size = partialProducts.length > 0 ? COMPACT_CELL : COLUMN_CELL;
+  const { width: cell, height: row } = size;
+
   const numbers = problem.operands.map(String);
   // Like on paper, the operator sits right left of the longest number; a longer answer
   // (e.g. 5-digit × 3-digit = 8 digits) only makes the line under the numbers wider.
   const numberColumns = Math.max(...numbers.map(text => text.length));
   const answerColumns = getAnswerLength(problem.answer);
-  const columns = Math.max(numberColumns + 1, answerColumns);
-  const left = (STAGE_WIDTH - columns * CELL_WIDTH) / 2;
-  const right = left + columns * CELL_WIDTH;
-  const operatorX = right - (numberColumns + 1) * CELL_WIDTH;
+  const columns = Math.max(numberColumns + 1, answerColumns, ...partialProducts.map(field => field.length));
+  const left = (STAGE_WIDTH - columns * cell) / 2;
+  const right = left + columns * cell;
+  const operatorX = right - (numberColumns + 1) * cell;
+  // The carry / borrow row goes above the numbers
+  const numbersTop = columnFields.length > 0 ? PROBLEM_TOP + CARRY_HEIGHT + 4 : PROBLEM_TOP;
 
   const cells: Cell[] = [];
-  numbers.forEach((text, row) => {
-    const y = PROBLEM_TOP + row * ROW_HEIGHT;
+  numbers.forEach((text, index) => {
+    const y = numbersTop + index * row;
     // Like the map cards, every number after the first has the operator in front
-    if (row > 0) cells.push({ x: operatorX, y, text: getOperatorSymbol(type) });
-    cellsEndingAt(right, text.length).forEach((x, index) => cells.push({ x, y, text: text[index] }));
+    if (index > 0) cells.push({ x: operatorX, y, text: getOperatorSymbol(type) });
+    cellsEndingAt(right, text.length, cell).forEach((x, digit) => cells.push({ x, y, text: text[digit] }));
   });
 
-  const lineY = PROBLEM_TOP + numbers.length * ROW_HEIGHT;
+  const carrySize = { width: cell, height: CARRY_HEIGHT, fontSize: CARRY_FONT_SIZE };
+  // box 1 is the tens column, one cell left of the ones
+  const steps: FieldLayout[] = columnFields.map(field => ({ y: PROBLEM_TOP, cellXs: [right - (field.box! + 1) * cell], size: carrySize }));
+
+  const lineY = numbersTop + numbers.length * row;
+  let y = lineY + ANSWER_GAP;
+  let secondLine: HorizontalLine | undefined;
+  if (partialProducts.length > 0) {
+    partialProducts.forEach(field => {
+      steps.push({ y, cellXs: cellsEndingAt(right, field.length, cell), size });
+      y += row;
+    });
+    secondLine = { x1: left, x2: right, y: y + 4 };
+    y += ANSWER_GAP + 4;
+  }
   return {
     kind: "column",
-    cellSize: COLUMN_CELL,
+    cellSize: size,
     cells,
     line: { x1: left, x2: right, y: lineY },
-    answer: { y: lineY + ANSWER_GAP, cellXs: cellsEndingAt(right, answerColumns) },
+    secondLine,
+    steps,
+    answer: { y, cellXs: cellsEndingAt(right, answerColumns, cell), size },
   };
 }
 
@@ -140,7 +176,7 @@ function getDivisionLayout(problem: MainGameProblem): DivisionLayout {
       cellsEndingAt(right, dividend.length, cell).forEach((cellX, index) => cells.push({ x: cellX, y: amountY, text: dividend[index] }));
     } else {
       const from = steps.length - 1;
-      carried.push({ from, y: amountY, cellXs: cellsEndingAt(right, lengthOf(box - 1, "remaining"), cell) });
+      carried.push({ from, y: amountY, cellXs: cellsEndingAt(right, lengthOf(box - 1, "remaining"), cell), size: BOX_CELL });
     }
 
     const productCells = cellsEndingAt(right, lengthOf(box, "product"), cell);
@@ -148,14 +184,14 @@ function getDivisionLayout(problem: MainGameProblem): DivisionLayout {
     lines.push({ x1: x + BOX_PADDING, x2: right, y: remainingY - 2 });
 
     steps.push(
-      { y: PROBLEM_TOP, cellXs: cellsEndingAt(right, lengthOf(box, "partialQuotient"), cell) },
-      { y: productY, cellXs: productCells },
-      { y: remainingY, cellXs: cellsEndingAt(right, lengthOf(box, "remaining"), cell) },
+      { y: PROBLEM_TOP, cellXs: cellsEndingAt(right, lengthOf(box, "partialQuotient"), cell), size: BOX_CELL },
+      { y: productY, cellXs: productCells, size: BOX_CELL },
+      { y: remainingY, cellXs: cellsEndingAt(right, lengthOf(box, "remaining"), cell), size: BOX_CELL },
     );
   }
 
   const right = boxesLeft + boxCount * boxWidth;
-  const answer = { y: boxTop + boxHeight + ANSWER_GAP * 2, cellXs: cellsEndingAt(right, getAnswerLength(problem.answer)) };
+  const answer = { y: boxTop + boxHeight + ANSWER_GAP * 2, cellXs: cellsEndingAt(right, getAnswerLength(problem.answer)), size: COLUMN_CELL };
   return {
     kind: "division", cellSize: BOX_CELL, cells, boxes, lines, steps, carried,
     answerLabel: { right: answer.cellXs[0] - ANSWER_GAP, y: answer.y }, answer,

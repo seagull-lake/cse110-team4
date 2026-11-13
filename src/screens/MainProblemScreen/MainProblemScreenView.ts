@@ -2,8 +2,8 @@ import Konva from "konva";
 import type { View } from "../../types.ts";
 import { STAGE_WIDTH, STAGE_HEIGHT, FONT_FAMILY, TITLE_COLOR, BUTTON_COLOR, BUTTON_TEXT_COLOR } from "../../constants.ts";
 import { createHomeButton } from "../../components/HomeButton.ts";
-import { CELL_WIDTH, DIGIT_FONT_SIZE, ROW_HEIGHT } from "./MainProblemLayout.ts";
-import type { CellSize, FieldLayout, HorizontalLine, ProblemLayout } from "./MainProblemLayout.ts";
+import { ROW_HEIGHT } from "./MainProblemLayout.ts";
+import type { FieldLayout, HorizontalLine, ProblemLayout } from "./MainProblemLayout.ts";
 
 const BACK_BUTTON = { width: 150, height: 40 };
 const BOX_INSET = 4;
@@ -12,10 +12,7 @@ const BOX_STROKE = "#27695B";
 /** The field being typed in */
 const ACTIVE_FILL = "#FFF1B8";
 const ACTIVE_STROKE = "#E0A100";
-const ANSWER_CELL: CellSize = { width: CELL_WIDTH, height: ROW_HEIGHT, fontSize: DIGIT_FONT_SIZE };
 
-/** One field's input boxes as drawn. */
-interface DrawnField extends FieldLayout { size: CellSize }
 
 /** The screen for one level: its title and its problem, written in columns like on paper. */
 export class MainProblemScreenView implements View {
@@ -26,9 +23,9 @@ export class MainProblemScreenView implements View {
   // The input boxes of every field, and the typed characters drawn inside them
   private readonly answerGroup = new Konva.Group();
   /** In the model's field order: the division box fields first, then the answer. */
-  private fields: DrawnField[] = [];
+  private fields: FieldLayout[] = [];
   /** Division: copies of a box's amount left at the top of the next box. */
-  private carried: (DrawnField & { from: number })[] = [];
+  private carried: (FieldLayout & { from: number })[] = [];
   private readonly onFieldClick: (index: number) => void;
 
   /**
@@ -75,7 +72,7 @@ export class MainProblemScreenView implements View {
 
     if (layout.kind === "column") {
       this.problemGroup.add(this.makeLine(layout.line));
-      this.fields = [{ ...layout.answer, size: ANSWER_CELL }];
+      if (layout.secondLine) this.problemGroup.add(this.makeLine(layout.secondLine));
       this.carried = [];
     } else {
       // Box method: one box per division step
@@ -86,9 +83,9 @@ export class MainProblemScreenView implements View {
         x: right - 200, y, width: 200, height: ROW_HEIGHT, align: "right", verticalAlign: "middle",
         text: "Answer", fontSize: 24, fontFamily: FONT_FAMILY, fill: TITLE_COLOR,
       }));
-      this.fields = [...layout.steps.map(step => ({ ...step, size: layout.cellSize })), { ...layout.answer, size: ANSWER_CELL }];
-      this.carried = layout.carried.map(copy => ({ ...copy, size: layout.cellSize }));
+      this.carried = layout.carried;
     }
+    this.fields = [...layout.steps, layout.answer];
     this.showAnswer(this.fields.map(() => ""), 0);
   }
 
@@ -116,7 +113,7 @@ export class MainProblemScreenView implements View {
   }
 
   /** Writes `entered` into the last cells of a field. Text doesn't catch clicks, so the box under it does. */
-  private drawCharacters({ cellXs, y, size }: DrawnField, entered: string): void {
+  private drawCharacters({ cellXs, y, size }: FieldLayout, entered: string): void {
     const firstFilled = cellXs.length - entered.length;
     cellXs.forEach((x, index) => {
       const character = index >= firstFilled ? entered[index - firstFilled] : "";

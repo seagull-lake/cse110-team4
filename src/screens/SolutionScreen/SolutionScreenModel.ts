@@ -24,7 +24,23 @@ export class SolutionScreenModel{
     getCurrentColumn(){
         return this.getCurrentStep().additionColumns?.[this.columnIndex];
     }
-    
 
+    getVisibleColumns(){//this returns the columns that should be visible on the screeen 
+        const columns = this.getCurrentStep().additionColumns;
+        if(!columns) return [];
+        return columns.slice(0, this.columnIndex + 1);
+    }  
+
+    hasNextColumn(){
+        const columns = this.getCurrentStep().additionColumns;
+        if(!columns) return false;
+        return this.columnIndex < columns.length - 1;
+    }
+
+    nextColumn(){
+        if(this.hasNextColumn()){
+            this.columnIndex++;
+        }
+    }
 
 }

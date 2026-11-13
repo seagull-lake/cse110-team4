@@ -48,30 +48,31 @@ describe("MainGameScreenModel topics", () => {
     });
 
     it.each([
-        ["addition", 2],
-        ["subtraction", 0],
-        ["multiplication", 1],
-        ["division", 1],
-    ] as const)("generates a %s problem for the selected topic", (operation, answer) => {
+        ["addition", [1, 1], 2],
+        ["subtraction", [10, 1], 9],
+        ["multiplication", [1, 1], 1],
+        ["division", [10, 1], 10],
+    ] as const)("generates a %s problem for the selected topic", (operation, operands, answer) => {
         const model = new MainGameScreenModel();
         const dispatcher = createDispatcher();
         const generate = vi.spyOn(dispatcher, "generate");
         model.selectTopic(operation);
 
-        expect(model.generateProblem(1, dispatcher)).toMatchObject({ operands: [1, 1], answer });
+        expect(model.generateProblem(1, dispatcher)).toMatchObject({ operands, answer });
         expect(generate).toHaveBeenCalledExactlyOnceWith({
             gameType: "main-game", operation, difficulty: 1,
         });
     });
 
     it.each([
-        [1, 2], [2, 2], [3, 2], [4, 3], [5, 3],
-    ])("uses the configured operand count at difficulty %i", (difficulty, operandCount) => {
+        [1, [1, 1], 2], [2, [10, 10], 20], [3, [100, 100], 200],
+        [4, [100, 100, 100], 300], [5, [10000, 10000, 10000], 30000],
+    ])("uses the configured addition operands at difficulty %i", (difficulty, operands, answer) => {
         const model = new MainGameScreenModel();
         model.selectTopic("addition");
         const problem = model.generateProblem(difficulty, createDispatcher());
-        expect(problem.operands).toHaveLength(operandCount);
-        expect(problem.answer).toBe(operandCount);
+        expect(problem.operands).toEqual(operands);
+        expect(problem.answer).toBe(answer);
     });
 
     it("uses a newly selected topic for the next problem", () => {
@@ -80,7 +81,7 @@ describe("MainGameScreenModel topics", () => {
         model.selectTopic("addition");
         expect(model.generateProblem(1, dispatcher).answer).toBe(2);
         model.selectTopic("subtraction");
-        expect(model.generateProblem(1, dispatcher).answer).toBe(0);
+        expect(model.generateProblem(1, dispatcher).answer).toBe(9);
     });
 
     it("does not call the dispatcher before topic selection", () => {

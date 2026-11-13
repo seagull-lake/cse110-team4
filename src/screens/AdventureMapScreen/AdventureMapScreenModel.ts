@@ -1,6 +1,6 @@
 import { ADDITION_LEVELS, problemDifficultyConfig, validateLevelDefinition } from "../../levels/levelConfig.ts";
 import type { LevelDefinition } from "../../levels/levelConfig.ts";
-import { completeLevel, initialProgression, startLevel } from "../../levels/progression.ts";
+import { completeLevel, initialProgression, isValidProgression, startLevel } from "../../levels/progression.ts";
 import type { ProgressionState } from "../../levels/progression.ts";
 
 /** Raw configuration and progress; the View decides how to display them. */
@@ -17,16 +17,25 @@ export class AdventureMapScreenModel {
   private state: ProgressionState;
   private readonly level: LevelDefinition;
 
-  constructor(level: LevelDefinition = ADDITION_LEVELS) {
+  /** Starts at the first difficulty unless saved progress is given. */
+  constructor(level: LevelDefinition = ADDITION_LEVELS, progression?: ProgressionState) {
     validateLevelDefinition(level);
+    for (let difficulty = 1; difficulty <= level.maxDifficulty; difficulty++) {
+      if (!problemDifficultyConfig.mainGame[level.type][difficulty]) {
+        throw new Error(`No operand digits are configured for ${level.type} difficulty ${difficulty}.`);
+      }
+    }
+    if (progression && !isValidProgression(level, progression)) {
+      throw new Error("Invalid progression state.");
+    }
     this.level = level;
-    this.state = initialProgression(level);
+    this.state = progression ?? initialProgression(level);
   }
 
   getMapData(): AdventureMapData {
     const difficulties = Array.from({ length: this.level.maxDifficulty }, (_, index) => ({
       difficulty: index + 1,
-      operandDigits: problemDifficultyConfig.mainGame[index + 1],
+      operandDigits: problemDifficultyConfig.mainGame[this.level.type][index + 1],
     }));
     return { level: this.level, progression: this.state, difficulties };
   }

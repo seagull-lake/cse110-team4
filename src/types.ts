@@ -12,6 +12,7 @@ export type Screen =
     { type: "menu" } |
     { type: "maingame" } |
     { type: "adventuremap"; topic: LevelType } |
+    { type: "mainproblem"; topic: LevelType; difficulty: number } |
     { type: "fractiongame" } |
     { type: "multidivgame"};
 

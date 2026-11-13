@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
-import type { ProblemDifficultyConfig } from "../levels/levelConfig.ts";
+import type { OperandDigitsByDifficulty, ProblemDifficultyConfig } from "../levels/levelConfig.ts";
 import { MainGameProblemGenerator } from "./MainGameProblemGenerator.ts";
 import { ProblemDispatcher } from "./ProblemDispatcher.ts";
 
+// Uses the same digit counts for every operation, so a test can pick any operation.
+function forAllOperations(digits: OperandDigitsByDifficulty): ProblemDifficultyConfig["mainGame"] {
+  return { addition: digits, subtraction: digits, multiplication: digits, division: digits };
+}
+
 const mixedDigitConfig: ProblemDifficultyConfig = {
-  mainGame: { 1: [2, 3] },
+  mainGame: forAllOperations({ 1: [2, 3] }),
   miniGameOne: { 1: [1, 1] },
 };
 
@@ -69,8 +74,11 @@ describe("ProblemDispatcher and MainGameProblemGenerator integration", () => {
     });
   });
 
-  it("uses the default level configuration to return both steps of 9 + 9 + 9", () => {
-    const dispatcher = createDispatcher(() => 0.999999);
+  it("returns both steps of 9 + 9 + 9", () => {
+    const dispatcher = createDispatcher(() => 0.999999, {
+      mainGame: forAllOperations({ 4: [1, 1, 1] }),
+      miniGameOne: { 1: [1, 1] },
+    });
 
     expect(dispatcher.generate({
       gameType: "main-game", operation: "addition", difficulty: 4,
@@ -103,7 +111,7 @@ describe("ProblemDispatcher and MainGameProblemGenerator integration", () => {
     const firstDigits = Object.freeze([2, 3]);
     const secondDigits = Object.freeze([3, 1, 2]);
     const config: ProblemDifficultyConfig = {
-      mainGame: Object.freeze({ 1: firstDigits, 2: secondDigits }),
+      mainGame: forAllOperations(Object.freeze({ 1: firstDigits, 2: secondDigits })),
       miniGameOne: { 1: [1, 1] },
     };
     const dispatcher = createDispatcher(() => 0, config);
@@ -113,7 +121,7 @@ describe("ProblemDispatcher and MainGameProblemGenerator integration", () => {
 
     expect(first).toMatchObject({ operands: [10, 100], answer: 110, solution: { finalAnswer: 110 } });
     expect(second).toMatchObject({ operands: [100, 1, 10], answer: 111, solution: { finalAnswer: 111 } });
-    expect(config.mainGame).toEqual({ 1: [2, 3], 2: [3, 1, 2] });
+    expect(config.mainGame.addition).toEqual({ 1: [2, 3], 2: [3, 1, 2] });
   });
 
   it("returns a fresh problem and solution on each request", () => {
@@ -140,7 +148,7 @@ describe("ProblemDispatcher and MainGameProblemGenerator integration", () => {
 
   it("propagates generator validation errors for invalid configured digit counts", () => {
     const dispatcher = createDispatcher(() => 0, {
-      mainGame: { 1: [2, 0] },
+      mainGame: forAllOperations({ 1: [2, 0] }),
       miniGameOne: { 1: [1, 1] },
     });
 

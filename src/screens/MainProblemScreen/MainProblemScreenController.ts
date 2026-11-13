@@ -16,7 +16,12 @@ export class MainProblemScreenController extends ScreenController {
     super();
     this.screenSwitcher = screenSwitcher;
     this.dispatcher = dispatcher;
-    this.view = new MainProblemScreenView(() => this.handleHomeClick(), () => this.handleBackClick());
+    this.view = new MainProblemScreenView(
+      () => this.handleHomeClick(),
+      () => this.handleBackClick(),
+      key => this.handleKey(key),
+      index => this.handleFieldClick(index),
+    );
   }
 
   /** Opens the level clicked on the adventure map with a new problem for it. */
@@ -24,6 +29,32 @@ export class MainProblemScreenController extends ScreenController {
     this.model = new MainProblemScreenModel(topic, difficulty, this.dispatcher);
     this.view.setTitle(this.model.getTitle());
     this.view.setProblem(getProblemLayout(topic, this.model.getProblem()));
+    this.showAnswer();
+  }
+
+  /**
+   * Typing fills in the active field: digits (and a leading "-" in the answer). Backspace removes the
+   * last one, Escape empties the field, Tab / Shift+Tab move to the next / previous field.
+   */
+  private handleKey(key: string): void {
+    if (!this.model) return;
+    if (key === "Backspace") this.model.deleteLastCharacter();
+    else if (key === "Escape") this.model.clearActiveField();
+    else if (key === "Tab") this.model.nextField();
+    else if (key === "Shift+Tab") this.model.previousField();
+    else if (!this.model.typeCharacter(key)) return;
+    this.showAnswer();
+  }
+
+  /** Clicking a field's box moves typing there. */
+  private handleFieldClick(index: number): void {
+    if (!this.model) return;
+    this.model.selectField(index);
+    this.showAnswer();
+  }
+
+  private showAnswer(): void {
+    if (this.model) this.view.showAnswer(this.model.getEntries(), this.model.getActiveField());
   }
 
   private handleHomeClick(): void {

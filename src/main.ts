@@ -1,12 +1,15 @@
 import Konva from "konva";
 import type { ScreenSwitcher, Screen } from "./types.ts";
 import { STAGE_WIDTH, STAGE_HEIGHT, FONT_FAMILY } from "./constants.ts";
-import { saveScreen, loadScreen } from "./storage.ts";
+import { saveScreen, loadScreen, loadProgression } from "./storage.ts";
 import { MenuScreenController } from "./screens/MenuScreen/MenuScreenController.ts";
 import { FractionSortScreenController } from "./screens/FractionSortScreen/FractionSortScreenController.ts";
 import { MainGameScreenController } from "./screens/MainGameScreen/MainGameScreenController.ts";
 import { MultiplicationDivisionScreenController } from "./screens/MultiplicationDivisionScreen/MultiplicationDivisionScreenController.ts";
 import { AdventureMapScreenController } from "./screens/AdventureMapScreen/AdventureMapScreenController.ts";
+import { MainProblemScreenController } from "./screens/MainProblemScreen/MainProblemScreenController.ts";
+import { getLevelDefinition } from "./levels/levelConfig.ts";
+import { isLevelUnlocked } from "./levels/progression.ts";
 
 
 class App implements ScreenSwitcher {
@@ -17,6 +20,7 @@ class App implements ScreenSwitcher {
   private maingameController: MainGameScreenController;
   private multidivController: MultiplicationDivisionScreenController;
   private adventureMapController: AdventureMapScreenController;
+  private mainProblemController: MainProblemScreenController;
 
   constructor(container: string) {
     this.stage = new Konva.Stage({ container, width: STAGE_WIDTH, height: STAGE_HEIGHT });
@@ -28,12 +32,14 @@ class App implements ScreenSwitcher {
     this.maingameController = new MainGameScreenController(this);
     this.multidivController = new MultiplicationDivisionScreenController(this);
     this.adventureMapController = new AdventureMapScreenController(this);
+    this.mainProblemController = new MainProblemScreenController(this);
 
     this.layer.add(this.menuController.getView().getGroup());
     this.layer.add(this.fractiongameController.getView().getGroup());
     this.layer.add(this.maingameController.getView().getGroup());
     this.layer.add(this.multidivController.getView().getGroup());
     this.layer.add(this.adventureMapController.getView().getGroup());
+    this.layer.add(this.mainProblemController.getView().getGroup());
 
 
     this.layer.draw();
@@ -45,6 +51,7 @@ class App implements ScreenSwitcher {
   }
 
   switchToScreen(screen: Screen): void {
+    if (screen.type === "mainproblem") screen = checkLevelScreen(screen);
     saveScreen(screen);
 
     this.menuController.hide();
@@ -52,6 +59,7 @@ class App implements ScreenSwitcher {
     this.multidivController.hide();
     this.fractiongameController.hide();
     this.adventureMapController.hide();
+    this.mainProblemController.hide();
 
     switch (screen.type) {
       case "menu": this.menuController.show(); break;
@@ -60,10 +68,30 @@ class App implements ScreenSwitcher {
         this.adventureMapController.setTopic(screen.topic);
         this.adventureMapController.show();
         break;
+      case "mainproblem":
+        this.mainProblemController.setLevel(screen.topic, screen.difficulty);
+        this.mainProblemController.show();
+        break;
       case "multidivgame": this.multidivController.show(); break;
       case "fractiongame": this.fractiongameController.show(); break;
     }
   }
+}
+
+/**
+ * A level screen can come from old saved data, so check it before opening:
+ * a locked or unknown level opens that topic's map instead, and an unknown topic opens the menu.
+ */
+function checkLevelScreen(screen: Extract<Screen, { type: "mainproblem" }>): Screen {
+  let level;
+  try {
+    level = getLevelDefinition(screen.topic);
+  } catch {
+    return { type: "menu" };
+  }
+  return isLevelUnlocked(level, loadProgression(level), screen.difficulty)
+    ? screen
+    : { type: "adventuremap", topic: screen.topic };
 }
 
 new App("container");

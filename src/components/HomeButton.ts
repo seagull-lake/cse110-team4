@@ -1,11 +1,12 @@
 import Konva from "konva";
-import { FONT_FAMILY, TITLE_COLOR } from "../constants";
+import { FONT_FAMILY, STAGE_HEIGHT, TITLE_COLOR } from "../constants";
 
 /**
  * Shared Home button — reuse in any screen's view:
  *   this.group.add(createHomeButton(onHomeClick));
+ * Sits in the bottom-left corner by default, matching every screen.
  */
-export function createHomeButton(onClick: () => void, x = 20, y = 20): Konva.Group {
+export function createHomeButton(onClick: () => void, x = 30, y = STAGE_HEIGHT - 62): Konva.Group {
     const button = new Konva.Group({ x, y });
 
     button.add(new Konva.Rect({

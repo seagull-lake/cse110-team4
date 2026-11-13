@@ -81,9 +81,9 @@ describe("main problem screen controller", () => {
   });
 
   describe("typing the answer", () => {
-    /** Opens a level whose problem is 74 − 2 = 72. */
+    /** Opens a level whose answer has 2 digits and no borrow boxes (1-digit numbers). */
     function openLevel() {
-      const dispatcher = { generate: () => ({ operands: [74, 2], answer: 72 }) };
+      const dispatcher = { generate: () => ({ operands: [9, 3], answer: 72 }) };
       const controller = new MainProblemScreenController({ switchToScreen: () => {} }, dispatcher as never);
       controller.setLevel("subtraction", 1);
       view.answer = "";

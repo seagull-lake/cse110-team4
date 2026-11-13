@@ -17,16 +17,33 @@ export function getAnswerLength(answer: number): number {
 }
 
 /**
- * One place the student types a number. Division asks for every box of the box method
- * (the partial quotient above it, the product subtracted, and the amount left), then the answer.
- * Every other topic only asks for the answer.
+ * One place the student types a number: an in-between step, or the final answer (always last).
+ * - Addition / subtraction: the carry / borrow above each column from the tens up
+ * - Multiplication: each partial product (2+ digit multiplier), or the carries (1-digit multiplier)
+ * - Division: every box of the box method (partial quotient, product, amount left)
  */
 export interface AnswerField {
-  readonly kind: "partialQuotient" | "product" | "remaining" | "answer";
-  /** Which division box the field belongs to (division boxes only). */
+  readonly kind: "carry" | "borrow" | "partialProduct" | "partialQuotient" | "product" | "remaining" | "answer";
+  /** Carries and borrows: the column, 1 = tens. Partial products: the multiplier digit, 0 = ones. Division: the box. */
   readonly box?: number;
   /** One input box per character of the correct number. */
   readonly length: number;
+}
+
+/** Number of columns of the longest number. */
+export function getNumberColumns(problem: MainGameProblem): number {
+  return Math.max(...problem.operands.map(operand => String(Math.abs(operand)).length));
+}
+
+/** The numbers the student writes under the line before adding them up: one per multiplier digit, ones first. */
+export function getPartialProducts(problem: MainGameProblem): number[] {
+  const [multiplicand, multiplier] = problem.operands;
+  return [...String(multiplier)].reverse().map((digit, place) => multiplicand * Number(digit) * 10 ** place);
+}
+
+/** One single-digit field above each column from the tens up to the longest number's last column. */
+function getColumnFields(kind: "carry" | "borrow", columns: number): AnswerField[] {
+  return Array.from({ length: Math.max(columns - 1, 0) }, (_, index) => ({ kind, box: index + 1, length: 1 }));
 }
 
 /** The division boxes the generator worked out for this problem. */
@@ -39,7 +56,17 @@ export function getDivisionBoxes(problem: MainGameProblem): readonly DivisionBox
 /** The fields to fill in, in the order the student fills them. */
 export function getAnswerFields(topic: LevelType, problem: MainGameProblem): AnswerField[] {
   const answer: AnswerField = { kind: "answer", length: getAnswerLength(problem.answer) };
-  if (topic !== "division") return [answer];
+  if (topic === "addition") return [...getColumnFields("carry", getNumberColumns(problem)), answer];
+  if (topic === "subtraction") return [...getColumnFields("borrow", getNumberColumns(problem)), answer];
+  if (topic === "multiplication") {
+    const partialProducts = getPartialProducts(problem);
+    // With a 1-digit multiplier the only partial product is the answer, so the steps are the carries
+    if (partialProducts.length === 1) return [...getColumnFields("carry", String(problem.operands[0]).length), answer];
+    return [
+      ...partialProducts.map((product, box): AnswerField => ({ kind: "partialProduct", box, length: getAnswerLength(product) })),
+      answer,
+    ];
+  }
   return [
     ...getDivisionBoxes(problem).flatMap((step, box): AnswerField[] => [
       { kind: "partialQuotient", box, length: getAnswerLength(step.partialQuotient) },

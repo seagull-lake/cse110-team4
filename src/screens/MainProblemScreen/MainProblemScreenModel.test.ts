@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { problemDifficultyConfig } from "../../levels/levelConfig.ts";
 import type { LevelType } from "../../levels/levelConfig.ts";
-import { MainProblemScreenModel, createProblemDispatcher, getAnswerFields } from "./MainProblemScreenModel.ts";
+import { MainProblemScreenModel, createProblemDispatcher, getAnswerFields, getPartialProducts } from "./MainProblemScreenModel.ts";
 import type { SolvedMainGameProblem } from "../../problem-engine/MainGameProblemGenerator.ts";
 import { solvedDivision } from "./testProblems.ts";
 
@@ -51,8 +51,8 @@ describe("the problem a level asks for", () => {
 });
 
 describe("filling out the answer", () => {
-  /** A level whose problem is fixed, so the answer length is known. */
-  const withAnswer = (answer: number, operands = [10, 5]) =>
+  /** A level whose problem is fixed, so the answer length is known. 1-digit numbers have no borrow boxes. */
+  const withAnswer = (answer: number, operands = [9, 3]) =>
     new MainProblemScreenModel("subtraction", 3, { generate: () => ({ operands, answer }) } as never);
   const typeAll = (model: MainProblemScreenModel, text: string) => [...text].map(c => model.typeCharacter(c));
 
@@ -116,14 +116,17 @@ describe("filling out the answer", () => {
 
   it("accepts a minus only as the first character, for negative answers", () => {
     const model = withAnswer(-74, [472, 546]);
+    model.selectField(2); // after the 2 borrow boxes
     expect(typeAll(model, "7-")).toEqual([true, false]);
     model.clearAnswer();
+    model.selectField(2);
     expect(typeAll(model, "-74")).toEqual([true, true, true]);
     expect(model.getAnswerValue()).toBe(-74);
   });
 
   it("does not count a lone minus as an answer", () => {
     const model = withAnswer(-74, [472, 546]);
+    model.selectField(2);
     model.typeCharacter("-");
     expect(model.getAnswerValue()).toBeNull();
   });
@@ -143,9 +146,6 @@ describe("filling out the division boxes", () => {
     ]);
   });
 
-  it("only asks for the answer in the other topics", () => {
-    expect(getAnswerFields("addition", { operands: [482, 315], answer: 797 })).toEqual([{ kind: "answer", length: 3 }]);
-  });
 
   it.each([1, 2, 3, 4, 5])("division level %s has one set of fields per generator box", difficulty => {
     const model = new MainProblemScreenModel("division", difficulty);
@@ -195,5 +195,47 @@ describe("filling out the division boxes", () => {
     model.selectField(9);
     typeAll(model, "238");
     expect(model.getAnswerValue()).toBe(238);
+  });
+});
+
+describe("filling out the steps of the other topics", () => {
+  it("addition asks for the carry above each column from the tens up, then the answer", () => {
+    expect(getAnswerFields("addition", { operands: [10984, 50789], answer: 61773 })).toEqual([
+      { kind: "carry", box: 1, length: 1 }, { kind: "carry", box: 2, length: 1 },
+      { kind: "carry", box: 3, length: 1 }, { kind: "carry", box: 4, length: 1 },
+      { kind: "answer", length: 5 },
+    ]);
+  });
+
+  it("subtraction asks for the borrows the same way", () => {
+    expect(getAnswerFields("subtraction", { operands: [74, 8], answer: 66 })).toEqual([
+      { kind: "borrow", box: 1, length: 1 }, { kind: "answer", length: 2 },
+    ]);
+  });
+
+  it("1-digit numbers have no carries", () => {
+    expect(getAnswerFields("addition", { operands: [4, 3], answer: 7 })).toEqual([{ kind: "answer", length: 1 }]);
+  });
+
+  it("multiplication asks for one partial product per multiplier digit, then the answer", () => {
+    // 44 × 32: 44 × 2 = 88, 44 × 30 = 1320, 88 + 1320 = 1408
+    expect(getPartialProducts({ operands: [44, 32], answer: 1408 })).toEqual([88, 1320]);
+    expect(getAnswerFields("multiplication", { operands: [44, 32], answer: 1408 })).toEqual([
+      { kind: "partialProduct", box: 0, length: 2 }, { kind: "partialProduct", box: 1, length: 4 },
+      { kind: "answer", length: 4 },
+    ]);
+  });
+
+  it("multiplication by a 1-digit number asks for the carries instead", () => {
+    expect(getAnswerFields("multiplication", { operands: [47, 6], answer: 282 })).toEqual([
+      { kind: "carry", box: 1, length: 1 }, { kind: "answer", length: 3 },
+    ]);
+  });
+
+  it("fills the steps before the answer", () => {
+    const model = new MainProblemScreenModel("addition", 2, { generate: () => ({ operands: [48, 35], answer: 83 }) } as never);
+    [..."183"].forEach(c => model.typeCharacter(c));
+    expect(model.getEntries()).toEqual(["1", "83"]);
+    expect(model.getAnswerValue()).toBe(83);
   });
 });

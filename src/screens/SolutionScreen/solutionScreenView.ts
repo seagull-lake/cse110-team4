@@ -1,5 +1,5 @@
 import Konva from "konva";
-import type{AdditionColumn, AdditionStep} from "../../problem-engine/MainGameProblemGenerator.ts";
+import type{AdditionColumn, SolutionStep} from "../../problem-engine/MainGameProblemGenerator.ts";
 import {
   FONT_FAMILY,
   STAGE_WIDTH,
@@ -8,11 +8,20 @@ import {
 
 
 interface SolutionViewData{
-    step: AdditionStep;
+    step: SolutionStep;
     currentColumn: AdditionColumn | undefined;
     visibleColumns: readonly AdditionColumn[];
     hasNextColumn: boolean;
 }
+
+const BACKGROUND = "#FFF6DD";
+const TEXT_COLOR = "#412F00";
+const HIGHLIGHT = "#FFE28A";
+const PANEL_COLOR = "#FFE9AE";
+
+const COLUMN_WIDTH = 48;
+const BOX_WIDTH = 38;
+const RIGHT_COLUMN_X = 420;
 
 export class SolutionScreenView {
     private readonly group: Konva.Group;

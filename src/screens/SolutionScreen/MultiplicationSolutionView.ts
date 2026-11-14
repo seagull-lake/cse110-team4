@@ -17,7 +17,7 @@ export class MultiplicationSolutionView {
         this.onBackToMap = onBackToMap;
     }
 
-    render(level: number, problem: MainGameProblem, explanation: string): void {
+    render(level: number, problem: MainGameProblem): void {
         const layout = getProblemLayout("multiplication", problem);
         if (layout.kind !== "column") throw new Error("Expected a multiplication column layout.");
         this.group.destroyChildren();
@@ -61,7 +61,9 @@ export class MultiplicationSolutionView {
         const explanationPanel = new Konva.Label({ x: 480, y: 290 });
         explanationPanel.add(new Konva.Tag({ fill: "#FFE9AE", cornerRadius: 8 }));
         explanationPanel.add(new Konva.Text({
-            width: 285, height: 150, padding: 20, text: explanation,
+            width: 285, height: 150, padding: 20,
+            // Temporary example until the controller supplies the current solution step.
+            text: "Units digit: 1\n36748 × 1 = 36748\nFirst partial product.",
             fontFamily: FONT_FAMILY, fontSize: 24, lineHeight: 1.3, fill: TITLE_COLOR,
             align: "center", verticalAlign: "middle",
         }));

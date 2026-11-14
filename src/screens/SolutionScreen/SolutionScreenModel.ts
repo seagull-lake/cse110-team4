@@ -1,7 +1,17 @@
 import type {
     SolvedMainGameProblem,
+    AdditionColumn, SubtractionColumn, MultiplicationRow, DivisionBoxMethod,
 } from "../../problem-engine/MainGameProblemGenerator.ts";
-import type { SolutionPage } from "./SolutionPage.ts";
+
+export type SolutionPage = {
+    hasNext: boolean;
+    finalAnswer?: number;
+} & (
+    | { operation: "addition"; currentColumn: AdditionColumn | undefined; visibleColumns: readonly AdditionColumn[] }
+    | { operation: "subtraction"; currentColumn: SubtractionColumn | undefined; visibleColumns: readonly SubtractionColumn[] }
+    | { operation: "multiplication"; currentRow: MultiplicationRow | undefined; visibleRows: readonly MultiplicationRow[] }
+    | { operation: "division"; division: DivisionBoxMethod; visibleBoxCount: number }
+);
 
 export class SolutionScreenModel{
     private readonly problem: SolvedMainGameProblem;

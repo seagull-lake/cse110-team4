@@ -4,7 +4,7 @@ import { createHomeButton } from "../../components/HomeButton.ts";
 import { createActionButton } from "../../components/ComponentFactory.ts";
 import type { MainGameProblem } from "../../domain/problem.ts";
 import { getProblemLayout } from "../MainProblemScreen/MainProblemLayout.ts";
-import type { SolutionPage } from "./SolutionPage.ts";
+import type { SolutionPage } from "./SolutionScreenModel.ts";
 
 const CALCULATION_OFFSET_X = -120;
 

@@ -19,13 +19,16 @@ export function getAnswerLength(answer: number): number {
 /**
  * One place the student types a number: an in-between step, or the final answer (always last).
  * - Addition / subtraction: the carry / borrow above each column from the tens up
- * - Multiplication: each partial product (2+ digit multiplier), or the carries (1-digit multiplier)
+ * - Multiplication: for each digit of the multiplier (ones first), the carries of multiplying by it,
+ *   then (with a 2+ digit multiplier) its partial product
  * - Division: every box of the box method (partial quotient, product, amount left)
  */
 export interface AnswerField {
   readonly kind: "carry" | "borrow" | "partialProduct" | "partialQuotient" | "product" | "remaining" | "answer";
   /** Carries and borrows: the column, 1 = tens. Partial products: the multiplier digit, 0 = ones. Division: the box. */
   readonly box?: number;
+  /** Multiplication carries: the multiplier digit they belong to (0 = ones), the same as the `box` of its partial product. */
+  readonly row?: number;
   /** One input box per character of the correct number. */
   readonly length: number;
 }
@@ -69,13 +72,20 @@ export function getAnswerFields(topic: LevelType, problem: MainGameProblem): Ans
   }
   if (topic === "subtraction") return [...getColumnFields("borrow", getNumberColumns(problem)), answer];
   if (topic === "multiplication") {
+    const [multiplicand, multiplier] = problem.operands;
+    const columns = String(multiplicand).length;
     const partialProducts = getPartialProducts(problem);
-    // With a 1-digit multiplier the only partial product is the answer, so the steps are the carries
-    if (partialProducts.length === 1) return [...getColumnFields("carry", String(problem.operands[0]).length), answer];
-    return [
-      ...partialProducts.map((product, box): AnswerField => ({ kind: "partialProduct", box, length: getAnswerLength(product) })),
-      answer,
-    ];
+    const multiplierDigits = [...String(multiplier)].reverse().map(Number);
+    const rows = multiplierDigits.flatMap((digit, row): AnswerField[] => {
+      // The carries of multiplying by this digit, like addition's: one per column from the tens up,
+      // plus one more when the product has an extra digit (the carry out of the leftmost column)
+      const hasCarryOut = getAnswerLength(multiplicand * digit) > columns;
+      const carries = getColumnFields("carry", columns, hasCarryOut).map((field): AnswerField => ({ ...field, row }));
+      // With a 1-digit multiplier the only partial product is the answer, so there is no row for it
+      if (partialProducts.length === 1) return carries;
+      return [...carries, { kind: "partialProduct", box: row, length: getAnswerLength(partialProducts[row]) }];
+    });
+    return [...rows, answer];
   }
   return [
     ...getDivisionBoxes(problem).flatMap((step, box): AnswerField[] => [

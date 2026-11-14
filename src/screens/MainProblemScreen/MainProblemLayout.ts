@@ -48,13 +48,40 @@ export interface ColumnLayout {
   line: HorizontalLine;
   /** The line under the partial products (multiplication with a 2+ digit multiplier). */
   secondLine?: HorizontalLine;
-  /** The step fields in the model's order: carries / borrows, or partial products. */
+  /** The step fields in the model's order: carries / borrows, and partial products. */
   steps: FieldLayout[];
   answer: FieldLayout;
+  /**
+   * Multiplication with a 2+ digit multiplier: one small marker beside each partial product showing
+   * whether the carries of that row are filled in. Empty for every other problem.
+   */
+  rowMarkers: RowMarker[];
+  /**
+   * Multiplication with a 2+ digit multiplier: where each digit of the second number is (index 0 = the
+   * ones digit, like a partial product's row), so the one being multiplied by can be outlined.
+   */
+  multiplierCells: Rect[];
 }
 
 /** Where one field's input boxes go: their top, the left edge of each (right-aligned), and their size. */
-export interface FieldLayout { y: number; cellXs: number[]; size: CellSize }
+export interface FieldLayout {
+  y: number;
+  cellXs: number[];
+  size: CellSize;
+  /** Multiplication: the multiplier digit this field belongs to (0 = ones). */
+  row?: number;
+  /**
+   * Multiplication carries: the carries of every row share the same boxes above the numbers, so only
+   * those of the row being worked on are drawn at a time.
+   */
+  carry?: boolean;
+}
+
+/** A marker's top-left corner, for the partial product row of a multiplier digit. */
+export interface RowMarker { row: number; x: number; y: number }
+/** Size of a row marker, and its distance from the right end of the rows. */
+export const MARKER_SIZE = 42; // nearly the height of a partial product row (44), so neighboring circles don't touch
+const MARKER_GAP = 14;
 
 /**
  * Division, box method: the divisor on the left, then one box per step. Above each box the student
@@ -89,7 +116,6 @@ function cellsEndingAt(rightEdge: number, count: number, width = CELL_WIDTH): nu
 
 function getColumnLayout(type: LevelType, problem: MainGameProblem): ColumnLayout {
   const fields = getAnswerFields(type, problem);
-  const columnFields = fields.filter(field => field.kind === "carry" || field.kind === "borrow");
   const partialProducts = fields.filter(field => field.kind === "partialProduct");
   const size = partialProducts.length > 0 ? COMPACT_CELL : COLUMN_CELL;
   const { width: cell, height: row } = size;
@@ -104,9 +130,8 @@ function getColumnLayout(type: LevelType, problem: MainGameProblem): ColumnLayou
   const right = left + columns * cell;
   const operatorX = right - (numberColumns + 1) * cell;
   // The carry / borrow row goes above the numbers. Its space is kept even when a problem happens to
-  // have no boxes in it (e.g. 2 + 3), so the numbers sit in the same place on every such problem.
-  // Only multiplication with partial products never has the row, so its numbers start higher.
-  const numbersTop = partialProducts.length === 0 ? PROBLEM_TOP + CARRY_HEIGHT + 4 : PROBLEM_TOP;
+  // have no boxes in it (e.g. 2 + 3), so the numbers sit in the same place on every column problem.
+  const numbersTop = PROBLEM_TOP + CARRY_HEIGHT + 4;
 
   const cells: Cell[] = [];
   numbers.forEach((text, index) => {
@@ -117,17 +142,27 @@ function getColumnLayout(type: LevelType, problem: MainGameProblem): ColumnLayou
   });
 
   const carrySize = { width: cell, height: CARRY_HEIGHT, fontSize: CARRY_FONT_SIZE };
-  // box 1 is the tens column, one cell left of the ones
-  const steps: FieldLayout[] = columnFields.map(field => ({ y: PROBLEM_TOP, cellXs: [right - (field.box! + 1) * cell], size: carrySize }));
-
   const lineY = numbersTop + numbers.length * row;
   let y = lineY + ANSWER_GAP;
+  const steps: FieldLayout[] = [];
+  const rowMarkers: RowMarker[] = [];
+  // In the model's order. Carries / borrows all sit above the numbers (box 1 is the tens column, one
+  // cell left of the ones); partial products go under the line, one row each.
+  fields.filter(field => field.kind !== "answer").forEach(field => {
+    if (field.kind === "partialProduct") {
+      steps.push({ y, cellXs: cellsEndingAt(right, field.length, cell), size, row: field.box });
+      rowMarkers.push({ row: field.box!, x: right + MARKER_GAP, y: y + (row - MARKER_SIZE) / 2 });
+      y += row;
+    } else {
+      const isMultiplicationCarry = field.row !== undefined;
+      steps.push({
+        y: PROBLEM_TOP, cellXs: [right - (field.box! + 1) * cell], size: carrySize,
+        ...(isMultiplicationCarry && { row: field.row, carry: true }),
+      });
+    }
+  });
   let secondLine: HorizontalLine | undefined;
   if (partialProducts.length > 0) {
-    partialProducts.forEach(field => {
-      steps.push({ y, cellXs: cellsEndingAt(right, field.length, cell), size });
-      y += row;
-    });
     secondLine = { x1: left, x2: right, y: y + 4 };
     y += ANSWER_GAP + 4;
   }
@@ -139,6 +174,9 @@ function getColumnLayout(type: LevelType, problem: MainGameProblem): ColumnLayou
     secondLine,
     steps,
     answer: { y, cellXs: cellsEndingAt(right, answerColumns, cell), size },
+    rowMarkers,
+    multiplierCells: partialProducts.length === 0 ? [] :
+      cellsEndingAt(right, numbers[1].length, cell).reverse().map(x => ({ x, y: numbersTop + row, width: cell, height: row })),
   };
 }
 

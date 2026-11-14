@@ -254,19 +254,47 @@ describe("filling out the steps of the other topics", () => {
     expect(getAnswerFields("subtraction", { operands: [7, 3], answer: 4 })).toEqual([{ kind: "answer", length: 1 }]);
   });
 
-  it("multiplication asks for one partial product per multiplier digit, then the answer", () => {
+  it("multiplication asks for the carries and the partial product of each multiplier digit, then the answer", () => {
     // 44 × 32: 44 × 2 = 88, 44 × 30 = 1320, 88 + 1320 = 1408
     expect(getPartialProducts({ operands: [44, 32], answer: 1408 })).toEqual([88, 1320]);
     expect(getAnswerFields("multiplication", { operands: [44, 32], answer: 1408 })).toEqual([
-      { kind: "partialProduct", box: 0, length: 2 }, { kind: "partialProduct", box: 1, length: 4 },
+      // × 2: 88 has no extra digit, so only the carry into the tens
+      { kind: "carry", box: 1, length: 1, row: 0 }, { kind: "partialProduct", box: 0, length: 2 },
+      // × 3: 132 has an extra digit, so a carry out of the tens as well
+      { kind: "carry", box: 1, length: 1, row: 1 }, { kind: "carry", box: 2, length: 1, row: 1 },
+      { kind: "partialProduct", box: 1, length: 4 },
       { kind: "answer", length: 4 },
     ]);
   });
 
-  it("multiplication by a 1-digit number asks for the carries instead", () => {
+  it("multiplication by a 1-digit number asks for the carries, then the answer", () => {
+    // 47 × 6 = 282: the carry into the tens (4) and out of the tens (2, the answer's first digit)
     expect(getAnswerFields("multiplication", { operands: [47, 6], answer: 282 })).toEqual([
-      { kind: "carry", box: 1, length: 1 }, { kind: "answer", length: 3 },
+      { kind: "carry", box: 1, length: 1, row: 0 }, { kind: "carry", box: 2, length: 1, row: 0 },
+      { kind: "answer", length: 3 },
     ]);
+  });
+
+  it("1-digit multiplication only has a carry when the product has 2 digits", () => {
+    expect(getAnswerFields("multiplication", { operands: [8, 7], answer: 56 })).toEqual([
+      { kind: "carry", box: 1, length: 1, row: 0 }, { kind: "answer", length: 2 },
+    ]);
+    expect(getAnswerFields("multiplication", { operands: [2, 3], answer: 6 })).toEqual([{ kind: "answer", length: 1 }]);
+  });
+
+  it("multiplication still asks for the carries of a multiplier digit that is 0", () => {
+    // 47 × 10: the ones row is 47 × 0 = 0 (carries all 0), the tens row is 470
+    expect(getAnswerFields("multiplication", { operands: [47, 10], answer: 470 })).toEqual([
+      { kind: "carry", box: 1, length: 1, row: 0 }, { kind: "partialProduct", box: 0, length: 1 },
+      { kind: "carry", box: 1, length: 1, row: 1 }, { kind: "partialProduct", box: 1, length: 3 },
+      { kind: "answer", length: 3 },
+    ]);
+  });
+
+  it("asks for 3 rows of carries for a 3-digit multiplier", () => {
+    const fields = getAnswerFields("multiplication", { operands: [99999, 999], answer: 99899001 });
+    expect(fields.filter(field => field.kind === "partialProduct")).toHaveLength(3);
+    expect([0, 1, 2].map(row => fields.filter(field => field.kind === "carry" && field.row === row).length)).toEqual([5, 5, 5]);
   });
 
   it("fills the steps before the answer", () => {

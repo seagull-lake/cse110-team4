@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { STAGE_HEIGHT, STAGE_WIDTH } from "../../constants.ts";
-import { BOX_CELL, CELL_WIDTH, COMPACT_CELL, PROBLEM_TOP, ROW_HEIGHT, getProblemLayout } from "./MainProblemLayout.ts";
+import { BOX_CELL, CELL_WIDTH, COMPACT_CELL, MARKER_SIZE, PROBLEM_TOP, ROW_HEIGHT, getProblemLayout } from "./MainProblemLayout.ts";
 import type { Cell, ProblemLayout } from "./MainProblemLayout.ts";
 import { MainProblemScreenModel } from "./MainProblemScreenModel.ts";
 import { solvedDivision } from "./testProblems.ts";
@@ -149,7 +149,7 @@ describe("steps of addition, subtraction and multiplication", () => {
     // 44 × 32: 88 and 1320, then 1408
     const layout = getProblemLayout("multiplication", { operands: [44, 32], answer: 1408 });
     if (layout.kind !== "column") throw new Error("expected a column layout");
-    const [ones, tens] = layout.steps;
+    const [ones, tens] = layout.steps.filter(step => !step.carry);
     expect([ones.cellXs.length, tens.cellXs.length]).toEqual([2, 4]);
     expect(ones.y).toBeGreaterThan(layout.line.y);
     expect(tens.y).toBeGreaterThan(ones.y);
@@ -161,11 +161,79 @@ describe("steps of addition, subtraction and multiplication", () => {
     }
   });
 
-  it("asks for carries instead when multiplying by a 1-digit number", () => {
+  it("only asks for carries (no partial product rows) when multiplying by a 1-digit number", () => {
     const layout = getProblemLayout("multiplication", { operands: [47, 6], answer: 282 });
     if (layout.kind !== "column") throw new Error("expected a column layout");
-    expect(layout.steps).toHaveLength(1);
+    expect(layout.steps).toHaveLength(2);
+    expect(layout.steps.every(step => step.carry && step.row === 0)).toBe(true);
     expect(layout.secondLine).toBeUndefined();
+    expect(layout.rowMarkers).toEqual([]);
+  });
+
+  describe("multiplication carries", () => {
+    const multiplications = [
+      [8, 7], [9, 8], [37, 9], [36, 27], [47, 11], [84, 92], [73, 74], [472, 36], [99999, 999],
+    ].map(operands => getProblemLayout("multiplication", { operands, answer: operands[0] * operands[1] }));
+    const topOf = (layout: ProblemLayout) => Math.min(...layout.cells.map(cell => cell.y));
+
+    it("starts the numbers at the same height on every multiplication problem, like addition and subtraction", () => {
+      const addition = getProblemLayout("addition", { operands: [57, 76], answer: 133 });
+      multiplications.forEach(layout => expect(topOf(layout)).toBe(topOf(addition)));
+    });
+
+    it("draws the carries of every row in the same boxes above the numbers", () => {
+      const layout = getProblemLayout("multiplication", { operands: [44, 32], answer: 1408 });
+      if (layout.kind !== "column") throw new Error("expected a column layout");
+      const carries = layout.steps.filter(step => step.carry);
+      expect(carries.map(step => step.row)).toEqual([0, 1, 1]);
+      expect(carries.every(step => step.y === PROBLEM_TOP)).toBe(true);
+      // row 1's carries start with the same box as row 0's (the tens column)
+      expect(carries[1].cellXs).toEqual(carries[0].cellXs);
+      expect(carries[2].cellXs[0]).toBe(carries[0].cellXs[0] - COMPACT_CELL.width); // one column left
+    });
+
+    it("puts a marker beside each partial product, centered on its row", () => {
+      const layout = getProblemLayout("multiplication", { operands: [44, 32], answer: 1408 });
+      if (layout.kind !== "column") throw new Error("expected a column layout");
+      const partialProducts = layout.steps.filter(step => !step.carry);
+      expect(layout.rowMarkers.map(marker => marker.row)).toEqual([0, 1]);
+      layout.rowMarkers.forEach((marker, index) => {
+        const field = partialProducts[index];
+        expect(marker.x).toBeGreaterThan(field.cellXs.at(-1)! + field.size.width);
+        expect(marker.y + MARKER_SIZE / 2).toBe(field.y + field.size.height / 2);
+      });
+    });
+
+    it("knows where each digit of the second number is, ones first, so the one being used can be outlined", () => {
+      const layout = getProblemLayout("multiplication", { operands: [44, 32], answer: 1408 });
+      if (layout.kind !== "column") throw new Error("expected a column layout");
+      const secondRow = layout.cells.filter(cell => cell.y === layout.cells[3].y && cell.text !== "×");
+      // 32: the "2" is the ones digit (row 0), the "3" the tens digit (row 1)
+      expect(layout.multiplierCells.map(cell => cell.x)).toEqual([secondRow[1].x, secondRow[0].x]);
+      expect(secondRow.map(cell => cell.text)).toEqual(["3", "2"]);
+      layout.multiplierCells.forEach(cell => expect(cell.y).toBe(secondRow[0].y));
+    });
+
+    it("has no multiplier digit cells without partial product rows", () => {
+      [getProblemLayout("multiplication", { operands: [47, 6], answer: 282 }),
+        getProblemLayout("addition", { operands: [57, 76], answer: 133 })].forEach(layout => {
+        if (layout.kind === "column") expect(layout.multiplierCells).toEqual([]);
+      });
+    });
+
+    it("has no markers for other problems", () => {
+      [getProblemLayout("addition", { operands: [57, 76], answer: 133 }), ...multiplications.slice(0, 3)].forEach(layout => {
+        if (layout.kind === "column") expect(layout.rowMarkers).toEqual([]);
+      });
+    });
+
+    it("keeps everything above the Submit button, even for 5-digit × 3-digit", () => {
+      const submitTop = STAGE_HEIGHT - 70;
+      multiplications.forEach(layout => {
+        if (layout.kind !== "column") throw new Error("expected a column layout");
+        expect(layout.answer.y + layout.answer.size.height).toBeLessThanOrEqual(submitTop);
+      });
+    });
   });
 });
 

@@ -1,20 +1,25 @@
 import type{ SolvedMainGameProblem } from "../../problem-engine/MainGameProblemGenerator.ts";
 import  {SolutionScreenModel} from "./SolutionScreenModel.ts";
 import  {SolutionScreenView} from "./solutionScreenView.ts";
+import { ScreenController } from "../../types.ts";
 
 
-export class SolutionScreenController{
-    private readonly model: SolutionScreenModel;
+export class SolutionScreenController extends ScreenController{
+    private model: SolutionScreenModel | null = null;
     private readonly view: SolutionScreenView;
 
-    constructor(problem: SolvedMainGameProblem) {
-        this.model = new SolutionScreenModel(problem);
+    constructor() {
+        super();
         this.view = new SolutionScreenView(() => {
         this.handleNextStep();
         });
+    }
+    setProblem(problem: SolvedMainGameProblem): void {
+        this.model = new SolutionScreenModel(problem);
         this.updateView();
     }
     private handleNextStep(): void {
+        if (!this.model) return;
         if (this.model.getCurrentStep().operation === "division") {
             this.model.nextDivisionPage();
         } else {
@@ -24,6 +29,7 @@ export class SolutionScreenController{
     }
 
   private updateView(): void {
+    if (!this.model) return;
     if (this.model.getCurrentStep().operation === "division") {
       const page = this.model.getDivisionPage();
       this.view.renderDivision(page.division, page.visibleBoxCount);

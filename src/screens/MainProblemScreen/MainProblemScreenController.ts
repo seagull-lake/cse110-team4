@@ -78,8 +78,18 @@ export class MainProblemScreenController extends ScreenController {
 
   private handleSubmitClick(): void {
     if (!this.model) return;
-    if (!this.model.checkAnswer(this.view.getEnteredAnswer())) return;
-    this.view.showCorrectAnswer();
+    const answer = this.view.getEnteredAnswer();
+    if (answer.length !== this.model.getAnswerLength() || answer.some(digit => digit === "")) return;
+    if (this.model.checkAnswer(answer)) {
+      this.view.showCorrectAnswer();
+    } else {
+      this.screenSwitcher.switchToScreen({
+        type: "solution",
+        problem: this.model.getProblem(),
+        topic: this.model.getTopic(),
+        difficulty: this.model.getDifficulty(),
+      });
+    }
   }
 
   private handleContinueClick(): void {

@@ -84,7 +84,7 @@ export class MainProblemScreenModel {
   private readonly problem: MainGameProblem;
   private answerCorrect = false;
   private readonly fields: readonly AnswerField[];
-  /** What the student typed in each field, e.g. "72"; filled from the right like a calculator. */
+  /** What the student typed in each field as it reads on screen, e.g. "72"; typing fills it from the right. */
   private readonly entries: string[];
   /** The field that typing goes into. */
   private active = 0;
@@ -138,26 +138,28 @@ export class MainProblemScreenModel {
   previousField(): void { this.selectField(this.active - 1); }
 
   /**
-   * Adds one typed character to the active field. Only digits are accepted, plus "-" as the very
-   * first character of the answer (subtraction can have a negative answer). Returns false if it was rejected.
-   * A full field moves typing on to the next one.
+   * Adds one typed character to the active field. A field is filled from right to left like on paper:
+   * the first digit goes in the ones box, the next one in the box to its left, and digits already
+   * typed stay where they are. Only digits are accepted, plus "-" as the leftmost character of the
+   * answer (subtraction can have a negative answer), which can only be typed once every box to its
+   * right is filled. Returns false if it was rejected. A full field moves typing on to the next one.
    */
   typeCharacter(character: string): boolean {
     const field = this.fields[this.active];
     const entry = this.entries[this.active];
     const isDigit = /^[0-9]$/.test(character);
-    const isLeadingMinus = character === "-" && entry === "" && field.kind === "answer";
+    const isLeadingMinus = character === "-" && field.kind === "answer" && entry.length === field.length - 1;
     if (!isDigit && !isLeadingMinus) return false;
     if (entry.length >= field.length) return false;
-    this.entries[this.active] = entry + character;
+    this.entries[this.active] = character + entry;
     if (this.entries[this.active].length === field.length) this.nextField();
     return true;
   }
 
-  /** Backspace: removes the last character, or goes back to the previous field when this one is empty. */
+  /** Backspace: removes the character typed last (the leftmost one), or goes back to the previous field when this one is empty. */
   deleteLastCharacter(): void {
     if (this.entries[this.active] === "") this.previousField();
-    this.entries[this.active] = this.entries[this.active].slice(0, -1);
+    this.entries[this.active] = this.entries[this.active].slice(1);
   }
 
   /** Escape: empties the active field. */

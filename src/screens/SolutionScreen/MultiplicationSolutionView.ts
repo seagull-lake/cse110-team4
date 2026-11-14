@@ -1,6 +1,7 @@
 import Konva from "konva";
 import { BUTTON_COLOR, BUTTON_TEXT_COLOR, FONT_FAMILY, STAGE_HEIGHT, STAGE_WIDTH, TITLE_COLOR } from "../../constants.ts";
 import { createHomeButton } from "../../components/HomeButton.ts";
+import { createActionButton } from "../../components/ActionButton.ts";
 import type { MainGameProblem } from "../../domain/problem.ts";
 import { getProblemLayout } from "../MainProblemScreen/MainProblemLayout.ts";
 
@@ -11,12 +12,12 @@ export class MultiplicationSolutionView {
     private readonly group = new Konva.Group();
     private readonly onHome: () => void;
     private readonly onBackToMap: () => void;
-    private readonly onContinue: () => void;
+    private readonly onNextStep: () => void;
 
-    constructor(onHome: () => void, onBackToMap: () => void, onContinue: () => void) {
+    constructor(onHome: () => void, onBackToMap: () => void, onNextStep: () => void) {
         this.onHome = onHome;
         this.onBackToMap = onBackToMap;
-        this.onContinue = onContinue;
+        this.onNextStep = onNextStep;
     }
 
     render(level: number, problem: MainGameProblem): void {
@@ -81,16 +82,9 @@ export class MultiplicationSolutionView {
         backButton.on("mouseenter", () => (document.body.style.cursor = "pointer"));
         backButton.on("mouseleave", () => (document.body.style.cursor = "default"));
         this.group.add(backButton);
-        const continueButton = new Konva.Label({ x: STAGE_WIDTH - 200, y: STAGE_HEIGHT - 70 });
-        continueButton.add(new Konva.Tag({ fill: BUTTON_COLOR, cornerRadius: 8 }));
-        continueButton.add(new Konva.Text({
-            width: 170, height: 48, text: "Continue", fontSize: 20, fontFamily: FONT_FAMILY,
-            fill: BUTTON_TEXT_COLOR, align: "center", verticalAlign: "middle",
-        }));
-        continueButton.on("click tap", this.onContinue);
-        continueButton.on("mouseenter", () => (document.body.style.cursor = "pointer"));
-        continueButton.on("mouseleave", () => (document.body.style.cursor = "default"));
-        this.group.add(continueButton);
+        const nextButton = createActionButton("Next Step");
+        nextButton.on("click tap", this.onNextStep);
+        this.group.add(nextButton);
         this.group.getLayer()?.batchDraw();
     }
 

@@ -2,7 +2,6 @@ import Konva from "konva";
 import type { View } from "../../types.ts";
 import { STAGE_HEIGHT,STAGE_WIDTH } from "../../constants.ts";
 import { createHomeButton } from "../../components/HomeButton.ts";
-import { createActionButton } from "../../components/ActionButton.ts";
 import type { Bin, Fraction } from "./FractionSortScreenModel.ts";
 import { FONT_FAMILY, TITLE_COLOR, BUTTON_TEXT_COLOR } from "../../constants.ts";
 
@@ -150,7 +149,7 @@ export class FractionSortScreenView implements View {
         this.gameGroup.add(this.tilesGroup);
 
         /*--- Submit / Continue button ---*/
-        const actionButton = createActionButton("Submit", BUTTON.x, BUTTON.y);
+        const actionButton = this.makeButton("Submit", BUTTON.x, BUTTON.y);
         this.actionText = actionButton.findOne("Text") as Konva.Text;
         actionButton.on("click", () => {
             if (this.mode === "sorting") this.onSubmit();
@@ -165,7 +164,7 @@ export class FractionSortScreenView implements View {
         this.finalHighScoreText = this.text("", 0, 320, 18, { width: STAGE_WIDTH, align: "center", fill: COLORS.muted });
         this.newHighScoreText = this.text("New Highscore!", 0, 318, 30, { width: STAGE_WIDTH, align: "center", fill: COLORS.highlight, fontStyle: "bold" });
         this.gameOverGroup.add(this.finalScoreText, this.finalHighScoreText, this.newHighScoreText);
-        const playAgainButton = createActionButton("Play Again", BUTTON.x, BUTTON.y);
+        const playAgainButton = this.makeButton("Play Again", BUTTON.x, BUTTON.y);
         playAgainButton.on("click", onPlayAgain);
         this.gameOverGroup.add(playAgainButton);
         this.group.add(this.gameOverGroup);
@@ -350,6 +349,15 @@ export class FractionSortScreenView implements View {
         tile.add(this.text(String(fraction.numerator), 0, 3, 14, { width: TILE.width, align: "center", fill: COLORS.tileText }));
         tile.add(new Konva.Line({ points: [TILE.width / 2 - 12, half, TILE.width / 2 + 12, half], stroke: COLORS.tileText, strokeWidth: 1.5 }));
         tile.add(this.text(String(fraction.denominator), 0, half + 4, 14, { width: TILE.width, align: "center", fill: COLORS.tileText }));
+    }
+
+    private makeButton(label: string, x: number, y: number): Konva.Group {
+        const button = new Konva.Group({ x, y });
+        button.add(new Konva.Rect({ width: BUTTON.width, height: BUTTON.height, fill: COLORS.button, stroke: COLORS.text, strokeWidth: 3, cornerRadius: 8 }));
+        button.add(this.text(label, 0, 0, 22, { width: BUTTON.width, height: BUTTON.height, align: "center", verticalAlign: "middle" }));
+        button.on("mouseenter", () => { document.body.style.cursor = "pointer"; });
+        button.on("mouseleave", () => { document.body.style.cursor = "default"; });
+        return button;
     }
 
     private text(value: string, x: number, y: number, fontSize: number, extra: Konva.TextConfig = {}): Konva.Text {

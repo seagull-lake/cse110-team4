@@ -3,6 +3,7 @@ import type { Screen } from "../../types.ts";
 import type { ProblemLayout } from "./MainProblemLayout.ts";
 import { MainProblemScreenController } from "./MainProblemScreenController.ts";
 import { solvedDivision } from "./testProblems.ts";
+import { MainGameProblemGenerator } from "../../problem-engine/MainGameProblemGenerator.ts";
 
 // Konva can't draw text in tests, so the view is replaced with one that records what it was told
 const view = vi.hoisted(() => ({
@@ -230,21 +231,52 @@ describe("main problem screen controller", () => {
     expect(view.visible).toBe(false);
   });
 
+  it.each(["addition", "subtraction", "multiplication", "division"] as const)(
+    "passes the same solved %s problem to the solution screen on a wrong answer", topic => {
+      const problem = new MainGameProblemGenerator(() => 0.5).generate({ operation: topic, operandDigits: [2, 1] });
+      const generate = vi.fn(() => problem);
+      const { controller, screens } = setup({ generate });
+      controller.setLevel(topic, 1);
+      const digits = Array.from(String(problem.answer));
+
+      for (const incomplete of [digits.slice(1), digits.map(() => "")]) {
+        view.enteredAnswer = incomplete;
+        view.onSubmitClick();
+        expect(screens).toEqual([]);
+      }
+
+      view.enteredAnswer = digits.map(() => "0");
+      view.onSubmitClick();
+      expect(view.correctAnswerShown).toBe(false);
+      expect(screens).toHaveLength(1);
+      const route = screens[0];
+      expect(route).toEqual({ type: "solution", problem, topic, difficulty: 1 });
+      if (route.type !== "solution") throw new Error("Expected a solution route.");
+      expect(route.problem).toBe(problem);
+      expect(route.problem.solution).toBe(problem.solution);
+      expect(generate).toHaveBeenCalledTimes(1);
+      view.onContinueClick();
+      expect(screens).toHaveLength(1);
+    },
+  );
+
   it("only shows correct feedback and continues after a fully correct submission", () => {
-    const { controller, screens } = setup({
-      generate: () => ({ operands: [482, 315], answer: 797 }),
-    });
+    const problem = new MainGameProblemGenerator(() => 0.5).generate({ operation: "addition", operandDigits: [2, 1] });
+    const { controller, screens } = setup({ generate: () => problem });
     controller.setLevel("addition", 1);
-    view.enteredAnswer = ["7", "9", "8"];
+    view.enteredAnswer = Array.from(String(problem.answer), () => "0");
     view.onSubmitClick();
     expect(view.correctAnswerShown).toBe(false);
+    expect(screens).toEqual([{ type: "solution", problem, topic: "addition", difficulty: 1 }]);
+    screens.length = 0;
 
     view.onContinueClick();
     expect(screens).toEqual([]);
 
-    view.enteredAnswer = ["7", "9", "7"];
+    view.enteredAnswer = Array.from(String(problem.answer));
     view.onSubmitClick();
     expect(view.correctAnswerShown).toBe(true);
+    expect(screens).toEqual([]);
     view.onContinueClick();
     expect(screens).toEqual([{ type: "adventuremap", topic: "addition" }]);
   });

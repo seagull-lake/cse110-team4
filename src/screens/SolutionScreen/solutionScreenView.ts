@@ -1,10 +1,6 @@
 import Konva from "konva";
-import type{AdditionColumn, SolutionStep} from "../../problem-engine/MainGameProblemGenerator.ts";
-import {
-  FONT_FAMILY,
-  STAGE_WIDTH,
-  STAGE_HEIGHT,
-} from "../../constants.ts";
+import type{AdditionColumn, SolutionStep, DivisionBoxMethod} from "../../problem-engine/MainGameProblemGenerator.ts";
+import { DivisionSolutionView } from "./DivisionSolutionView.ts";
 
 
 interface SolutionViewData{
@@ -14,31 +10,29 @@ interface SolutionViewData{
     hasNextColumn: boolean;
 }
 
-const BACKGROUND = "#FFF6DD";
-const TEXT_COLOR = "#412F00";
-const HIGHLIGHT = "#FFE28A";
-const PANEL_COLOR = "#FFE9AE";
-
-const COLUMN_WIDTH = 48;
-const BOX_WIDTH = 38;
-const RIGHT_COLUMN_X = 420;
-
 export class SolutionScreenView {
     private readonly group: Konva.Group;
     private readonly content: Konva.Group;
-    private readonly onNextStep: () => void;
+    private readonly divisionView: DivisionSolutionView;
 
     constructor(onNextStep: () => void) {
-        this.onNextStep = onNextStep;
+        this.divisionView = new DivisionSolutionView(onNextStep);
 
         this.group = new Konva.Group({ visible: false });
         this.content = new Konva.Group();
 
         this.group.add(this.content);
   }
-    render(data: SolutionViewData): void {
+    render(_data: SolutionViewData): void {
         this.content.destroyChildren();// Clear previous content
         this.group.getLayer()?.batchDraw();// Redraw the layer to reflect the changes
+    }
+
+    // Keep the division View alive while redrawing the revealed boxes.
+    renderDivision(division: DivisionBoxMethod, visibleBoxCount: number): void {
+        this.content.removeChildren();
+        this.content.add(this.divisionView.getGroup());
+        this.divisionView.render(division, visibleBoxCount);
     }
 
     show():void{

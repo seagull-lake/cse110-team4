@@ -100,6 +100,7 @@ export class MultiplicationSolutionView {
         backButton.on("mouseleave", () => (document.body.style.cursor = "default"));
         this.group.add(backButton);
         const nextButton = createActionButton("Next Step");
+        nextButton.visible(page.hasNext);
         nextButton.on("click tap", this.onNextStep);
         this.group.add(nextButton);
         this.group.getLayer()?.batchDraw();

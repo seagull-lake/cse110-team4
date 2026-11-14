@@ -17,6 +17,14 @@ it.each([[5, 3], [2, 1], [1, 1]])("renders cumulative rows and a separate answer
     const rows = problem.solution.steps[0].multiplicationRows;
     if (!rows) throw new Error("Expected multiplication rows from the generator.");
     const text = (name: string) => view.getGroup().find<Konva.Text>(`.${name}`).map(node => node.text()).join("");
+    const nextButton = () => {
+        const button = view.getGroup().find<Konva.Text>("Text")
+            .find(node => node.text() === "Next Step")?.getParent();
+        if (!button) throw new Error("Expected the Next Step button.");
+        return button;
+    };
+    const firstPage = model.getCurrentPage();
+    if (firstPage.operation !== "multiplication") throw new Error("Expected a multiplication page.");
     const renderPage = () => {
         const page = model.getCurrentPage();
         if (page.operation !== "multiplication") throw new Error("Expected a multiplication page.");
@@ -28,9 +36,14 @@ it.each([[5, 3], [2, 1], [1, 1]])("renders cumulative rows and a separate answer
         expect(text("partial-product")).toBe(rows.slice(0, index + 1).map(row => row.partialProduct).join(""));
         expect(text("final-answer")).toBe("");
         expect(view.getGroup().find<Konva.Text>("Text").some(node => node.text() === "Example explanation")).toBe(true);
+        expect(nextButton().visible()).toBe(true);
         model.nextPage();
     }
     renderPage();
     expect(text("partial-product")).toBe(rows.map(row => row.partialProduct).join(""));
     expect(text("final-answer")).toBe(String(problem.solution.finalAnswer));
+    expect(nextButton().visible()).toBe(false);
+
+    view.render(1, problem, firstPage, "Example explanation");
+    expect(nextButton().visible()).toBe(true);
 });

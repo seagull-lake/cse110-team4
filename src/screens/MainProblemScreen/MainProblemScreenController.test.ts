@@ -2,11 +2,19 @@ import { describe, expect, it, vi } from "vitest";
 import type { Screen } from "../../types.ts";
 import type { ProblemLayout } from "./MainProblemLayout.ts";
 import { MainProblemScreenController } from "./MainProblemScreenController.ts";
+import { solvedDivision } from "./testProblems.ts";
 
 // Konva can't draw text in tests, so the view is replaced with one that records what it was told
 const view = vi.hoisted(() => ({
   onHomeClick: () => {},
   onBackClick: () => {},
+  onKey: (_key: string) => {},
+  onFieldClick: (_index: number) => {},
+  /** What was typed in each field, and the field being typed in */
+  entries: [] as readonly string[],
+  active: 0,
+  /** The final answer field */
+  answer: "",
   title: "",
   layout: null as ProblemLayout | null,
   visible: false,
@@ -14,9 +22,17 @@ const view = vi.hoisted(() => ({
 
 vi.mock("./MainProblemScreenView.ts", () => ({
   MainProblemScreenView: class {
-    constructor(onHomeClick: () => void, onBackClick: () => void) {
+    constructor(onHomeClick: () => void, onBackClick: () => void, onKey: (key: string) => void,
+      onFieldClick: (index: number) => void) {
       view.onHomeClick = onHomeClick;
       view.onBackClick = onBackClick;
+      view.onKey = onKey;
+      view.onFieldClick = onFieldClick;
+    }
+    showAnswer(entries: readonly string[], active: number) {
+      view.entries = entries;
+      view.active = active;
+      view.answer = entries.at(-1) ?? "";
     }
     setTitle(title: string) { view.title = title; }
     setProblem(layout: ProblemLayout) { view.layout = layout; }
@@ -62,6 +78,108 @@ describe("main problem screen controller", () => {
     controller.setLevel("addition", 2);
     expect(calls).toBe(2);
     expect(view.layout).not.toEqual(first);
+  });
+
+  describe("typing the answer", () => {
+    /** Opens a level whose answer has 2 digits and no borrow boxes (1-digit numbers). */
+    function openLevel() {
+      const dispatcher = { generate: () => ({ operands: [9, 3], answer: 72 }) };
+      const controller = new MainProblemScreenController({ switchToScreen: () => {} }, dispatcher as never);
+      controller.setLevel("subtraction", 1);
+      view.answer = "";
+      return controller;
+    }
+    const press = (...keys: string[]) => keys.forEach(key => view.onKey(key));
+
+    it("shows the digits as they are typed", () => {
+      openLevel();
+      press("7");
+      expect(view.answer).toBe("7");
+      press("2");
+      expect(view.answer).toBe("72");
+    });
+
+    it("ignores keys that are not digits", () => {
+      openLevel();
+      press("7", "a", "Shift", " ");
+      expect(view.answer).toBe("7");
+    });
+
+    it("Backspace removes the last digit and Escape clears the answer", () => {
+      openLevel();
+      press("7", "3", "Backspace");
+      expect(view.answer).toBe("7");
+      press("2", "Escape");
+      expect(view.answer).toBe("");
+    });
+
+    it("starts with an empty answer when a level is opened again", () => {
+      const controller = openLevel();
+      press("7", "2");
+      controller.setLevel("subtraction", 1);
+      press("1");
+      expect(view.answer).toBe("1");
+    });
+
+    it("ignores typing before any level is opened", () => {
+      setup();
+      view.answer = "";
+      press("7");
+      expect(view.answer).toBe("");
+    });
+  });
+
+  describe("filling out the division boxes", () => {
+    /** Opens a division level whose problem is 9044 ÷ 38 = 238 (boxes 200, 30 and 8). */
+    function openDivision() {
+      const dispatcher = { generate: () => solvedDivision(9044, 38) };
+      const controller = new MainProblemScreenController({ switchToScreen: () => {} }, dispatcher as never);
+      controller.setLevel("division", 3);
+      return controller;
+    }
+    const press = (...keys: string[]) => keys.forEach(key => view.onKey(key));
+
+    it("starts in the first box's partial quotient with every field empty", () => {
+      openDivision();
+      expect(view.active).toBe(0);
+      expect(view.entries).toEqual(Array(10).fill("")); // 3 fields × 3 boxes + the answer
+    });
+
+    it("moves on to the next field when one is full", () => {
+      openDivision();
+      press(..."200", ..."7600", ..."1444");
+      expect(view.entries.slice(0, 3)).toEqual(["200", "7600", "1444"]);
+      expect(view.active).toBe(3);
+    });
+
+    it("fills every box and then the answer", () => {
+      openDivision();
+      press(..."200760014443011403048304" + "0", ..."238");
+      expect(view.entries).toEqual(["200", "7600", "1444", "30", "1140", "304", "8", "304", "0", "238"]);
+    });
+
+    it("Tab and Shift+Tab move between fields", () => {
+      openDivision();
+      press("Tab", "Tab");
+      expect(view.active).toBe(2);
+      press("Shift+Tab");
+      expect(view.active).toBe(1);
+    });
+
+    it("clicking a field moves typing there", () => {
+      openDivision();
+      view.onFieldClick(9);
+      press("2");
+      expect(view.active).toBe(9);
+      expect(view.answer).toBe("2");
+    });
+
+    it("Backspace in an empty field goes back to the field before", () => {
+      openDivision();
+      press(..."200", "Backspace");
+      expect(view.active).toBe(0);
+      expect(view.entries[0]).toBe("20");
+    });
   });
 
   it("goes back to the menu on Home", () => {

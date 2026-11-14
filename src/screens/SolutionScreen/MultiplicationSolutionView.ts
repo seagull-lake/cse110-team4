@@ -1,9 +1,10 @@
 import Konva from "konva";
 import { BUTTON_COLOR, BUTTON_TEXT_COLOR, FONT_FAMILY, STAGE_HEIGHT, STAGE_WIDTH, TITLE_COLOR } from "../../constants.ts";
 import { createHomeButton } from "../../components/HomeButton.ts";
+import type { MainGameProblem } from "../../domain/problem.ts";
+import { getProblemLayout } from "../MainProblemScreen/MainProblemLayout.ts";
 
-const RIGHT_EDGE = 425;
-const DIGIT_WIDTH = 38;
+const CALCULATION_OFFSET_X = -120;
 
 /** Draws the multiplication solution on a Konva group. */
 export class MultiplicationSolutionView {
@@ -16,7 +17,9 @@ export class MultiplicationSolutionView {
         this.onBackToMap = onBackToMap;
     }
 
-    render(level: number, multiplicand: number, multiplier: number): void {
+    render(level: number, problem: MainGameProblem): void {
+        const layout = getProblemLayout("multiplication", problem);
+        if (layout.kind !== "column") throw new Error("Expected a multiplication column layout.");
         this.group.destroyChildren();
         this.group.add(new Konva.Rect({
             width: STAGE_WIDTH,
@@ -34,29 +37,27 @@ export class MultiplicationSolutionView {
             align: "center",
         }));
 
-        [multiplicand, multiplier].forEach((operand, row) => {
-            const digits = String(operand);
-            Array.from(digits).forEach((digit, index) => {
-                this.group.add(new Konva.Text({
-                    x: RIGHT_EDGE - (digits.length - index) * DIGIT_WIDTH,
-                    y: 180 + row * 44,
-                    width: DIGIT_WIDTH,
-                    text: digit,
-                    fontFamily: FONT_FAMILY,
-                    fontSize: 32,
-                    fill: TITLE_COLOR,
-                    align: "center",
-                }));
-            });
+        const calculation = new Konva.Group({ x: CALCULATION_OFFSET_X });
+        const { width, height, fontSize } = layout.cellSize;
+        layout.cells.forEach(cell => {
+            calculation.add(new Konva.Text({
+                x: cell.x, y: cell.y, width, height, text: cell.text,
+                fontFamily: FONT_FAMILY, fontSize, fill: TITLE_COLOR,
+                align: "center", verticalAlign: "middle",
+            }));
         });
-        this.group.add(new Konva.Text({
-            x: RIGHT_EDGE - (Math.max(String(multiplicand).length, String(multiplier).length) + 1) * DIGIT_WIDTH,
-            y: 224, width: DIGIT_WIDTH, text: "×",
-            fontFamily: FONT_FAMILY, fontSize: 32, fill: TITLE_COLOR, align: "center",
-        }));
-        this.group.add(new Konva.Line({
-            points: [100, 265, RIGHT_EDGE, 265], stroke: TITLE_COLOR, strokeWidth: 3,
-        }));
+        for (const line of [layout.line, layout.secondLine]) {
+            if (line) calculation.add(new Konva.Line({
+                points: [line.x1, line.y, line.x2, line.y], stroke: TITLE_COLOR, strokeWidth: 3,
+            }));
+        }
+        for (const field of [...layout.steps, layout.answer]) {
+            for (const x of field.cellXs) calculation.add(new Konva.Rect({
+                x: x + 4, y: field.y + 4, width: field.size.width - 8, height: field.size.height - 8,
+                fill: "#FFFFFF", stroke: BUTTON_COLOR, strokeWidth: 2, cornerRadius: 6,
+            }));
+        }
+        this.group.add(calculation);
         this.group.add(createHomeButton(this.onHome));
         const backButton = new Konva.Group({ x: 140, y: STAGE_HEIGHT - 62 });
         backButton.add(new Konva.Rect({ width: 150, height: 40, fill: BUTTON_COLOR, cornerRadius: 8 }));

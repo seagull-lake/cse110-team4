@@ -1,6 +1,7 @@
 import Konva from "konva";
 import { BUTTON_COLOR, BUTTON_TEXT_COLOR, FONT_FAMILY, STAGE_HEIGHT, STAGE_WIDTH, TITLE_COLOR } from "../../constants.ts";
 import { createHomeButton } from "../../components/HomeButton.ts";
+import { createActionButton } from "../../components/ComponentFactory.ts";
 import type { MainGameProblem } from "../../domain/problem.ts";
 import { getProblemLayout } from "../MainProblemScreen/MainProblemLayout.ts";
 
@@ -11,10 +12,12 @@ export class MultiplicationSolutionView {
     private readonly group = new Konva.Group();
     private readonly onHome: () => void;
     private readonly onBackToMap: () => void;
+    private readonly onNextStep: () => void;
 
-    constructor(onHome: () => void, onBackToMap: () => void) {
+    constructor(onHome: () => void, onBackToMap: () => void, onNextStep: () => void) {
         this.onHome = onHome;
         this.onBackToMap = onBackToMap;
+        this.onNextStep = onNextStep;
     }
 
     render(level: number, problem: MainGameProblem): void {
@@ -79,6 +82,9 @@ export class MultiplicationSolutionView {
         backButton.on("mouseenter", () => (document.body.style.cursor = "pointer"));
         backButton.on("mouseleave", () => (document.body.style.cursor = "default"));
         this.group.add(backButton);
+        const nextButton = createActionButton("Next Step");
+        nextButton.on("click tap", this.onNextStep);
+        this.group.add(nextButton);
         this.group.getLayer()?.batchDraw();
     }
 

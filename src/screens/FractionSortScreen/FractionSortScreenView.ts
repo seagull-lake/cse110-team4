@@ -2,7 +2,7 @@ import Konva from "konva";
 import type { View } from "../../types.ts";
 import { STAGE_HEIGHT,STAGE_WIDTH } from "../../constants.ts";
 import { createHomeButton } from "../../components/HomeButton.ts";
-import { createActionButton } from "../../components/ActionButton.ts";
+import { createActionButton } from "../../components/ComponentFactory.ts";
 import type { Bin, Fraction } from "./FractionSortScreenModel.ts";
 import { FONT_FAMILY, TITLE_COLOR, BUTTON_TEXT_COLOR } from "../../constants.ts";
 

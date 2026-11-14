@@ -17,7 +17,7 @@ export class MultiplicationSolutionView {
         this.onBackToMap = onBackToMap;
     }
 
-    render(level: number, problem: MainGameProblem): void {
+    render(level: number, problem: MainGameProblem, explanation: string): void {
         const layout = getProblemLayout("multiplication", problem);
         if (layout.kind !== "column") throw new Error("Expected a multiplication column layout.");
         this.group.destroyChildren();
@@ -58,6 +58,14 @@ export class MultiplicationSolutionView {
             }));
         }
         this.group.add(calculation);
+        this.group.add(new Konva.Rect({
+            x: 480, y: 290, width: 285, height: 150, fill: "#FFE9AE", cornerRadius: 8,
+        }));
+        this.group.add(new Konva.Text({
+            x: 480, y: 290, width: 285, height: 150, padding: 20, text: explanation,
+            fontFamily: FONT_FAMILY, fontSize: 32, fill: TITLE_COLOR,
+            align: "center", verticalAlign: "middle",
+        }));
         this.group.add(createHomeButton(this.onHome));
         const backButton = new Konva.Group({ x: 140, y: STAGE_HEIGHT - 62 });
         backButton.add(new Konva.Rect({ width: 150, height: 40, fill: BUTTON_COLOR, cornerRadius: 8 }));

@@ -4,6 +4,8 @@ import { STAGE_WIDTH, STAGE_HEIGHT, FONT_FAMILY, TITLE_COLOR, BUTTON_COLOR, BUTT
 import { createHomeButton } from "../../components/HomeButton.ts";
 import { MARKER_SIZE, ROW_HEIGHT } from "./MainProblemLayout.ts";
 import type { FieldLayout, HorizontalLine, ProblemLayout, Rect, RowMarker } from "./MainProblemLayout.ts";
+import { getCarryFieldIndexes, getRowProgress, getShownRow, isHiddenCarry, isWorkingRow } from "./MainProblemRows.ts";
+import type { RowProgress } from "./MainProblemRows.ts";
 
 const BACK_BUTTON = { width: 150, height: 40 };
 /** The main button in the bottom-right corner: "Submit", then "Continue" or "Review Mistakes", in the same spot. */
@@ -24,8 +26,11 @@ const CORRECT_FILL = "#B8E6C7";
 /** The "Correct!" message */
 const CORRECT_TEXT_COLOR = "#3f9a5b";
 /** The circle beside a multiplication row: no carries filled in yet / some of them / all of them. */
-const MARKER_EMPTY_FILL = "#E53935";
-const MARKER_PARTIAL_FILL = "#F2C94C";
+const MARKER_FILL: Record<RowProgress, string> = {
+  empty: "#E53935",
+  partial: "#F2C94C",
+  complete: CORRECT_TEXT_COLOR,
+};
 /** Multiplication: the boxes of the row being worked on (its carries and partial product) get a thicker outline. */
 const WORKING_ROW_STROKE_WIDTH = 4;
 /**
@@ -33,7 +38,6 @@ const WORKING_ROW_STROKE_WIDTH = 4;
  * it stays clear of the line right under that row and of the neighboring digits.
  */
 const DIGIT_HIGHLIGHT_INSET = 4;
-const MARKER_DONE_FILL = CORRECT_TEXT_COLOR;
 
 /** The screen for one level: its title and its problem, written in columns like on paper. */
 export class MainProblemScreenView implements View {
@@ -176,12 +180,11 @@ export class MainProblemScreenView implements View {
     this.entries = entries;
     this.active = active;
     this.answerGroup.destroyChildren();
-    const activeRow = this.fields[active]?.row;
-    if (activeRow !== undefined) this.shownRow = activeRow;
+    this.shownRow = getShownRow(this.fields, active, this.shownRow);
     this.drawMultiplierDigitHighlight();
     this.fields.forEach((field, index) => {
-      if (field.carry && field.row !== this.shownRow) return; // another row's carries are in these boxes
-      const isWorkingRow = this.rowMarkers.length > 0 && field.row === this.shownRow;
+      if (isHiddenCarry(field, this.shownRow)) return; // another row's carries are in these boxes
+      const inWorkingRow = isWorkingRow(field, this.shownRow, this.rowMarkers.length > 0);
       const isActive = index === active && !this.answerLocked;
       const isLockedAnswer = this.answerLocked && index === this.fields.length - 1;
       field.cellXs.forEach(x => {
@@ -190,7 +193,7 @@ export class MainProblemScreenView implements View {
           width: field.size.width - BOX_INSET * 2, height: field.size.height - BOX_INSET * 2,
           fill: isLockedAnswer ? CORRECT_FILL : isActive ? ACTIVE_FILL : BOX_FILL,
           stroke: isActive ? ACTIVE_STROKE : BOX_STROKE,
-          strokeWidth: isWorkingRow ? WORKING_ROW_STROKE_WIDTH : 2, cornerRadius: 6,
+          strokeWidth: inWorkingRow ? WORKING_ROW_STROKE_WIDTH : 2, cornerRadius: 6,
         });
         box.on("click tap", () => { if (!this.answerLocked) this.onFieldClick(index); });
         box.on("mouseenter", () => (document.body.style.cursor = "text"));
@@ -222,16 +225,15 @@ export class MainProblemScreenView implements View {
    */
   private drawRowMarkers(entries: readonly string[]): void {
     this.rowMarkers.forEach(({ row, x, y }) => {
-      const carries = this.fields.flatMap((field, index) => (field.carry && field.row === row ? [index] : []));
-      if (carries.length === 0) return;
-      const filled = carries.filter(index => (entries[index] ?? "").length === this.fields[index].cellXs.length).length;
-      const isShown = row === this.shownRow;
+      const progress = getRowProgress(this.fields, entries, row);
+      if (!progress) return;
       const marker = new Konva.Circle({
         x: x + MARKER_SIZE / 2, y: y + MARKER_SIZE / 2, radius: MARKER_SIZE / 2 - 3, // leaves room for the thickest outline
-        fill: filled === carries.length ? MARKER_DONE_FILL : filled > 0 ? MARKER_PARTIAL_FILL : MARKER_EMPTY_FILL,
-        stroke: TITLE_COLOR, strokeWidth: isShown ? 5 : 2,
+        fill: MARKER_FILL[progress],
+        stroke: TITLE_COLOR, strokeWidth: row === this.shownRow ? 5 : 2,
       });
-      marker.on("click tap", () => { if (!this.answerLocked) this.onFieldClick(carries[0]); });
+      const [firstCarry] = getCarryFieldIndexes(this.fields, row);
+      marker.on("click tap", () => { if (!this.answerLocked) this.onFieldClick(firstCarry); });
       marker.on("mouseenter", () => (document.body.style.cursor = "pointer"));
       marker.on("mouseleave", () => (document.body.style.cursor = "default"));
       this.answerGroup.add(marker);

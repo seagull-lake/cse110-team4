@@ -1,5 +1,5 @@
-import type { ProblemRequest, ProblemResult } from "../domain/problem.ts";
-import type { MainGameProblemGenerator } from "./MainGameProblemGenerator.ts";
+import type { MiniGameOneProblem, ProblemRequest } from "../domain/problem.ts";
+import type { MainGameProblemGenerator, SolvedMainGameProblem } from "./MainGameProblemGenerator.ts";
 import type { MiniGameOneProblemGenerator } from "./MiniGameOneProblemGenerator.ts";
 import { problemDifficultyConfig } from "../levels/levelConfig.ts";
 import type { ProblemDifficultyConfig } from "../levels/levelConfig.ts";
@@ -20,7 +20,7 @@ export class ProblemDispatcher {
     this.config = config;
   }
 
-  generate(request: ProblemRequest): ProblemResult {
+  generate(request: ProblemRequest): SolvedMainGameProblem | MiniGameOneProblem {
     if (!Number.isInteger(request.difficulty) || request.difficulty < 1) {
       throw new Error("Difficulty must be a positive integer.");
     }

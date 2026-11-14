@@ -8,9 +8,17 @@ const BOX_PADDING = 8;
 
 export class DivisionSolutionView{
     private readonly group = new Konva.Group();
-    //draw the layout and reveal only the first box's solution numbers.
-    render(division: DivisionBoxMethod): void {
+    private readonly onNextStep: () => void;
+
+    // Report button clicks to the Controller, which updates the Model.
+    constructor(onNextStep: () => void = () => {}) {
+        this.onNextStep = onNextStep;
+    }
+
+    // Draw all boxes and fill only those revealed by the Model.
+    render(division: DivisionBoxMethod, visibleBoxCount = 1): void {
         this.group.destroyChildren();//clear any previous diagram
+        const count = Math.max(1, Math.min(visibleBoxCount, division.boxes.length));//at least one box is always visible
 
         this.group.add(new Konva.Rect({ // background
             width: STAGE_WIDTH,
@@ -59,10 +67,9 @@ export class DivisionSolutionView{
             this.drawEmptySlots(diagram, right, productY, productLength);
             this.drawEmptySlots(diagram, right, remainingY, String(box.remainingAmount).length);
 
-            //only the first starting amount is shown at this stage.
-            if (i === 0) {
-                this.drawText(diagram, dividend, right - dividend.length * CELL_WIDTH,
-                    amountY, dividend.length * CELL_WIDTH, ROW_HEIGHT, 26);
+            //keep earlier boxes filled and show the starting amount of each revealed box.
+            if (i < count) {
+                this.drawSlotNumber(diagram, right, amountY, box.startingAmount);
                 this.drawSlotNumber(diagram, right, 0, box.partialQuotient);
                 this.drawSlotNumber(diagram, right, productY, box.amountSubtracted);
                 this.drawSlotNumber(diagram, right, remainingY, box.remainingAmount);
@@ -82,7 +89,21 @@ export class DivisionSolutionView{
         this.drawText(diagram, "Answer", answerRight - answerLength * CELL_WIDTH - 110,
             answerY, 100, ROW_HEIGHT, 22);
         this.drawEmptySlots(diagram, answerRight, answerY, answerLength);
+        this.drawNextButton(count < division.boxes.length);
         this.group.getLayer()?.batchDraw();
+    }
+    // request the next box, disabling the button when all boxes are visible.
+    private drawNextButton(hasNext: boolean): void {
+        const button = new Konva.Group({ x: STAGE_WIDTH - 190, y: STAGE_HEIGHT - 62 });
+        button.add(new Konva.Rect({
+            width: 160, height: 40, fill: "#FFE28A", stroke: TITLE_COLOR,
+            cornerRadius: 6, opacity: hasNext ? 1 : 0.5,
+        }));
+        this.drawText(button, hasNext ? "Next Step →" : "Completed", 0, 0, 160, 40, 22);
+        button.on("click tap", () => {
+            if (hasNext) this.onNextStep();
+        });
+        this.group.add(button);
     }
 
     //draw one empty slot per digit, aligned to the right edge of a box.

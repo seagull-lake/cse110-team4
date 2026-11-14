@@ -94,10 +94,55 @@ describe("steps of addition, subtraction and multiplication", () => {
     expect(layout.steps[0].cellXs[0]).toBeGreaterThan(layout.steps[1].cellXs[0]);
   });
 
-  it("has no carry row for 1-digit numbers", () => {
-    const layout = getProblemLayout("addition", { operands: [4, 3], answer: 7 });
-    expect(layout.steps).toHaveLength(0);
-    expect(Math.min(...layout.cells.map(cell => cell.y))).toBe(PROBLEM_TOP);
+  it("adds one more carry box left of the numbers when the sum has an extra digit, so it sits above an answer box", () => {
+    const layout = getProblemLayout("addition", { operands: [57, 76], answer: 133 });
+    if (layout.kind !== "column") throw new Error("expected a column layout");
+    const topRow = layout.cells.filter(cell => cell.y === Math.min(...layout.cells.map(c => c.y)) && cell.text !== "+").map(cell => cell.x);
+    expect(layout.steps.map(step => step.cellXs[0])).toEqual([topRow[0], topRow[0] - CELL_WIDTH]);
+    expect(layout.answer.cellXs[0]).toBe(topRow[0] - CELL_WIDTH);
+  });
+
+  it("never puts a carry box left of the answer's boxes", () => {
+    [[53278, 38972], [57, 76], [4, 3], [9, 8], [99999, 99999], [10984, 50789]].forEach(operands => {
+      const layout = getProblemLayout("addition", { operands, answer: operands[0] + operands[1] });
+      if (layout.kind !== "column") throw new Error("expected a column layout");
+      layout.steps.forEach(step => expect(step.cellXs[0]).toBeGreaterThanOrEqual(layout.answer.cellXs[0]));
+    });
+  });
+
+  it("has no carry boxes for 1-digit addition that stays 1 digit", () => {
+    expect(getProblemLayout("addition", { operands: [4, 3], answer: 7 }).steps).toHaveLength(0);
+  });
+
+  it("gives 1-digit addition a carry box when the sum has 2 digits", () => {
+    const layout = getProblemLayout("addition", { operands: [9, 8], answer: 17 });
+    expect(layout.steps).toHaveLength(1);
+    expect(layout.steps[0].y).toBe(PROBLEM_TOP);
+    expect(Math.min(...layout.cells.map(cell => cell.y))).toBeGreaterThanOrEqual(PROBLEM_TOP + layout.steps[0].size.height);
+  });
+
+  it("has no borrow boxes for 1-digit subtraction", () => {
+    expect(getProblemLayout("subtraction", { operands: [7, 3], answer: 4 }).steps).toHaveLength(0);
+  });
+
+  it("keeps the numbers in the same place whether or not a problem has carry / borrow boxes", () => {
+    const topOf = (layout: ProblemLayout) => Math.min(...layout.cells.map(cell => cell.y));
+    const lineOf = (layout: ProblemLayout) => layout.kind === "column" ? layout.line.y : NaN;
+    const withCarries = getProblemLayout("addition", { operands: [57, 76], answer: 133 });
+    [
+      getProblemLayout("addition", { operands: [4, 3], answer: 7 }),
+      getProblemLayout("addition", { operands: [9, 8], answer: 17 }),
+      getProblemLayout("addition", { operands: [10984, 50789], answer: 61773 }),
+    ].forEach(layout => {
+      expect(topOf(layout)).toBe(topOf(withCarries));
+      expect(lineOf(layout)).toBe(lineOf(withCarries));
+    });
+    // the same for subtraction, with and without borrows
+    const withBorrows = getProblemLayout("subtraction", { operands: [74, 8], answer: 66 });
+    expect(topOf(getProblemLayout("subtraction", { operands: [7, 3], answer: 4 }))).toBe(topOf(withBorrows));
+    // and multiplication by a 1-digit number, with and without carries
+    expect(topOf(getProblemLayout("multiplication", { operands: [2, 3], answer: 6 })))
+      .toBe(topOf(getProblemLayout("multiplication", { operands: [47, 6], answer: 282 })));
   });
 
   it("writes the partial products under the line, a second line, then the answer", () => {

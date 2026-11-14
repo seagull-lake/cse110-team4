@@ -41,9 +41,14 @@ export function getPartialProducts(problem: MainGameProblem): number[] {
   return [...String(multiplier)].reverse().map((digit, place) => multiplicand * Number(digit) * 10 ** place);
 }
 
-/** One single-digit field above each column from the tens up to the longest number's last column. */
-function getColumnFields(kind: "carry" | "borrow", columns: number): AnswerField[] {
-  return Array.from({ length: Math.max(columns - 1, 0) }, (_, index) => ({ kind, box: index + 1, length: 1 }));
+/**
+ * One single-digit field above each column from the tens up to the longest number's last column.
+ * With `includeCarryOut`, one more field is added in the column left of that (what adding the
+ * leftmost column carries over into the answer's extra digit).
+ */
+function getColumnFields(kind: "carry" | "borrow", columns: number, includeCarryOut = false): AnswerField[] {
+  const count = Math.max(columns - 1, 0) + (includeCarryOut ? 1 : 0);
+  return Array.from({ length: count }, (_, index) => ({ kind, box: index + 1, length: 1 }));
 }
 
 /** The division boxes the generator worked out for this problem. */
@@ -56,7 +61,12 @@ export function getDivisionBoxes(problem: MainGameProblem): readonly DivisionBox
 /** The fields to fill in, in the order the student fills them. */
 export function getAnswerFields(topic: LevelType, problem: MainGameProblem): AnswerField[] {
   const answer: AnswerField = { kind: "answer", length: getAnswerLength(problem.answer) };
-  if (topic === "addition") return [...getColumnFields("carry", getNumberColumns(problem)), answer];
+  if (topic === "addition") {
+    // Like every box count, this follows the answer: the carry out of the leftmost column is only
+    // asked for when it becomes an extra digit of the answer, so no carry ever sits left of the answer's boxes.
+    const columns = getNumberColumns(problem);
+    return [...getColumnFields("carry", columns, answer.length > columns), answer];
+  }
   if (topic === "subtraction") return [...getColumnFields("borrow", getNumberColumns(problem)), answer];
   if (topic === "multiplication") {
     const partialProducts = getPartialProducts(problem);
@@ -81,7 +91,7 @@ export function getAnswerFields(topic: LevelType, problem: MainGameProblem): Ans
 export class MainProblemScreenModel {
   private readonly level: LevelDefinition;
   private readonly difficulty: number;
-  private readonly problem: MainGameProblem;
+  private readonly problem: SolvedMainGameProblem;
   private answerCorrect = false;
   private readonly fields: readonly AnswerField[];
   /** What the student typed in each field as it reads on screen, e.g. "72"; typing fills it from the right. */
@@ -96,7 +106,7 @@ export class MainProblemScreenModel {
     }
     this.difficulty = difficulty;
     // The main-game request always returns a MainGameProblem (operands + answer)
-    this.problem = dispatcher.generate(this.getProblemRequest()) as MainGameProblem;
+    this.problem = dispatcher.generate(this.getProblemRequest()) as SolvedMainGameProblem;
     this.fields = getAnswerFields(this.level.type, this.problem);
     this.entries = this.fields.map(() => "");
   }
@@ -108,7 +118,7 @@ export class MainProblemScreenModel {
 
   getTopic(): LevelType { return this.level.type; }
   getDifficulty(): number { return this.difficulty; }
-  getProblem(): MainGameProblem { return this.problem; }
+  getProblem(): SolvedMainGameProblem { return this.problem; }
 
   /** Returns true only when every entered answer character matches the generated answer. */
   checkAnswer(digits: readonly string[]): boolean {

@@ -42,11 +42,12 @@ export class MultiplicationSolutionView {
             });
         });
         this.group.add(new Konva.Text({
-            x: 175, y: 224, width: DIGIT_WIDTH, text: "×",
+            x: RIGHT_EDGE - (Math.max(String(multiplicand).length, String(multiplier).length) + 1) * DIGIT_WIDTH,
+            y: 224, width: DIGIT_WIDTH, text: "×",
             fontFamily: FONT_FAMILY, fontSize: 32, fill: TITLE_COLOR, align: "center",
         }));
         this.group.add(new Konva.Line({
-            points: [170, 265, RIGHT_EDGE, 265], stroke: TITLE_COLOR, strokeWidth: 3,
+            points: [100, 265, RIGHT_EDGE, 265], stroke: TITLE_COLOR, strokeWidth: 3,
         }));
         this.group.getLayer()?.batchDraw();
     }

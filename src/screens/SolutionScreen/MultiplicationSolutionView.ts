@@ -4,6 +4,7 @@ import { createHomeButton } from "../../components/HomeButton.ts";
 import { createActionButton } from "../../components/ComponentFactory.ts";
 import type { MainGameProblem } from "../../domain/problem.ts";
 import { getProblemLayout } from "../MainProblemScreen/MainProblemLayout.ts";
+import type { SolutionPage } from "./SolutionScreenModel.ts";
 
 const CALCULATION_OFFSET_X = -120;
 
@@ -20,9 +21,16 @@ export class MultiplicationSolutionView {
         this.onNextStep = onNextStep;
     }
 
-    render(level: number, problem: MainGameProblem): void {
+    render(level: number, problem: MainGameProblem,
+        page: Extract<SolutionPage, { operation: "multiplication" }>, explanation: string): void {
         const layout = getProblemLayout("multiplication", problem);
         if (layout.kind !== "column") throw new Error("Expected a multiplication column layout.");
+        // The game uses carry fields for a one-digit multiplier; the solution needs a product row.
+        if (!layout.secondLine) {
+            layout.steps = [{ ...layout.answer, y: layout.line.y + 12 }];
+            layout.secondLine = { ...layout.line, y: layout.steps[0].y + layout.cellSize.height + 4 };
+            layout.answer = { ...layout.answer, y: layout.secondLine.y + 12 };
+        }
         this.group.destroyChildren();
         this.group.add(new Konva.Rect({
             width: STAGE_WIDTH,
@@ -54,19 +62,28 @@ export class MultiplicationSolutionView {
                 points: [line.x1, line.y, line.x2, line.y], stroke: TITLE_COLOR, strokeWidth: 3,
             }));
         }
-        for (const field of [...layout.steps, layout.answer]) {
-            for (const x of field.cellXs) calculation.add(new Konva.Rect({
-                x: x + 4, y: field.y + 4, width: field.size.width - 8, height: field.size.height - 8,
-                fill: "#FFFFFF", stroke: BUTTON_COLOR, strokeWidth: 2, cornerRadius: 6,
-            }));
+        for (const [index, field] of [...layout.steps, layout.answer].entries()) {
+            const row = page.visibleRows[index];
+            const value = index === layout.steps.length ? page.finalAnswer : row?.partialProduct;
+            const digits = value === undefined ? "" : String(value).padStart(field.cellXs.length, " ");
+            field.cellXs.forEach((x, digitIndex) => {
+                calculation.add(new Konva.Rect({
+                    x: x + 4, y: field.y + 4, width: field.size.width - 8, height: field.size.height - 8,
+                    fill: "#FFFFFF", stroke: BUTTON_COLOR, strokeWidth: 2, cornerRadius: 6,
+                }));
+                if (digits[digitIndex]?.trim()) calculation.add(new Konva.Text({
+                    name: index === layout.steps.length ? "final-answer" : "partial-product",
+                    x, y: field.y, ...field.size, text: digits[digitIndex],
+                    fontFamily: FONT_FAMILY, fill: TITLE_COLOR, align: "center", verticalAlign: "middle",
+                }));
+            });
         }
         this.group.add(calculation);
         const explanationPanel = new Konva.Label({ x: 480, y: 290 });
         explanationPanel.add(new Konva.Tag({ fill: "#FFE9AE", cornerRadius: 8 }));
         explanationPanel.add(new Konva.Text({
             width: 285, height: 150, padding: 20,
-            // Temporary example until the controller supplies the current solution step.
-            text: "Units digit: 1\n36748 × 1 = 36748\nFirst partial product.",
+            text: explanation,
             fontFamily: FONT_FAMILY, fontSize: 24, lineHeight: 1.3, fill: TITLE_COLOR,
             align: "center", verticalAlign: "middle",
         }));
@@ -83,6 +100,7 @@ export class MultiplicationSolutionView {
         backButton.on("mouseleave", () => (document.body.style.cursor = "default"));
         this.group.add(backButton);
         const nextButton = createActionButton("Next Step");
+        nextButton.visible(page.hasNext);
         nextButton.on("click tap", this.onNextStep);
         this.group.add(nextButton);
         this.group.getLayer()?.batchDraw();

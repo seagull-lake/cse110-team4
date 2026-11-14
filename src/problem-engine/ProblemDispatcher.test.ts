@@ -48,7 +48,7 @@ describe("ProblemDispatcher", () => {
 
   it.each([
     [1, [1, 1], 2], [2, [10, 10], 20], [3, [100, 100], 200],
-    [4, [100, 100, 100], 300], [5, [10000, 10000, 10000], 30000],
+    [4, [1000, 1000], 2000], [5, [10000, 10000], 20000],
   ])("addition difficulty %s uses its configured operands", (difficulty, operands, answer) => {
     const dispatcher = new ProblemDispatcher(new MainGameProblemGenerator(() => 0), setup().miniGame);
     expect(dispatcher.generate({ gameType: "main-game", difficulty, operation: "addition" }))

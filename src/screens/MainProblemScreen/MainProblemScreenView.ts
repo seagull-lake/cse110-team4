@@ -35,6 +35,8 @@ export class MainProblemScreenView implements View {
   private readonly continueButton: Konva.Group;
   // The input boxes of every field, and the typed characters drawn inside them
   private readonly answerGroup = new Konva.Group();
+  // Solution content sits above the question and below the navigation buttons.
+  private readonly solutionGroup = new Konva.Group();
   /** In the model's field order: the division box fields first, then the answer. */
   private fields: FieldLayout[] = [];
   /** Division: copies of a box's amount left at the top of the next box. */
@@ -91,6 +93,7 @@ export class MainProblemScreenView implements View {
     this.continueButton = this.makePrimaryButton("Continue", PRIMARY_BUTTON_X, PRIMARY_BUTTON_Y, onContinueClick);
     this.continueButton.visible(false);
     this.group.add(this.submitButton, this.continueButton);
+    this.group.add(this.solutionGroup);
 
     // Shared Home button (bottom-left) and Back to map next to it
     this.group.add(createHomeButton(onHomeClick));
@@ -103,6 +106,11 @@ export class MainProblemScreenView implements View {
 
   /** Draws the problem; where everything goes is decided in MainProblemLayout. */
   setProblem(layout: ProblemLayout): void {
+    this.solutionGroup.destroyChildren();
+    this.title.show();
+    this.problemGroup.show();
+    this.answerGroup.show();
+    this.feedback.show();
     this.problemGroup.destroyChildren();
     this.answerLocked = false;
     const { width, height, fontSize } = layout.cellSize;
@@ -132,6 +140,21 @@ export class MainProblemScreenView implements View {
     this.submitButton.visible(true);
     this.continueButton.visible(false);
     this.showAnswer(this.fields.map(() => ""), 0);
+  }
+
+  /** Replace the question with a solution while keeping Home and Back to map available. */
+  showSolution(view: View): void {
+    this.answerLocked = true;
+    this.title.hide();
+    this.problemGroup.hide();
+    this.answerGroup.hide();
+    this.feedback.hide();
+    this.submitButton.hide();
+    this.continueButton.hide();
+    this.solutionGroup.destroyChildren();
+    this.solutionGroup.add(view.getGroup());
+    view.show();
+    this.group.getLayer()?.draw();
   }
 
   /** The characters typed in the final answer field, one per box. */

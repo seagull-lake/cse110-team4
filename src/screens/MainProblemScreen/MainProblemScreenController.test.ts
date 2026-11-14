@@ -31,15 +31,13 @@ vi.mock("./MainProblemScreenView.ts", () => ({
       onBackClick: () => void,
       onSubmitClick: () => void,
       onContinueClick: () => void,
+      onKey: (key: string) => void,
+      onFieldClick: (index: number) => void,
     ) {
       view.onHomeClick = onHomeClick;
       view.onBackClick = onBackClick;
       view.onSubmitClick = onSubmitClick;
       view.onContinueClick = onContinueClick;
-    constructor(onHomeClick: () => void, onBackClick: () => void, onKey: (key: string) => void,
-      onFieldClick: (index: number) => void) {
-      view.onHomeClick = onHomeClick;
-      view.onBackClick = onBackClick;
       view.onKey = onKey;
       view.onFieldClick = onFieldClick;
     }

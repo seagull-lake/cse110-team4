@@ -12,7 +12,8 @@ const BOX_STROKE = "#27695B";
 /** The field being typed in */
 const ACTIVE_FILL = "#FFF1B8";
 const ACTIVE_STROKE = "#E0A100";
-
+/** The answer once it is correct */
+const CORRECT_FILL = "#B8E6C7";
 
 /** The screen for one level: its title and its problem, written in columns like on paper. */
 export class MainProblemScreenView implements View {
@@ -23,18 +24,6 @@ export class MainProblemScreenView implements View {
   private readonly feedback: Konva.Text;
   private readonly submitButton: Konva.Group;
   private readonly continueButton: Konva.Group;
-  private answerCells: { rect: Konva.Rect; text: Konva.Text }[] = [];
-  private enteredAnswer: string[] = [];
-  private focusedCell = 0;
-  private answerLocked = false;
-  private readonly keydownHandler = (event: KeyboardEvent) => this.handleKeyDown(event);
-
-  constructor(
-    onHomeClick: () => void,
-    onBackClick: () => void,
-    onSubmitClick: () => void,
-    onContinueClick: () => void,
-  ) {
   // The input boxes of every field, and the typed characters drawn inside them
   private readonly answerGroup = new Konva.Group();
   /** In the model's field order: the division box fields first, then the answer. */
@@ -42,19 +31,34 @@ export class MainProblemScreenView implements View {
   /** Division: copies of a box's amount left at the top of the next box. */
   private carried: (FieldLayout & { from: number })[] = [];
   private readonly onFieldClick: (index: number) => void;
+  /** What showAnswer last drew, so the answer can be read back and redrawn. */
+  private entries: readonly string[] = [];
+  private active = 0;
+  /** Once the answer is correct, typing and clicking boxes does nothing. */
+  private answerLocked = false;
 
   /**
    * onKey gets every key pressed while this screen is shown, e.g. "7", "-", "Backspace" or "Tab"
    * ("Shift+Tab" with Shift held). onFieldClick gets the index of a clicked field.
    */
-  constructor(onHomeClick: () => void, onBackClick: () => void, onKey: (key: string) => void = () => {},
-    onFieldClick: (index: number) => void = () => {}) {
+  constructor(
+    onHomeClick: () => void,
+    onBackClick: () => void,
+    onSubmitClick: () => void,
+    onContinueClick: () => void,
+    onKey: (key: string) => void = () => {},
+    onFieldClick: (index: number) => void = () => {},
+  ) {
     this.onFieldClick = onFieldClick;
     window.addEventListener("keydown", event => {
-      if (!this.group.visible()) return;
+      if (!this.group.visible() || this.answerLocked) return;
       if (event.key === "Tab") {
         event.preventDefault(); // keep the focus on the game
         onKey(event.shiftKey ? "Shift+Tab" : "Tab");
+        return;
+      }
+      if (event.key === "Enter") {
+        this.submitButton.fire("click");
         return;
       }
       onKey(event.key);
@@ -93,9 +97,6 @@ export class MainProblemScreenView implements View {
   /** Draws the problem; where everything goes is decided in MainProblemLayout. */
   setProblem(layout: ProblemLayout): void {
     this.problemGroup.destroyChildren();
-    this.answerCells = [];
-    this.enteredAnswer = Array.from({ length: layout.answer.cellXs.length }, () => "");
-    this.focusedCell = 0;
     this.answerLocked = false;
     const { width, height, fontSize } = layout.cellSize;
     layout.cells.forEach(cell => this.problemGroup.add(new Konva.Text({
@@ -119,56 +120,40 @@ export class MainProblemScreenView implements View {
       this.carried = layout.carried;
     }
 
-    layout.answer.cellXs.forEach((x, index) => {
-      const rect = new Konva.Rect({
-        x: x + 2, y: layout.answer.y + 2, width: CELL_WIDTH - 4, height: ROW_HEIGHT - 4,
-        fill: "#FFFFFF", stroke: "#000000", strokeWidth: 2, cornerRadius: 6,
-      });
-      const text = new Konva.Text({
-        x: x + 2, y: layout.answer.y + 2, width: CELL_WIDTH - 4, height: ROW_HEIGHT - 4,
-        text: "", fontSize: DIGIT_FONT_SIZE - 4, fontFamily: FONT_FAMILY, fill: TITLE_COLOR,
-        align: "center", verticalAlign: "middle",
-      });
-      const focusCell = () => {
-        this.focusedCell = index;
-        this.updateCellFocus();
-      };
-      rect.on("click", focusCell);
-      text.on("click", focusCell);
-      this.answerCells.push({ rect, text });
-      this.problemGroup.add(rect, text);
-    });
-    this.updateCellFocus();
+    this.fields = [...layout.steps, layout.answer];
     this.feedback.text("");
     this.continueButton.visible(false);
-    this.group.getLayer()?.draw();
+    this.showAnswer(this.fields.map(() => ""), 0);
   }
 
-  getEnteredAnswer(): readonly string[] { return this.enteredAnswer; }
+  /** The characters typed in the final answer field, one per box. */
+  getEnteredAnswer(): readonly string[] { return Array.from(this.entries.at(-1) ?? ""); }
 
+  /** Turns the answer boxes green, locks the answer and offers Continue. */
   showCorrectAnswer(): void {
     this.answerLocked = true;
-    this.answerCells.forEach(({ rect }) => rect.fill("#B8E6C7"));
     this.feedback.text("Correct!");
     this.continueButton.visible(true);
-    this.updateCellFocus();
-    this.fields = [...layout.steps, layout.answer];
-    this.showAnswer(this.fields.map(() => ""), 0);
+    this.showAnswer(this.entries, this.active);
   }
 
   /** Draws every field's boxes with what was typed in them (right-aligned like a calculator); the active field is highlighted. */
   showAnswer(entries: readonly string[], active: number): void {
+    this.entries = entries;
+    this.active = active;
     this.answerGroup.destroyChildren();
     this.fields.forEach((field, index) => {
-      const isActive = index === active;
+      const isActive = index === active && !this.answerLocked;
+      const isLockedAnswer = this.answerLocked && index === this.fields.length - 1;
       field.cellXs.forEach(x => {
         const box = new Konva.Rect({
           x: x + BOX_INSET, y: field.y + BOX_INSET,
           width: field.size.width - BOX_INSET * 2, height: field.size.height - BOX_INSET * 2,
-          fill: isActive ? ACTIVE_FILL : BOX_FILL, stroke: isActive ? ACTIVE_STROKE : BOX_STROKE,
+          fill: isLockedAnswer ? CORRECT_FILL : isActive ? ACTIVE_FILL : BOX_FILL,
+          stroke: isActive ? ACTIVE_STROKE : BOX_STROKE,
           strokeWidth: 2, cornerRadius: 6,
         });
-        box.on("click tap", () => this.onFieldClick(index));
+        box.on("click tap", () => { if (!this.answerLocked) this.onFieldClick(index); });
         box.on("mouseenter", () => (document.body.style.cursor = "text"));
         box.on("mouseleave", () => (document.body.style.cursor = "default"));
         this.answerGroup.add(box);
@@ -211,47 +196,6 @@ export class MainProblemScreenView implements View {
     return button;
   }
 
-  private updateCellFocus(): void {
-    this.answerCells.forEach(({ rect }, index) => {
-      rect.strokeWidth(index === this.focusedCell ? 3 : 2);
-    });
-  }
-
-  private handleKeyDown(event: KeyboardEvent): void {
-    if (!this.group.visible() || this.answerCells.length === 0 || this.answerLocked) return;
-    if (/^\d$/.test(event.key) || (event.key === "-" && this.focusedCell === 0)) {
-      this.enteredAnswer[this.focusedCell] = event.key;
-      this.answerCells[this.focusedCell].text.text(event.key);
-      if (this.focusedCell < this.answerCells.length - 1) this.focusedCell++;
-      this.clearAnswerFeedback();
-      this.updateCellFocus();
-    } else if (event.key === "Backspace") {
-      if (this.enteredAnswer[this.focusedCell] === "" && this.focusedCell > 0) this.focusedCell--;
-      this.enteredAnswer[this.focusedCell] = "";
-      this.answerCells[this.focusedCell].text.text("");
-      this.clearAnswerFeedback();
-      this.updateCellFocus();
-    } else if (event.key === "ArrowLeft" && this.focusedCell > 0) {
-      this.focusedCell--;
-      this.updateCellFocus();
-    } else if (event.key === "ArrowRight" && this.focusedCell < this.answerCells.length - 1) {
-      this.focusedCell++;
-      this.updateCellFocus();
-    } else if (event.key === "Enter") {
-      this.submitButton.fire("click");
-    } else {
-      return;
-    }
-    event.preventDefault();
-    this.group.getLayer()?.draw();
-  }
-
-  private clearAnswerFeedback(): void {
-    this.answerCells.forEach(({ rect }) => rect.fill("#FFFFFF"));
-    this.feedback.text("");
-    this.continueButton.visible(false);
-  }
-
   private makeBackButton(onClick: () => void): Konva.Group {
     const button = new Konva.Group({ x: 140, y: STAGE_HEIGHT - 62 });
     button.add(new Konva.Rect({ ...BACK_BUTTON, fill: BUTTON_COLOR, cornerRadius: 8 }));
@@ -268,12 +212,10 @@ export class MainProblemScreenView implements View {
   getGroup(): Konva.Group { return this.group; }
   show(): void {
     this.group.visible(true);
-    window.addEventListener("keydown", this.keydownHandler);
     this.group.getLayer()?.draw();
   }
   hide(): void {
     this.group.visible(false);
-    window.removeEventListener("keydown", this.keydownHandler);
     this.group.getLayer()?.draw();
   }
 }

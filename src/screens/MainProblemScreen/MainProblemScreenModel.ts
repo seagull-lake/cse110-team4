@@ -101,7 +101,7 @@ export function getAnswerFields(topic: LevelType, problem: MainGameProblem): Ans
 export class MainProblemScreenModel {
   private readonly level: LevelDefinition;
   private readonly difficulty: number;
-  private readonly problem: MainGameProblem;
+  private readonly problem: SolvedMainGameProblem;
   private answerCorrect = false;
   private readonly fields: readonly AnswerField[];
   /** What the student typed in each field as it reads on screen, e.g. "72"; typing fills it from the right. */
@@ -116,7 +116,7 @@ export class MainProblemScreenModel {
     }
     this.difficulty = difficulty;
     // The main-game request always returns a MainGameProblem (operands + answer)
-    this.problem = dispatcher.generate(this.getProblemRequest()) as MainGameProblem;
+    this.problem = dispatcher.generate(this.getProblemRequest()) as SolvedMainGameProblem;
     this.fields = getAnswerFields(this.level.type, this.problem);
     this.entries = this.fields.map(() => "");
   }
@@ -128,7 +128,7 @@ export class MainProblemScreenModel {
 
   getTopic(): LevelType { return this.level.type; }
   getDifficulty(): number { return this.difficulty; }
-  getProblem(): MainGameProblem { return this.problem; }
+  getProblem(): SolvedMainGameProblem { return this.problem; }
 
   /** Returns true only when every entered answer character matches the generated answer. */
   checkAnswer(digits: readonly string[]): boolean {

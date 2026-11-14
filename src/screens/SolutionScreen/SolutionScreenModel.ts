@@ -5,6 +5,7 @@ export class SolutionScreenModel{
 
     private stepIndex = 0;
     private columnIndex = 0;
+    private divisionBoxIndex = 0;
     constructor(problem: SolvedMainGameProblem){
         this.problem = problem;
     }
@@ -41,6 +42,22 @@ export class SolutionScreenModel{
         if(this.hasNextColumn()){
             this.columnIndex++;
         }
+    }
+
+    // Return the division data and how many boxes should be filled in.
+    getDivisionPage() {
+        const division = this.getCurrentStep().divisionBoxMethod;
+        if (!division) throw new Error("The current solution step is not division.");
+        return {
+            division,
+            visibleBoxCount: this.divisionBoxIndex + 1,
+            hasNext: this.divisionBoxIndex < division.boxes.length - 1,
+        };
+    }
+
+    // Reveal one more box, stopping at the last box.
+    nextDivisionPage(): void {
+        if (this.getDivisionPage().hasNext) this.divisionBoxIndex++;
     }
 
 }

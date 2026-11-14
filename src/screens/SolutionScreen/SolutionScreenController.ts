@@ -15,11 +15,20 @@ export class SolutionScreenController{
         this.updateView();
     }
     private handleNextStep(): void {
-        this.model.nextColumn();
+        if (this.model.getCurrentStep().operation === "division") {
+            this.model.nextDivisionPage();
+        } else {
+            this.model.nextColumn();
+        }
         this.updateView();
     }
 
   private updateView(): void {
+    if (this.model.getCurrentStep().operation === "division") {
+      const page = this.model.getDivisionPage();
+      this.view.renderDivision(page.division, page.visibleBoxCount);
+      return;
+    }
     this.view.render({
       step: this.model.getCurrentStep(),
       currentColumn: this.model.getCurrentColumn(),

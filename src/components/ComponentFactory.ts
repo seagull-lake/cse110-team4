@@ -15,3 +15,34 @@ export function createActionButton(label: string, x = STAGE_WIDTH - 200, y = STA
     button.on("mouseleave", () => { document.body.style.cursor = "default"; });
     return button;
 }
+
+/** Draw one right-aligned number field, leaving field selection to its caller. */
+export function createNumberField(
+    field: { y: number; cellXs: readonly number[]; size: { width: number; height: number; fontSize: number } },
+    value: string,
+    style: { fill: string; stroke: string; strokeWidth: number; textName?: string; textListening?: boolean },
+    onClick?: () => void,
+): Konva.Group {
+    const group = new Konva.Group();
+    const firstFilled = field.cellXs.length - value.length;
+    field.cellXs.forEach((x, index) => {
+        const box = new Konva.Rect({
+            x: x + 4, y: field.y + 4, width: field.size.width - 8, height: field.size.height - 8,
+            fill: style.fill, stroke: style.stroke, strokeWidth: style.strokeWidth, cornerRadius: 6,
+        });
+        if (onClick) {
+            box.on("click tap", onClick);
+            box.on("mouseenter", () => (document.body.style.cursor = "text"));
+            box.on("mouseleave", () => (document.body.style.cursor = "default"));
+        }
+        group.add(box);
+        const character = index >= firstFilled ? value[index - firstFilled] : "";
+        if (character) group.add(new Konva.Text({
+            name: style.textName, x, y: field.y, width: field.size.width, height: field.size.height,
+            text: character === "-" ? "−" : character, fontSize: field.size.fontSize,
+            fontFamily: FONT_FAMILY, fill: TITLE_COLOR, align: "center", verticalAlign: "middle",
+            listening: style.textListening ?? true,
+        }));
+    });
+    return group;
+}

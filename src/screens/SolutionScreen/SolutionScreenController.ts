@@ -7,11 +7,11 @@ export class SolutionScreenController{
     private readonly model: SolutionScreenModel;
     private readonly view: SolutionScreenView;
 
-    constructor(problem: SolvedMainGameProblem) {
+    constructor(problem: SolvedMainGameProblem, onSimilarQuestion: () => void = () => {}) {
         this.model = new SolutionScreenModel(problem);
         this.view = new SolutionScreenView(() => {
         this.handleNextStep();
-        });
+        }, onSimilarQuestion);
         this.updateView();
     }
     private handleNextStep(): void {

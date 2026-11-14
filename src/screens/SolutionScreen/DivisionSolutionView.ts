@@ -9,10 +9,12 @@ const BOX_PADDING = 8;
 export class DivisionSolutionView{
     private readonly group = new Konva.Group();
     private readonly onNextStep: () => void;
+    private readonly onSimilarQuestion: () => void;
 
     // Report button clicks to the Controller, which updates the Model.
-    constructor(onNextStep: () => void = () => {}) {
+    constructor(onNextStep: () => void = () => {}, onSimilarQuestion: () => void = () => {}) {
         this.onNextStep = onNextStep;
+        this.onSimilarQuestion = onSimilarQuestion;
     }
 
     // Draw all boxes and fill only those revealed by the Model.
@@ -99,16 +101,17 @@ export class DivisionSolutionView{
         this.drawNextButton(count < division.boxes.length);
         this.group.getLayer()?.batchDraw();
     }
-    // Request the next box, disabling the button when all boxes are visible.
+    // Reveal another box, or return to a question at the same level.
     private drawNextButton(hasNext: boolean): void {
-        const button = new Konva.Group({ x: STAGE_WIDTH - 190, y: STAGE_HEIGHT - 62 });
+        const button = new Konva.Group({ x: STAGE_WIDTH - 250, y: STAGE_HEIGHT - 62 });
         button.add(new Konva.Rect({
-            width: 160, height: 40, fill: "#FFE28A", stroke: TITLE_COLOR,
-            cornerRadius: 6, opacity: hasNext ? 1 : 0.5,
+            width: 220, height: 40, fill: "#FFE28A", stroke: TITLE_COLOR,
+            cornerRadius: 6,
         }));
-        this.drawText(button, hasNext ? "Next Step →" : "Completed", 0, 0, 160, 40, 22);
+        this.drawText(button, hasNext ? "Next Step →" : "Similar Question", 0, 0, 220, 40, 22);
         button.on("click tap", () => {
             if (hasNext) this.onNextStep();
+            else this.onSimilarQuestion();
         });
         this.group.add(button);
     }

@@ -15,8 +15,8 @@ export class SolutionScreenView {
     private readonly content: Konva.Group;
     private readonly divisionView: DivisionSolutionView;
 
-    constructor(onNextStep: () => void) {
-        this.divisionView = new DivisionSolutionView(onNextStep);
+    constructor(onNextStep: () => void, onSimilarQuestion: () => void = () => {}) {
+        this.divisionView = new DivisionSolutionView(onNextStep, onSimilarQuestion);
 
         this.group = new Konva.Group({ visible: false });
         this.content = new Konva.Group();

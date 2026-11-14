@@ -1,5 +1,6 @@
 import Konva from "konva";
-import { FONT_FAMILY, STAGE_HEIGHT, STAGE_WIDTH, TITLE_COLOR } from "../../constants.ts";
+import { BUTTON_COLOR, BUTTON_TEXT_COLOR, FONT_FAMILY, STAGE_HEIGHT, STAGE_WIDTH, TITLE_COLOR } from "../../constants.ts";
+import { createHomeButton } from "../../components/HomeButton.ts";
 
 const RIGHT_EDGE = 425;
 const DIGIT_WIDTH = 38;
@@ -7,6 +8,13 @@ const DIGIT_WIDTH = 38;
 /** Draws the multiplication solution on a Konva group. */
 export class MultiplicationSolutionView {
     private readonly group = new Konva.Group();
+    private readonly onHome: () => void;
+    private readonly onBackToMap: () => void;
+
+    constructor(onHome: () => void, onBackToMap: () => void) {
+        this.onHome = onHome;
+        this.onBackToMap = onBackToMap;
+    }
 
     render(level: number, multiplicand: number, multiplier: number): void {
         this.group.destroyChildren();
@@ -49,6 +57,17 @@ export class MultiplicationSolutionView {
         this.group.add(new Konva.Line({
             points: [100, 265, RIGHT_EDGE, 265], stroke: TITLE_COLOR, strokeWidth: 3,
         }));
+        this.group.add(createHomeButton(this.onHome));
+        const backButton = new Konva.Group({ x: 140, y: STAGE_HEIGHT - 62 });
+        backButton.add(new Konva.Rect({ width: 150, height: 40, fill: BUTTON_COLOR, cornerRadius: 8 }));
+        backButton.add(new Konva.Text({
+            width: 150, height: 40, text: "Back to map", fontSize: 18, fontFamily: FONT_FAMILY,
+            fill: BUTTON_TEXT_COLOR, align: "center", verticalAlign: "middle",
+        }));
+        backButton.on("click", this.onBackToMap);
+        backButton.on("mouseenter", () => (document.body.style.cursor = "pointer"));
+        backButton.on("mouseleave", () => (document.body.style.cursor = "default"));
+        this.group.add(backButton);
         this.group.getLayer()?.batchDraw();
     }
 

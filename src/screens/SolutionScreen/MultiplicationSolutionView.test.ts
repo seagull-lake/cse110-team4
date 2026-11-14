@@ -32,4 +32,22 @@ describe("MultiplicationSolutionView", () => {
         expect(getMultiplicationDisplay(viewData()).finalAnswer).toBeUndefined();
         expect(getMultiplicationDisplay(viewData(1164)).finalAnswer).toBe(1164);
     });
+
+    it("keeps each carry aligned with its source column", () => {
+        const values = [0.1223, 0.4445];
+        const problem = new MainGameProblemGenerator(() => values.shift()!).generate({
+            operation: "multiplication", operandDigits: [2, 1],
+        });
+        const rows = problem.solution.steps[0].multiplicationRows;
+        if (!rows) throw new Error("Expected multiplication rows.");
+
+        const display = getMultiplicationDisplay({
+            multiplicand: problem.operands[0], multiplier: problem.operands[1],
+            visibleRows: rows, currentRow: rows[0], finalAnswer: problem.answer,
+        });
+
+        expect(problem.operands).toEqual([21, 5]);
+        expect(display.carries.map(carry => carry.columnOffset)).toEqual([2]);
+        expect(display.explanation).toContain("ones digit 5");
+    });
 });

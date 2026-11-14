@@ -2,8 +2,10 @@ import Konva from "konva";
 import type { View } from "../../types.ts";
 import { STAGE_WIDTH, STAGE_HEIGHT, FONT_FAMILY, TITLE_COLOR, BUTTON_COLOR, BUTTON_TEXT_COLOR } from "../../constants.ts";
 import { createHomeButton } from "../../components/HomeButton.ts";
-import { ROW_HEIGHT } from "./MainProblemLayout.ts";
-import type { FieldLayout, HorizontalLine, ProblemLayout } from "./MainProblemLayout.ts";
+import { MARKER_SIZE, ROW_HEIGHT } from "./MainProblemLayout.ts";
+import type { FieldLayout, HorizontalLine, ProblemLayout, Rect, RowMarker } from "./MainProblemLayout.ts";
+import { getCarryFieldIndexes, getRowProgress, getShownRow, isHiddenCarry, isWorkingRow } from "./MainProblemRows.ts";
+import type { RowProgress } from "./MainProblemRows.ts";
 
 const BACK_BUTTON = { width: 150, height: 40 };
 /** The main button in the bottom-right corner: "Submit", then "Continue" or "Review Mistakes", in the same spot. */
@@ -23,6 +25,19 @@ const ACTIVE_STROKE = "#E0A100";
 const CORRECT_FILL = "#B8E6C7";
 /** The "Correct!" message */
 const CORRECT_TEXT_COLOR = "#3f9a5b";
+/** The circle beside a multiplication row: no carries filled in yet / some of them / all of them. */
+const MARKER_FILL: Record<RowProgress, string> = {
+  empty: "#E53935",
+  partial: "#F2C94C",
+  complete: CORRECT_TEXT_COLOR,
+};
+/** Multiplication: the boxes of the row being worked on (its carries and partial product) get a thicker outline. */
+const WORKING_ROW_STROKE_WIDTH = 4;
+/**
+ * The outline around the digit of the second number being used. It is smaller than the digit's cell, so
+ * it stays clear of the line right under that row and of the neighboring digits.
+ */
+const DIGIT_HIGHLIGHT_INSET = 4;
 
 /** The screen for one level: its title and its problem, written in columns like on paper. */
 export class MainProblemScreenView implements View {
@@ -40,6 +55,15 @@ export class MainProblemScreenView implements View {
   /** Division: copies of a box's amount left at the top of the next box. */
   private carried: (FieldLayout & { from: number })[] = [];
   private readonly onFieldClick: (index: number) => void;
+  /** Multiplication: a marker beside each partial product showing whether that row's carries are filled in. */
+  private rowMarkers: RowMarker[] = [];
+  /** Multiplication: where each digit of the second number is (index 0 = ones), to outline the one being used. */
+  private multiplierCells: Rect[] = [];
+  /**
+   * Multiplication: the multiplier digit whose carries are drawn above the numbers (every row's carries
+   * share those boxes). It follows the field being typed in, and stays on the last row when the answer is selected.
+   */
+  private shownRow = 0;
   /** What showAnswer last drew, so the answer can be read back and redrawn. */
   private entries: readonly string[] = [];
   private active = 0;
@@ -115,6 +139,8 @@ export class MainProblemScreenView implements View {
       this.problemGroup.add(this.makeLine(layout.line));
       if (layout.secondLine) this.problemGroup.add(this.makeLine(layout.secondLine));
       this.carried = [];
+      this.rowMarkers = layout.rowMarkers;
+      this.multiplierCells = layout.multiplierCells;
     } else {
       // Box method: one box per division step
       layout.boxes.forEach(box => this.problemGroup.add(new Konva.Rect({ ...box, stroke: TITLE_COLOR, strokeWidth: 3 })));
@@ -125,9 +151,12 @@ export class MainProblemScreenView implements View {
         text: "Answer", fontSize: 24, fontFamily: FONT_FAMILY, fill: TITLE_COLOR,
       }));
       this.carried = layout.carried;
+      this.rowMarkers = [];
+      this.multiplierCells = [];
     }
 
     this.fields = [...layout.steps, layout.answer];
+    this.shownRow = 0;
     this.feedback.text("");
     this.submitButton.visible(true);
     this.continueButton.visible(false);
@@ -151,7 +180,11 @@ export class MainProblemScreenView implements View {
     this.entries = entries;
     this.active = active;
     this.answerGroup.destroyChildren();
+    this.shownRow = getShownRow(this.fields, active, this.shownRow);
+    this.drawMultiplierDigitHighlight();
     this.fields.forEach((field, index) => {
+      if (isHiddenCarry(field, this.shownRow)) return; // another row's carries are in these boxes
+      const inWorkingRow = isWorkingRow(field, this.shownRow, this.rowMarkers.length > 0);
       const isActive = index === active && !this.answerLocked;
       const isLockedAnswer = this.answerLocked && index === this.fields.length - 1;
       field.cellXs.forEach(x => {
@@ -160,7 +193,7 @@ export class MainProblemScreenView implements View {
           width: field.size.width - BOX_INSET * 2, height: field.size.height - BOX_INSET * 2,
           fill: isLockedAnswer ? CORRECT_FILL : isActive ? ACTIVE_FILL : BOX_FILL,
           stroke: isActive ? ACTIVE_STROKE : BOX_STROKE,
-          strokeWidth: 2, cornerRadius: 6,
+          strokeWidth: inWorkingRow ? WORKING_ROW_STROKE_WIDTH : 2, cornerRadius: 6,
         });
         box.on("click tap", () => { if (!this.answerLocked) this.onFieldClick(index); });
         box.on("mouseenter", () => (document.body.style.cursor = "text"));
@@ -170,7 +203,41 @@ export class MainProblemScreenView implements View {
       this.drawCharacters(field, entries[index] ?? "");
     });
     this.carried.forEach(copy => this.drawCharacters(copy, entries[copy.from] ?? ""));
+    this.drawRowMarkers(entries);
     this.group.getLayer()?.draw();
+  }
+
+  /** Multiplication: outlines the digit of the second number that the row being worked on multiplies by. */
+  private drawMultiplierDigitHighlight(): void {
+    const cell = this.multiplierCells[this.shownRow];
+    if (!cell) return;
+    // A square centered on the digit, so it has the same gap above and below
+    const side = Math.min(cell.width, cell.height) - DIGIT_HIGHLIGHT_INSET * 2;
+    this.answerGroup.add(new Konva.Rect({
+      x: cell.x + (cell.width - side) / 2, y: cell.y + (cell.height - side) / 2, width: side, height: side,
+      stroke: TITLE_COLOR, strokeWidth: 3, cornerRadius: 8, listening: false,
+    }));
+  }
+
+  /**
+   * One circle beside each partial product: red when none of its carries are filled in, yellow when some
+   * are, green when all are. The row whose carries are shown has a thicker outline; clicking a circle shows its carries.
+   */
+  private drawRowMarkers(entries: readonly string[]): void {
+    this.rowMarkers.forEach(({ row, x, y }) => {
+      const progress = getRowProgress(this.fields, entries, row);
+      if (!progress) return;
+      const marker = new Konva.Circle({
+        x: x + MARKER_SIZE / 2, y: y + MARKER_SIZE / 2, radius: MARKER_SIZE / 2 - 3, // leaves room for the thickest outline
+        fill: MARKER_FILL[progress],
+        stroke: TITLE_COLOR, strokeWidth: row === this.shownRow ? 5 : 2,
+      });
+      const [firstCarry] = getCarryFieldIndexes(this.fields, row);
+      marker.on("click tap", () => { if (!this.answerLocked) this.onFieldClick(firstCarry); });
+      marker.on("mouseenter", () => (document.body.style.cursor = "pointer"));
+      marker.on("mouseleave", () => (document.body.style.cursor = "default"));
+      this.answerGroup.add(marker);
+    });
   }
 
   /** Writes `entered` into the last cells of a field. Text doesn't catch clicks, so the box under it does. */

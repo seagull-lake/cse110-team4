@@ -18,14 +18,15 @@ export class DivisionSolutionView{
     // Draw all boxes and fill only those revealed by the Model.
     render(division: DivisionBoxMethod, visibleBoxCount = 1): void {
         this.group.destroyChildren();//clear any previous diagram
-        const count = Math.max(1, Math.min(visibleBoxCount, division.boxes.length));//at least one box is always visible
+        const count = Math.max(1, Math.min(visibleBoxCount, division.boxes.length));//the number of boxes to reveal
 
         this.group.add(new Konva.Rect({ // background
             width: STAGE_WIDTH,
             height: STAGE_HEIGHT,
             fill: "#FFF0CF",
         }));
-        this.drawText(this.group, "Division Solution", 0, 85, STAGE_WIDTH, 55, 40);//title
+        this.drawText(this.group, "Division Solution",
+            0, 85, STAGE_WIDTH, 55, 40);//title above the diagram
 
         const dividend = String(division.dividend);//the starting amount is shown above the first box
         const divisor = String(division.divisor);//the divisor is shown to the left of the boxes
@@ -68,8 +69,10 @@ export class DivisionSolutionView{
             this.drawEmptySlots(diagram, right, remainingY, String(box.remainingAmount).length);
 
             //keep earlier boxes filled and show the starting amount of each revealed box.
-            if (i < count) {
-                this.drawSlotNumber(diagram, right, amountY, box.startingAmount);
+            if (i === 0 || i < count) {
+                this.drawSlotNumber(diagram, right, amountY, box.startingAmount);//the starting amount is always shown in the first box, and in all revealed boxes
+            }
+            if (i < count) {//fill the revealed boxes with the partial quotient, product, and remaining amount.
                 this.drawSlotNumber(diagram, right, 0, box.partialQuotient);
                 this.drawSlotNumber(diagram, right, productY, box.amountSubtracted);
                 this.drawSlotNumber(diagram, right, remainingY, box.remainingAmount);
@@ -89,10 +92,14 @@ export class DivisionSolutionView{
         this.drawText(diagram, "Answer", answerRight - answerLength * CELL_WIDTH - 110,
             answerY, 100, ROW_HEIGHT, 22);
         this.drawEmptySlots(diagram, answerRight, answerY, answerLength);
+        //reveal the final quotient only after every box has been shown.
+        if (count === division.boxes.length) {
+            this.drawSlotNumber(diagram, answerRight, answerY, division.quotient);
+        }
         this.drawNextButton(count < division.boxes.length);
         this.group.getLayer()?.batchDraw();
     }
-    // request the next box, disabling the button when all boxes are visible.
+    // Request the next box, disabling the button when all boxes are visible.
     private drawNextButton(hasNext: boolean): void {
         const button = new Konva.Group({ x: STAGE_WIDTH - 190, y: STAGE_HEIGHT - 62 });
         button.add(new Konva.Rect({

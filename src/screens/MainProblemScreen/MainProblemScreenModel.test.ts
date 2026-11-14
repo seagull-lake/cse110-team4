@@ -78,16 +78,26 @@ describe("filling out the answer", () => {
     expect(withAnswer(30788952).getAnswerLength()).toBe(8);
   });
 
-  it("stores the digits the student types", () => {
+  it("is filled from right to left: the first digit is the ones digit", () => {
     const model = withAnswer(72);
-    expect(typeAll(model, "72")).toEqual([true, true]);
+    expect(typeAll(model, "27")).toEqual([true, true]);
     expect(model.getEnteredAnswer()).toBe("72");
     expect(model.getAnswerValue()).toBe(72);
   });
 
+  it("keeps the digits already typed where they are", () => {
+    const model = withAnswer(123);
+    model.typeCharacter("3");
+    expect(model.getEnteredAnswer()).toBe("3");
+    model.typeCharacter("2");
+    expect(model.getEnteredAnswer()).toBe("23");
+    model.typeCharacter("1");
+    expect(model.getEnteredAnswer()).toBe("123");
+  });
+
   it("keeps a wrong answer as typed (checking happens later)", () => {
     const model = withAnswer(72);
-    typeAll(model, "81");
+    typeAll(model, "18");
     expect(model.getAnswerValue()).toBe(81);
   });
 
@@ -99,15 +109,16 @@ describe("filling out the answer", () => {
 
   it("stops when every box is filled", () => {
     const model = withAnswer(72);
-    expect(typeAll(model, "723")).toEqual([true, true, false]);
+    expect(typeAll(model, "273")).toEqual([true, true, false]);
     expect(model.getEnteredAnswer()).toBe("72");
   });
 
-  it("lets the student fix a mistake with Backspace", () => {
+  it("Backspace removes the digit typed last, which is the leftmost one", () => {
     const model = withAnswer(72);
-    typeAll(model, "73");
+    typeAll(model, "23"); // "32": the 3 is wrong
     model.deleteLastCharacter();
-    model.typeCharacter("2");
+    expect(model.getEnteredAnswer()).toBe("2");
+    model.typeCharacter("7");
     expect(model.getEnteredAnswer()).toBe("72");
   });
 
@@ -119,26 +130,27 @@ describe("filling out the answer", () => {
 
   it("clears the whole answer", () => {
     const model = withAnswer(72);
-    typeAll(model, "72");
+    typeAll(model, "27");
     model.clearAnswer();
     expect(model.getEnteredAnswer()).toBe("");
     expect(model.getAnswerValue()).toBeNull();
   });
 
-  it("accepts a minus only as the first character, for negative answers", () => {
+  it("accepts a minus only in the leftmost box, after the digits, for negative answers", () => {
     const model = withAnswer(-74, [472, 546]);
     model.selectField(2); // after the 2 borrow boxes
-    expect(typeAll(model, "7-")).toEqual([true, false]);
+    expect(typeAll(model, "4-")).toEqual([true, false]); // a box to the right of the minus is still empty
     model.clearAnswer();
     model.selectField(2);
-    expect(typeAll(model, "-74")).toEqual([true, true, true]);
+    expect(typeAll(model, "47-")).toEqual([true, true, true]);
+    expect(model.getEnteredAnswer()).toBe("-74");
     expect(model.getAnswerValue()).toBe(-74);
   });
 
-  it("does not count a lone minus as an answer", () => {
+  it("does not accept a minus as the first character", () => {
     const model = withAnswer(-74, [472, 546]);
     model.selectField(2);
-    model.typeCharacter("-");
+    expect(model.typeCharacter("-")).toBe(false);
     expect(model.getAnswerValue()).toBeNull();
   });
 });
@@ -166,14 +178,14 @@ describe("filling out the division boxes", () => {
 
   it("stores each field separately and moves on when a field is full", () => {
     const model = open();
-    typeAll(model, "2007600");
+    typeAll(model, "002" + "0067"); // each field is typed from its ones digit to the left
     expect(model.getEntries().slice(0, 3)).toEqual(["200", "7600", ""]);
     expect(model.getActiveField()).toBe(2);
   });
 
   it("keeps wrong steps as typed (checking happens later)", () => {
     const model = open();
-    typeAll(model, "100");
+    typeAll(model, "001");
     expect(model.getEntries()[0]).toBe("100");
   });
 
@@ -193,7 +205,7 @@ describe("filling out the division boxes", () => {
 
   it("Escape empties only the active field; clearAnswer empties everything", () => {
     const model = open();
-    typeAll(model, "200" + "76");
+    typeAll(model, "002" + "67");
     model.clearActiveField();
     expect(model.getEntries().slice(0, 2)).toEqual(["200", ""]);
     model.clearAnswer();
@@ -204,7 +216,7 @@ describe("filling out the division boxes", () => {
   it("the answer is the last field", () => {
     const model = open();
     model.selectField(9);
-    typeAll(model, "238");
+    typeAll(model, "832");
     expect(model.getAnswerValue()).toBe(238);
   });
 });
@@ -245,7 +257,7 @@ describe("filling out the steps of the other topics", () => {
 
   it("fills the steps before the answer", () => {
     const model = new MainProblemScreenModel("addition", 2, { generate: () => ({ operands: [48, 35], answer: 83 }) } as never);
-    [..."183"].forEach(c => model.typeCharacter(c));
+    [..."138"].forEach(c => model.typeCharacter(c));
     expect(model.getEntries()).toEqual(["1", "83"]);
     expect(model.getAnswerValue()).toBe(83);
   });

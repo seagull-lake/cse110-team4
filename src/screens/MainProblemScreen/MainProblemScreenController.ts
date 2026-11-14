@@ -38,8 +38,9 @@ export class MainProblemScreenController extends ScreenController {
   }
 
   /**
-   * Typing fills in the active field: digits (and a leading "-" in the answer). Backspace removes the
-   * last one, Escape empties the field, Tab / Shift+Tab move to the next / previous field.
+   * Typing fills in the active field from right to left: digits (and a "-" in the leftmost box of the
+   * answer). Backspace removes the one typed last, Escape empties the field, Tab / Shift+Tab move to
+   * the next / previous field.
    */
   private handleKey(key: string): void {
     if (!this.model) return;

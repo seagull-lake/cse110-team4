@@ -111,11 +111,11 @@ describe("main problem screen controller", () => {
     }
     const press = (...keys: string[]) => keys.forEach(key => view.onKey(key));
 
-    it("shows the digits as they are typed", () => {
+    it("fills the answer from the right, and the digits already typed stay where they are", () => {
       openLevel();
-      press("7");
-      expect(view.answer).toBe("7");
       press("2");
+      expect(view.answer).toBe("2");
+      press("7");
       expect(view.answer).toBe("72");
     });
 
@@ -167,14 +167,14 @@ describe("main problem screen controller", () => {
 
     it("moves on to the next field when one is full", () => {
       openDivision();
-      press(..."200", ..."7600", ..."1444");
+      press(..."002", ..."0067", ..."4441"); // each field is typed from its ones digit to the left
       expect(view.entries.slice(0, 3)).toEqual(["200", "7600", "1444"]);
       expect(view.active).toBe(3);
     });
 
     it("fills every box and then the answer", () => {
       openDivision();
-      press(..."200760014443011403048304" + "0", ..."238");
+      press(..."002", ..."0067", ..."4441", ..."03", ..."0411", ..."403", ..."8", ..."403", ..."0", ..."832");
       expect(view.entries).toEqual(["200", "7600", "1444", "30", "1140", "304", "8", "304", "0", "238"]);
     });
 
@@ -194,11 +194,11 @@ describe("main problem screen controller", () => {
       expect(view.answer).toBe("2");
     });
 
-    it("Backspace in an empty field goes back to the field before", () => {
+    it("Backspace in an empty field goes back to the field before and removes the digit typed last", () => {
       openDivision();
-      press(..."200", "Backspace");
+      press(..."002", "Backspace");
       expect(view.active).toBe(0);
-      expect(view.entries[0]).toBe("20");
+      expect(view.entries[0]).toBe("00");
     });
   });
 

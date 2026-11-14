@@ -1,51 +1,70 @@
-import type{ SolvedMainGameProblem } from "../../problem-engine/MainGameProblemGenerator.ts";
-import  {SolutionScreenModel} from "./SolutionScreenModel.ts";
-import  {SolutionScreenView} from "./solutionScreenView.ts";
+import type { SolvedMainGameProblem } from "../../problem-engine/MainGameProblemGenerator.ts";
+import type { LevelType } from "../../levels/levelConfig.ts";
+import type { ScreenSwitcher } from "../../types.ts";
 import { ScreenController } from "../../types.ts";
+import { SolutionScreenModel } from "./SolutionScreenModel.ts";
+import { SolutionScreenView } from "./solutionScreenView.ts";
 
-
-export class SolutionScreenController extends ScreenController{
+export class SolutionScreenController extends ScreenController {
     private model: SolutionScreenModel | null = null;
+    private context: { problem: SolvedMainGameProblem; topic: LevelType; difficulty: number } | null = null;
     private readonly view: SolutionScreenView;
+    private readonly screenSwitcher: ScreenSwitcher;
 
-    constructor() {
+    constructor(screenSwitcher: ScreenSwitcher) {
         super();
-        this.view = new SolutionScreenView(() => {
-        this.handleNextStep();
-        });
+        this.screenSwitcher = screenSwitcher;
+        this.view = new SolutionScreenView(
+            () => this.handleNextStep(),
+            () => this.screenSwitcher.switchToScreen({ type: "menu" }),
+            () => {
+                if (this.context) this.screenSwitcher.switchToScreen({ type: "adventuremap", topic: this.context.topic });
+            },
+        );
     }
-    setProblem(problem: SolvedMainGameProblem): void {
+
+    setProblem(problem: SolvedMainGameProblem, topic: LevelType, difficulty: number): void {
+        this.context = { problem, topic, difficulty };
         this.model = new SolutionScreenModel(problem);
         this.updateView();
     }
+
     private handleNextStep(): void {
         if (!this.model) return;
-        if (this.model.getCurrentStep().operation === "division") {
-            this.model.nextDivisionPage();
-        } else {
-            this.model.nextColumn();
-        }
+        this.model.nextPage();
         this.updateView();
     }
 
-  private updateView(): void {
-    if (!this.model) return;
-    if (this.model.getCurrentStep().operation === "division") {
-      const page = this.model.getDivisionPage();
-      this.view.renderDivision(page.division, page.visibleBoxCount);
-      return;
+    private updateView(): void {
+        if (!this.model || !this.context) return;
+        const page = this.model.getCurrentPage();
+        switch (page.operation) {
+            case "multiplication": {
+                let explanation = "";
+                if (page.currentRow) {
+                    const { multiplierDigit, multiplierPlaceValue, partialProduct } = page.currentRow;
+                    explanation = `${this.model.getCurrentStep().leftOperand} × ${multiplierDigit * multiplierPlaceValue} = ${partialProduct}`;
+                } else if (page.finalAnswer !== undefined) {
+                    explanation = `${page.visibleRows.map(row => row.partialProduct).join(" + ")} = ${page.finalAnswer}`;
+                }
+                this.view.renderMultiplication(this.context.difficulty, this.context.problem, page, explanation);
+                break;
+            }
+            case "division":
+                this.view.renderDivision(page.division, page.visibleBoxCount);
+                break;
+            case "addition":
+            case "subtraction":
+                this.view.render({
+                    step: this.model.getCurrentStep(),
+                    currentColumn: this.model.getCurrentColumn(),
+                    visibleColumns: this.model.getVisibleColumns(),
+                    hasNextColumn: this.model.hasNextColumn(),
+                });
+                break;
+        }
     }
-    this.view.render({
-      step: this.model.getCurrentStep(),
-      currentColumn: this.model.getCurrentColumn(),
-      visibleColumns: this.model.getVisibleColumns(),
-      hasNextColumn: this.model.hasNextColumn(),
-    });
-  }
 
-  getView(): SolutionScreenView {
-    return this.view;
-  }
-
+    getView(): SolutionScreenView { return this.view; }
 }
 

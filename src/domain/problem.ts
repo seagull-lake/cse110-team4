@@ -1,3 +1,5 @@
+import type { SolvedMainGameProblem } from "../problem-engine/MainGameProblemGenerator";
+
 export type OperationType = "addition" | "subtraction" | "multiplication" | "division";
 
 export type ProblemGameType = "main-game" | "mini-game-1";
@@ -25,4 +27,4 @@ export interface MiniGameOneProblem {
   readonly answers: readonly { readonly value: number; readonly isCorrect: boolean }[];
 }
 
-export type ProblemResult = MainGameProblem | MiniGameOneProblem;
+export type ProblemResult = SolvedMainGameProblem | MiniGameOneProblem;

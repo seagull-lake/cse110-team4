@@ -1,7 +1,6 @@
 import Konva from "konva";
-import { FONT_FAMILY, STAGE_HEIGHT, STAGE_WIDTH, TITLE_COLOR } from "../../constants.ts";
+import { BUTTON_COLOR, BUTTON_TEXT_COLOR, FONT_FAMILY, STAGE_HEIGHT, STAGE_WIDTH, TITLE_COLOR } from "../../constants.ts";
 import { createHomeButton } from "../../components/HomeButton.ts";
-import { createBackToMapButton, createProblemBox, createProblemCell, createProblemLine } from "../../components/ProblemTemplate.ts";
 import type { MainGameProblem } from "../../domain/problem.ts";
 import { getProblemLayout } from "../MainProblemScreen/MainProblemLayout.ts";
 
@@ -39,16 +38,37 @@ export class MultiplicationSolutionView {
         }));
 
         const calculation = new Konva.Group({ x: CALCULATION_OFFSET_X });
-        layout.cells.forEach(cell => calculation.add(createProblemCell(cell, layout.cellSize)));
+        const { width, height, fontSize } = layout.cellSize;
+        layout.cells.forEach(cell => {
+            calculation.add(new Konva.Text({
+                x: cell.x, y: cell.y, width, height, text: cell.text,
+                fontFamily: FONT_FAMILY, fontSize, fill: TITLE_COLOR,
+                align: "center", verticalAlign: "middle",
+            }));
+        });
         for (const line of [layout.line, layout.secondLine]) {
-            if (line) calculation.add(createProblemLine(line));
+            if (line) calculation.add(new Konva.Line({
+                points: [line.x1, line.y, line.x2, line.y], stroke: TITLE_COLOR, strokeWidth: 3,
+            }));
         }
         for (const field of [...layout.steps, layout.answer]) {
-            for (const x of field.cellXs) calculation.add(createProblemBox(x, field));
+            for (const x of field.cellXs) calculation.add(new Konva.Rect({
+                x: x + 4, y: field.y + 4, width: field.size.width - 8, height: field.size.height - 8,
+                fill: "#FFFFFF", stroke: BUTTON_COLOR, strokeWidth: 2, cornerRadius: 6,
+            }));
         }
         this.group.add(calculation);
         this.group.add(createHomeButton(this.onHome));
-        this.group.add(createBackToMapButton(this.onBackToMap));
+        const backButton = new Konva.Group({ x: 140, y: STAGE_HEIGHT - 62 });
+        backButton.add(new Konva.Rect({ width: 150, height: 40, fill: BUTTON_COLOR, cornerRadius: 8 }));
+        backButton.add(new Konva.Text({
+            width: 150, height: 40, text: "Back to map", fontSize: 18, fontFamily: FONT_FAMILY,
+            fill: BUTTON_TEXT_COLOR, align: "center", verticalAlign: "middle",
+        }));
+        backButton.on("click", this.onBackToMap);
+        backButton.on("mouseenter", () => (document.body.style.cursor = "pointer"));
+        backButton.on("mouseleave", () => (document.body.style.cursor = "default"));
+        this.group.add(backButton);
         this.group.getLayer()?.batchDraw();
     }
 

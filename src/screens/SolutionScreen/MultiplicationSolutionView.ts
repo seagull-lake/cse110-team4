@@ -11,10 +11,12 @@ export class MultiplicationSolutionView {
     private readonly group = new Konva.Group();
     private readonly onHome: () => void;
     private readonly onBackToMap: () => void;
+    private readonly onContinue: () => void;
 
-    constructor(onHome: () => void, onBackToMap: () => void) {
+    constructor(onHome: () => void, onBackToMap: () => void, onContinue: () => void) {
         this.onHome = onHome;
         this.onBackToMap = onBackToMap;
+        this.onContinue = onContinue;
     }
 
     render(level: number, problem: MainGameProblem): void {
@@ -79,6 +81,16 @@ export class MultiplicationSolutionView {
         backButton.on("mouseenter", () => (document.body.style.cursor = "pointer"));
         backButton.on("mouseleave", () => (document.body.style.cursor = "default"));
         this.group.add(backButton);
+        const continueButton = new Konva.Label({ x: STAGE_WIDTH - 200, y: STAGE_HEIGHT - 70 });
+        continueButton.add(new Konva.Tag({ fill: BUTTON_COLOR, cornerRadius: 8 }));
+        continueButton.add(new Konva.Text({
+            width: 170, height: 48, text: "Continue", fontSize: 20, fontFamily: FONT_FAMILY,
+            fill: BUTTON_TEXT_COLOR, align: "center", verticalAlign: "middle",
+        }));
+        continueButton.on("click tap", this.onContinue);
+        continueButton.on("mouseenter", () => (document.body.style.cursor = "pointer"));
+        continueButton.on("mouseleave", () => (document.body.style.cursor = "default"));
+        this.group.add(continueButton);
         this.group.getLayer()?.batchDraw();
     }
 

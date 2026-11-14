@@ -8,23 +8,23 @@ const BOX_PADDING = 8;
 
 export class DivisionSolutionView{
     private readonly group = new Konva.Group();
-    //draw the static division layout; solution numbers stay blank for now.
+    //draw the layout and reveal only the first box's solution numbers.
     render(division: DivisionBoxMethod): void {
-        this.group.destroyChildren();
+        this.group.destroyChildren();//clear any previous diagram
 
-        this.group.add(new Konva.Rect({
+        this.group.add(new Konva.Rect({ // background
             width: STAGE_WIDTH,
             height: STAGE_HEIGHT,
             fill: "#FFF0CF",
         }));
-        this.drawText(this.group, "Division Solution", 0, 85, STAGE_WIDTH, 55, 40);
+        this.drawText(this.group, "Division Solution", 0, 85, STAGE_WIDTH, 55, 40);//title
 
-        const dividend = String(division.dividend);
-        const divisor = String(division.divisor);
-        const boxWidth = (dividend.length + 1) * CELL_WIDTH + BOX_PADDING * 2;
-        const boxHeight = ROW_HEIGHT * 3 + BOX_PADDING * 2;
-        const divisorWidth = divisor.length * CELL_WIDTH + BOX_PADDING;
-        const diagramWidth = divisorWidth + division.boxes.length * boxWidth;
+        const dividend = String(division.dividend);//the starting amount is shown above the first box
+        const divisor = String(division.divisor);//the divisor is shown to the left of the boxes
+        const boxWidth = (dividend.length + 1) * CELL_WIDTH + BOX_PADDING * 2;//each box is wide enough to hold the starting amount plus one extra digit for the next partial quotient
+        const boxHeight = ROW_HEIGHT * 3 + BOX_PADDING * 2;//each box has three rows: partial quotient, product, and remaining amount
+        const divisorWidth = divisor.length * CELL_WIDTH + BOX_PADDING;//the divisor is drawn in a box to the left of the first box
+        const diagramWidth = divisorWidth + division.boxes.length * boxWidth;//the total width of the diagram is the divisor plus all the boxes
 
         //scale wide diagrams so every box remains inside the canvas.
         const scale = Math.min(1, (STAGE_WIDTH - 60) / diagramWidth);
@@ -63,6 +63,9 @@ export class DivisionSolutionView{
             if (i === 0) {
                 this.drawText(diagram, dividend, right - dividend.length * CELL_WIDTH,
                     amountY, dividend.length * CELL_WIDTH, ROW_HEIGHT, 26);
+                this.drawSlotNumber(diagram, right, 0, box.partialQuotient);
+                this.drawSlotNumber(diagram, right, productY, box.amountSubtracted);
+                this.drawSlotNumber(diagram, right, remainingY, box.remainingAmount);
             }
 
             this.drawText(diagram, "−", right - (productLength + 1) * CELL_WIDTH,
@@ -96,7 +99,14 @@ export class DivisionSolutionView{
             }));
         }
     }
-
+    //write each digit into its own slot, aligned with the right edge.
+    private drawSlotNumber(parent: Konva.Group, right: number, y: number, value: number): void {
+        const digits = String(value);
+        for (let i = 0; i < digits.length; i++) {
+            const x = right - (digits.length - i) * CELL_WIDTH;
+            this.drawText(parent, digits[i], x, y, CELL_WIDTH, ROW_HEIGHT, 26);
+        }
+    }
     //draw a label or number without intercepting mouse events.
     private drawText(parent: Konva.Group, text: string, x: number, y: number,
         width: number, height: number, fontSize: number): void {

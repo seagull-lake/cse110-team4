@@ -51,9 +51,9 @@ export class SolutionScreenModel{
         if (!rows) {
             throw new Error("The current solution step is not multiplication.");
         }
-        const hasNext = this.multiplicationRowIndex < rows.length - 1;
+        const hasNext = this.multiplicationRowIndex < rows.length;
         return {
-            currentRow: rows[this.multiplicationRowIndex],
+            currentRow: hasNext ? rows[this.multiplicationRowIndex] : undefined,
             visibleRows: rows.slice(0, this.multiplicationRowIndex + 1),
             hasNext,
             finalAnswer: hasNext ? undefined : this.getFinalAnswer(),

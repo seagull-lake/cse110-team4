@@ -25,12 +25,14 @@ it.each([[5, 3], [2, 1], [1, 1]])("renders cumulative rows and a separate answer
 
     for (let index = 0; index < rows.length; index++) {
         renderPage();
+        expect(view.getGroup().find<Konva.Text>("Text").find(node => node.text() === "Next Step")?.getParent()?.visible()).toBe(true);
         expect(text("partial-product")).toBe(rows.slice(0, index + 1).map(row => row.partialProduct).join(""));
         expect(text("final-answer")).toBe("");
         expect(view.getGroup().find<Konva.Text>("Text").some(node => node.text() === "Example explanation")).toBe(true);
         model.nextPage();
     }
     renderPage();
+    expect(view.getGroup().find<Konva.Text>("Text").find(node => node.text() === "Next Step")?.getParent()?.visible()).toBe(false);
     expect(text("partial-product")).toBe(rows.map(row => row.partialProduct).join(""));
     expect(text("final-answer")).toBe(String(problem.solution.finalAnswer));
 });

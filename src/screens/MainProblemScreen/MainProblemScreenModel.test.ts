@@ -230,14 +230,28 @@ describe("filling out the steps of the other topics", () => {
     ]);
   });
 
+  it("addition asks for one more carry, left of the numbers, when the answer has an extra digit", () => {
+    expect(getAnswerFields("addition", { operands: [57, 76], answer: 133 })).toEqual([
+      { kind: "carry", box: 1, length: 1 }, { kind: "carry", box: 2, length: 1 },
+      { kind: "answer", length: 3 },
+    ]);
+  });
+
   it("subtraction asks for the borrows the same way", () => {
     expect(getAnswerFields("subtraction", { operands: [74, 8], answer: 66 })).toEqual([
       { kind: "borrow", box: 1, length: 1 }, { kind: "answer", length: 2 },
     ]);
   });
 
-  it("1-digit numbers have no carries", () => {
+  it("1-digit numbers have no carries unless the sum has 2 digits", () => {
     expect(getAnswerFields("addition", { operands: [4, 3], answer: 7 })).toEqual([{ kind: "answer", length: 1 }]);
+    expect(getAnswerFields("addition", { operands: [9, 8], answer: 17 })).toEqual([
+      { kind: "carry", box: 1, length: 1 }, { kind: "answer", length: 2 },
+    ]);
+  });
+
+  it("1-digit subtraction has no borrows", () => {
+    expect(getAnswerFields("subtraction", { operands: [7, 3], answer: 4 })).toEqual([{ kind: "answer", length: 1 }]);
   });
 
   it("multiplication asks for one partial product per multiplier digit, then the answer", () => {
@@ -257,7 +271,7 @@ describe("filling out the steps of the other topics", () => {
 
   it("fills the steps before the answer", () => {
     const model = new MainProblemScreenModel("addition", 2, { generate: () => ({ operands: [48, 35], answer: 83 }) } as never);
-    [..."138"].forEach(c => model.typeCharacter(c));
+    [..."138"].forEach(c => model.typeCharacter(c)); // the carry, then the answer's ones digit first
     expect(model.getEntries()).toEqual(["1", "83"]);
     expect(model.getAnswerValue()).toBe(83);
   });

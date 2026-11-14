@@ -103,8 +103,10 @@ function getColumnLayout(type: LevelType, problem: MainGameProblem): ColumnLayou
   const left = (STAGE_WIDTH - columns * cell) / 2;
   const right = left + columns * cell;
   const operatorX = right - (numberColumns + 1) * cell;
-  // The carry / borrow row goes above the numbers
-  const numbersTop = columnFields.length > 0 ? PROBLEM_TOP + CARRY_HEIGHT + 4 : PROBLEM_TOP;
+  // The carry / borrow row goes above the numbers. Its space is kept even when a problem happens to
+  // have no boxes in it (e.g. 2 + 3), so the numbers sit in the same place on every such problem.
+  // Only multiplication with partial products never has the row, so its numbers start higher.
+  const numbersTop = partialProducts.length === 0 ? PROBLEM_TOP + CARRY_HEIGHT + 4 : PROBLEM_TOP;
 
   const cells: Cell[] = [];
   numbers.forEach((text, index) => {

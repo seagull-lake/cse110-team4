@@ -58,6 +58,16 @@ export class MultiplicationSolutionView {
             }));
         }
         this.group.add(calculation);
+        const explanationPanel = new Konva.Label({ x: 480, y: 290 });
+        explanationPanel.add(new Konva.Tag({ fill: "#FFE9AE", cornerRadius: 8 }));
+        explanationPanel.add(new Konva.Text({
+            width: 285, height: 150, padding: 20,
+            // Temporary example until the controller supplies the current solution step.
+            text: "Units digit: 1\n36748 × 1 = 36748\nFirst partial product.",
+            fontFamily: FONT_FAMILY, fontSize: 24, lineHeight: 1.3, fill: TITLE_COLOR,
+            align: "center", verticalAlign: "middle",
+        }));
+        this.group.add(explanationPanel);
         this.group.add(createHomeButton(this.onHome));
         const backButton = new Konva.Group({ x: 140, y: STAGE_HEIGHT - 62 });
         backButton.add(new Konva.Rect({ width: 150, height: 40, fill: BUTTON_COLOR, cornerRadius: 8 }));

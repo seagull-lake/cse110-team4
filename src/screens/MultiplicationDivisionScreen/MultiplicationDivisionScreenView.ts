@@ -3,6 +3,7 @@ import Konva from "konva";
 import type { View } from "../../types.ts";
 import { STAGE_HEIGHT, STAGE_WIDTH, FONT_FAMILY, TITLE_COLOR, BUTTON_TEXT_COLOR } from "../../constants.ts";
 import { createHomeButton } from "../../components/HomeButton.ts";
+import { createActionButton } from "../../components/ActionButton.ts";
 
 // Constants
 const FONT = FONT_FAMILY;
@@ -211,7 +212,7 @@ export class MultiplicationDivisionScreenView implements View {
         this.gameOverGroup.add(this.newHighScoreText);
 
         // Play Again Button
-        const playAgainButton = this.makeButton("Play Again", BUTTON.x, BUTTON.y);
+        const playAgainButton = createActionButton("Play Again", BUTTON.x, BUTTON.y);
         playAgainButton.on("click", onPlayAgain);
         this.gameOverGroup.add(playAgainButton);
 
@@ -310,15 +311,6 @@ export class MultiplicationDivisionScreenView implements View {
     getGroup(): Konva.Group { return this.group; }
 
     /*------ Helpers ------*/
-
-    private makeButton(label: string, x: number, y: number): Konva.Group {
-        const button = new Konva.Group({ x, y });
-        button.add(new Konva.Rect({ width: BUTTON.width, height: BUTTON.height, fill: COLORS.button, stroke: COLORS.text, strokeWidth: 3, cornerRadius: 8 }));
-        button.add(this.text(label, 0, 0, 22, { width: BUTTON.width, height: BUTTON.height, align: "center", verticalAlign: "middle" }));
-        button.on("mouseenter", () => { document.body.style.cursor = "pointer"; });
-        button.on("mouseleave", () => { document.body.style.cursor = "default"; });
-        return button;
-    }
 
     // Calculates top-left corner of choice `index` in the 2x2 grid, centered on the stage
     private choicePosition(index: number): { x: number; y: number } {

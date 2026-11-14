@@ -1,6 +1,7 @@
 import Konva from "konva";
 import { BUTTON_COLOR, BUTTON_TEXT_COLOR, FONT_FAMILY, STAGE_HEIGHT, STAGE_WIDTH, TITLE_COLOR } from "../../constants.ts";
 import { createHomeButton } from "../../components/HomeButton.ts";
+import { createActionButton } from "../../components/ActionButton.ts";
 import type { MainGameProblem } from "../../domain/problem.ts";
 import { getProblemLayout } from "../MainProblemScreen/MainProblemLayout.ts";
 
@@ -81,21 +82,8 @@ export class MultiplicationSolutionView {
         backButton.on("mouseenter", () => (document.body.style.cursor = "pointer"));
         backButton.on("mouseleave", () => (document.body.style.cursor = "default"));
         this.group.add(backButton);
-        const nextButton = new Konva.Group({ x: STAGE_WIDTH - 230, y: STAGE_HEIGHT - 72 });
-        nextButton.add(new Konva.Rect({
-            x: 20, width: 180, height: 48, fill: "#FFE9AE", stroke: TITLE_COLOR,
-            strokeWidth: 2, cornerRadius: 12,
-        }));
-        nextButton.add(new Konva.Line({
-            points: [0, 24, 28, 5, 28, 43], closed: true, fill: TITLE_COLOR,
-        }));
-        nextButton.add(new Konva.Text({
-            x: 30, width: 165, height: 48, text: "Vai al prossimo", fontSize: 21,
-            fontFamily: FONT_FAMILY, fill: TITLE_COLOR, align: "center", verticalAlign: "middle",
-        }));
+        const nextButton = createActionButton("Next Step");
         nextButton.on("click tap", this.onNextStep);
-        nextButton.on("mouseenter", () => (document.body.style.cursor = "pointer"));
-        nextButton.on("mouseleave", () => (document.body.style.cursor = "default"));
         this.group.add(nextButton);
         this.group.getLayer()?.batchDraw();
     }

@@ -58,6 +58,9 @@ describe("the problem a level asks for", () => {
     expect(model.canContinue()).toBe(false);
     expect(model.checkAnswer(["7", "9", "7"])).toBe(true);
     expect(model.canContinue()).toBe(true);
+    model.clearAnswer();
+    expect(model.getEnteredAnswer()).toBe("");
+    expect(model.canContinue()).toBe(false);
   });
 });
 

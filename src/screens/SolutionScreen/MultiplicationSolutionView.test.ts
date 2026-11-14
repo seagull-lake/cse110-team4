@@ -17,15 +17,20 @@ it.each([[5, 3], [2, 1], [1, 1]])("renders cumulative rows and a separate answer
     const rows = problem.solution.steps[0].multiplicationRows;
     if (!rows) throw new Error("Expected multiplication rows from the generator.");
     const text = (name: string) => view.getGroup().find<Konva.Text>(`.${name}`).map(node => node.text()).join("");
+    const renderPage = () => {
+        const page = model.getCurrentPage();
+        if (page.operation !== "multiplication") throw new Error("Expected a multiplication page.");
+        view.render(1, problem, page, "Example explanation");
+    };
 
     for (let index = 0; index < rows.length; index++) {
-        view.render(1, problem, model.getMultiplicationPage(), "Example explanation");
+        renderPage();
         expect(text("partial-product")).toBe(rows.slice(0, index + 1).map(row => row.partialProduct).join(""));
         expect(text("final-answer")).toBe("");
         expect(view.getGroup().find<Konva.Text>("Text").some(node => node.text() === "Example explanation")).toBe(true);
-        model.nextMultiplicationPage();
+        model.nextPage();
     }
-    view.render(1, problem, model.getMultiplicationPage(), "Final answer");
+    renderPage();
     expect(text("partial-product")).toBe(rows.map(row => row.partialProduct).join(""));
     expect(text("final-answer")).toBe(String(problem.solution.finalAnswer));
 });

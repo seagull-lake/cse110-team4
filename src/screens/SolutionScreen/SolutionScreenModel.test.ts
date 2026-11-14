@@ -68,3 +68,53 @@ describe("SolutionScreenModel multiplication rows", () => {
             .toThrow("not multiplication");
     });
 });
+
+describe("SolutionScreenModel common page interface", () => {
+    it.each(["addition", "subtraction", "multiplication", "division"] as const)(
+        "advances %s using only the common interface", operation => {
+            const problem = new MainGameProblemGenerator(() => 0.5).generate({ operation, operandDigits: [3, 2] });
+            const model = new SolutionScreenModel(problem);
+            const step = problem.solution.steps[0];
+            const count = step.additionColumns?.length ?? step.subtractionColumns?.length ??
+                step.multiplicationRows?.length ?? step.divisionBoxMethod?.boxes.length ?? 0;
+            const pageCount = count + (operation === "multiplication" ? 1 : 0);
+            expect(pageCount).toBeGreaterThan(0);
+            for (let index = 0; index < pageCount; index++) {
+                const page = model.getCurrentPage();
+                expect(page.operation).toBe(operation);
+                expect(page.hasNext).toBe(index < pageCount - 1);
+                expect(page.finalAnswer).toBe(page.hasNext ? undefined : problem.solution.finalAnswer);
+                switch (page.operation) {
+                    case "addition":
+                        expect(page.currentColumn).toBe(step.additionColumns?.[index]);
+                        expect(page.visibleColumns).toEqual(step.additionColumns?.slice(0, index + 1));
+                        break;
+                    case "subtraction":
+                        expect(page.currentColumn).toBe(step.subtractionColumns?.[index]);
+                        expect(page.visibleColumns).toEqual(step.subtractionColumns?.slice(0, index + 1));
+                        break;
+                    case "multiplication":
+                        expect(page.currentRow).toBe(step.multiplicationRows?.[index]);
+                        expect(page.visibleRows).toEqual(step.multiplicationRows?.slice(0, index + 1));
+                        break;
+                    case "division":
+                        expect(page.division).toBe(step.divisionBoxMethod);
+                        expect(page.visibleBoxCount).toBe(index + 1);
+                        break;
+                }
+                model.nextPage();
+            }
+            const finalPage = model.getCurrentPage();
+            model.nextPage();
+            expect(model.getCurrentPage()).toEqual(finalPage);
+        },
+    );
+
+    it("keeps operation-specific navigation compatible with common navigation", () => {
+        const model = new SolutionScreenModel(multiplicationProblem());
+        model.nextMultiplicationPage();
+        expect(model.getCurrentPage()).toEqual(model.getMultiplicationPage());
+        model.nextPage();
+        expect(model.getMultiplicationPage().visibleRows).toHaveLength(3);
+    });
+});

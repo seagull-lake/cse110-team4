@@ -4,7 +4,7 @@ import { createHomeButton } from "../../components/HomeButton.ts";
 import { createActionButton } from "../../components/ComponentFactory.ts";
 import type { MainGameProblem } from "../../domain/problem.ts";
 import { getProblemLayout } from "../MainProblemScreen/MainProblemLayout.ts";
-import type { SolutionScreenModel } from "./SolutionScreenModel.ts";
+import type { SolutionPage } from "./SolutionPage.ts";
 
 const CALCULATION_OFFSET_X = -120;
 
@@ -22,7 +22,7 @@ export class MultiplicationSolutionView {
     }
 
     render(level: number, problem: MainGameProblem,
-        page: ReturnType<SolutionScreenModel["getMultiplicationPage"]>, explanation: string): void {
+        page: Extract<SolutionPage, { operation: "multiplication" }>, explanation: string): void {
         const layout = getProblemLayout("multiplication", problem);
         if (layout.kind !== "column") throw new Error("Expected a multiplication column layout.");
         // The game uses carry fields for a one-digit multiplier; the solution needs a product row.

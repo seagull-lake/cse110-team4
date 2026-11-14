@@ -12,7 +12,7 @@ afterAll(() => vi.restoreAllMocks());
 
 it.each([[5, 3], [2, 1], [1, 1]])("renders cumulative rows and a separate answer for %j digits", (...operandDigits) => {
     const problem = new MainGameProblemGenerator(() => 0.5).generate({ operation: "multiplication", operandDigits });
-    const model = new SolutionScreenModel(problem);
+    const model = new SolutionScreenModel(problem, "multiplication", 1);
     const view = new MultiplicationSolutionView(() => {}, () => {}, () => {});
     const rows = problem.solution.steps[0].multiplicationRows;
     if (!rows) throw new Error("Expected multiplication rows from the generator.");

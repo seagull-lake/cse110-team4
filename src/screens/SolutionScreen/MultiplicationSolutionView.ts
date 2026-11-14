@@ -25,11 +25,14 @@ export class MultiplicationSolutionView {
         page: Extract<SolutionPage, { operation: "multiplication" }>, explanation: string): void {
         const layout = getProblemLayout("multiplication", problem);
         if (layout.kind !== "column") throw new Error("Expected a multiplication column layout.");
-        // The game uses carry fields for a one-digit multiplier; the solution needs a product row.
-        if (!layout.secondLine) {
-            layout.steps = [{ ...layout.answer, y: layout.line.y + 12 }];
-            layout.secondLine = { ...layout.line, y: layout.steps[0].y + layout.cellSize.height + 4 };
-            layout.answer = { ...layout.answer, y: layout.secondLine.y + 12 };
+        let productFields = layout.steps.filter(field => !field.carry);
+        let secondLine = layout.secondLine;
+        let answerField = layout.answer;
+        // A one-digit multiplier has only carry fields, so add a row for its product.
+        if (productFields.length === 0) {
+            productFields = [{ ...layout.answer, y: layout.line.y + 12 }];
+            secondLine = { ...layout.line, y: productFields[0].y + layout.cellSize.height + 4 };
+            answerField = { ...layout.answer, y: secondLine.y + 12 };
         }
         this.group.destroyChildren();
         this.group.add(new Konva.Rect({
@@ -57,14 +60,14 @@ export class MultiplicationSolutionView {
                 align: "center", verticalAlign: "middle",
             }));
         });
-        for (const line of [layout.line, layout.secondLine]) {
+        for (const line of [layout.line, secondLine]) {
             if (line) calculation.add(new Konva.Line({
                 points: [line.x1, line.y, line.x2, line.y], stroke: TITLE_COLOR, strokeWidth: 3,
             }));
         }
-        for (const [index, field] of [...layout.steps, layout.answer].entries()) {
+        for (const [index, field] of [...productFields, answerField].entries()) {
             const row = page.visibleRows[index];
-            const value = index === layout.steps.length ? page.finalAnswer : row?.partialProduct;
+            const value = index === productFields.length ? page.finalAnswer : row?.partialProduct;
             const digits = value === undefined ? "" : String(value).padStart(field.cellXs.length, " ");
             field.cellXs.forEach((x, digitIndex) => {
                 calculation.add(new Konva.Rect({
@@ -72,7 +75,7 @@ export class MultiplicationSolutionView {
                     fill: "#FFFFFF", stroke: BUTTON_COLOR, strokeWidth: 2, cornerRadius: 6,
                 }));
                 if (digits[digitIndex]?.trim()) calculation.add(new Konva.Text({
-                    name: index === layout.steps.length ? "final-answer" : "partial-product",
+                    name: index === productFields.length ? "final-answer" : "partial-product",
                     x, y: field.y, ...field.size, text: digits[digitIndex],
                     fontFamily: FONT_FAMILY, fill: TITLE_COLOR, align: "center", verticalAlign: "middle",
                 }));

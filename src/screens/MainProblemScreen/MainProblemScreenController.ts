@@ -82,31 +82,19 @@ export class MainProblemScreenController extends ScreenController {
 
   /** Keep correct-answer feedback, or show the original division solution after a wrong answer. */
   private handleSubmitClick(): void {
-    if (!this.model || this.solutionOpen) return;
-    const digits = this.view.getEnteredAnswer();
-    if (!digits.some(digit => /^[0-9]$/.test(digit))) return;
-    if (this.model.checkAnswer(digits)) {
+    if (!this.model) return;
+    const answer = this.view.getEnteredAnswer();
+    if (answer.length !== this.model.getAnswerLength() || answer.some(digit => digit === "")) return;
+    if (this.model.checkAnswer(answer)) {
       this.view.showCorrectAnswer();
-      return;
+    } else {
+      this.screenSwitcher.switchToScreen({
+        type: "solution",
+        problem: this.model.getProblem(),
+        topic: this.model.getTopic(),
+        difficulty: this.model.getDifficulty(),
+      });
     }
-    if (this.model.getTopic() !== "division") return;
-
-    const solution = new SolutionScreenController(
-      this.model.getProblem() as SolvedMainGameProblem,
-      () => this.handleSimilarQuestion(),
-    );
-    this.solutionOpen = true;
-    this.view.showSolution(solution.getView());
-  }
-
-  /** Reopen the same level so its usual dispatcher creates a new question. */
-  private handleSimilarQuestion(): void {
-    if (!this.model || !this.solutionOpen) return;
-    this.screenSwitcher.switchToScreen({
-      type: "mainproblem",
-      topic: this.model.getTopic(),
-      difficulty: this.model.getDifficulty(),
-    });
   }
 
   private handleContinueClick(): void {

@@ -19,13 +19,16 @@ export function getAnswerLength(answer: number): number {
 /**
  * One place the student types a number: an in-between step, or the final answer (always last).
  * - Addition / subtraction: the carry / borrow above each column from the tens up
- * - Multiplication: each partial product (2+ digit multiplier), or the carries (1-digit multiplier)
+ * - Multiplication: for each digit of the multiplier (ones first), the carries of multiplying by it,
+ *   then (with a 2+ digit multiplier) its partial product
  * - Division: every box of the box method (partial quotient, product, amount left)
  */
 export interface AnswerField {
   readonly kind: "carry" | "borrow" | "partialProduct" | "partialQuotient" | "product" | "remaining" | "answer";
   /** Carries and borrows: the column, 1 = tens. Partial products: the multiplier digit, 0 = ones. Division: the box. */
   readonly box?: number;
+  /** Multiplication carries: the multiplier digit they belong to (0 = ones), the same as the `box` of its partial product. */
+  readonly row?: number;
   /** One input box per character of the correct number. */
   readonly length: number;
 }
@@ -41,9 +44,14 @@ export function getPartialProducts(problem: MainGameProblem): number[] {
   return [...String(multiplier)].reverse().map((digit, place) => multiplicand * Number(digit) * 10 ** place);
 }
 
-/** One single-digit field above each column from the tens up to the longest number's last column. */
-function getColumnFields(kind: "carry" | "borrow", columns: number): AnswerField[] {
-  return Array.from({ length: Math.max(columns - 1, 0) }, (_, index) => ({ kind, box: index + 1, length: 1 }));
+/**
+ * One single-digit field above each column from the tens up to the longest number's last column.
+ * With `includeCarryOut`, one more field is added in the column left of that (what adding the
+ * leftmost column carries over into the answer's extra digit).
+ */
+function getColumnFields(kind: "carry" | "borrow", columns: number, includeCarryOut = false): AnswerField[] {
+  const count = Math.max(columns - 1, 0) + (includeCarryOut ? 1 : 0);
+  return Array.from({ length: count }, (_, index) => ({ kind, box: index + 1, length: 1 }));
 }
 
 /** The division boxes the generator worked out for this problem. */
@@ -56,16 +64,28 @@ export function getDivisionBoxes(problem: MainGameProblem): readonly DivisionBox
 /** The fields to fill in, in the order the student fills them. */
 export function getAnswerFields(topic: LevelType, problem: MainGameProblem): AnswerField[] {
   const answer: AnswerField = { kind: "answer", length: getAnswerLength(problem.answer) };
-  if (topic === "addition") return [...getColumnFields("carry", getNumberColumns(problem)), answer];
+  if (topic === "addition") {
+    // Like every box count, this follows the answer: the carry out of the leftmost column is only
+    // asked for when it becomes an extra digit of the answer, so no carry ever sits left of the answer's boxes.
+    const columns = getNumberColumns(problem);
+    return [...getColumnFields("carry", columns, answer.length > columns), answer];
+  }
   if (topic === "subtraction") return [...getColumnFields("borrow", getNumberColumns(problem)), answer];
   if (topic === "multiplication") {
+    const [multiplicand, multiplier] = problem.operands;
+    const columns = String(multiplicand).length;
     const partialProducts = getPartialProducts(problem);
-    // With a 1-digit multiplier the only partial product is the answer, so the steps are the carries
-    if (partialProducts.length === 1) return [...getColumnFields("carry", String(problem.operands[0]).length), answer];
-    return [
-      ...partialProducts.map((product, box): AnswerField => ({ kind: "partialProduct", box, length: getAnswerLength(product) })),
-      answer,
-    ];
+    const multiplierDigits = [...String(multiplier)].reverse().map(Number);
+    const rows = multiplierDigits.flatMap((digit, row): AnswerField[] => {
+      // The carries of multiplying by this digit, like addition's: one per column from the tens up,
+      // plus one more when the product has an extra digit (the carry out of the leftmost column)
+      const hasCarryOut = getAnswerLength(multiplicand * digit) > columns;
+      const carries = getColumnFields("carry", columns, hasCarryOut).map((field): AnswerField => ({ ...field, row }));
+      // With a 1-digit multiplier the only partial product is the answer, so there is no row for it
+      if (partialProducts.length === 1) return carries;
+      return [...carries, { kind: "partialProduct", box: row, length: getAnswerLength(partialProducts[row]) }];
+    });
+    return [...rows, answer];
   }
   return [
     ...getDivisionBoxes(problem).flatMap((step, box): AnswerField[] => [
@@ -81,7 +101,7 @@ export function getAnswerFields(topic: LevelType, problem: MainGameProblem): Ans
 export class MainProblemScreenModel {
   private readonly level: LevelDefinition;
   private readonly difficulty: number;
-  private readonly problem: MainGameProblem;
+  private readonly problem: SolvedMainGameProblem;
   private answerCorrect = false;
   private readonly fields: readonly AnswerField[];
   /** What the student typed in each field as it reads on screen, e.g. "72"; typing fills it from the right. */
@@ -96,7 +116,7 @@ export class MainProblemScreenModel {
     }
     this.difficulty = difficulty;
     // The main-game request always returns a MainGameProblem (operands + answer)
-    this.problem = dispatcher.generate(this.getProblemRequest()) as MainGameProblem;
+    this.problem = dispatcher.generate(this.getProblemRequest()) as SolvedMainGameProblem;
     this.fields = getAnswerFields(this.level.type, this.problem);
     this.entries = this.fields.map(() => "");
   }
@@ -108,7 +128,7 @@ export class MainProblemScreenModel {
 
   getTopic(): LevelType { return this.level.type; }
   getDifficulty(): number { return this.difficulty; }
-  getProblem(): MainGameProblem { return this.problem; }
+  getProblem(): SolvedMainGameProblem { return this.problem; }
 
   /** Returns true only when every entered answer character matches the generated answer. */
   checkAnswer(digits: readonly string[]): boolean {

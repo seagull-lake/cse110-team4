@@ -8,6 +8,7 @@ import { MainGameScreenController } from "./screens/MainGameScreen/MainGameScree
 import { MultiplicationDivisionScreenController } from "./screens/MultiplicationDivisionScreen/MultiplicationDivisionScreenController.ts";
 import { AdventureMapScreenController } from "./screens/AdventureMapScreen/AdventureMapScreenController.ts";
 import { MainProblemScreenController } from "./screens/MainProblemScreen/MainProblemScreenController.ts";
+import { SolutionScreenController } from "./screens/SolutionScreen/SolutionScreenController.ts";
 import { getLevelDefinition } from "./levels/levelConfig.ts";
 import { isLevelUnlocked } from "./levels/progression.ts";
 
@@ -21,6 +22,7 @@ class App implements ScreenSwitcher {
   private multidivController: MultiplicationDivisionScreenController;
   private adventureMapController: AdventureMapScreenController;
   private mainProblemController: MainProblemScreenController;
+  private solutionController: SolutionScreenController;
 
   constructor(container: string) {
     this.stage = new Konva.Stage({ container, width: STAGE_WIDTH, height: STAGE_HEIGHT });
@@ -33,6 +35,7 @@ class App implements ScreenSwitcher {
     this.multidivController = new MultiplicationDivisionScreenController(this);
     this.adventureMapController = new AdventureMapScreenController(this);
     this.mainProblemController = new MainProblemScreenController(this);
+    this.solutionController = new SolutionScreenController();
 
     this.layer.add(this.menuController.getView().getGroup());
     this.layer.add(this.fractiongameController.getView().getGroup());
@@ -40,6 +43,7 @@ class App implements ScreenSwitcher {
     this.layer.add(this.multidivController.getView().getGroup());
     this.layer.add(this.adventureMapController.getView().getGroup());
     this.layer.add(this.mainProblemController.getView().getGroup());
+    this.layer.add(this.solutionController.getView().getGroup());
 
 
     this.layer.draw();
@@ -52,7 +56,7 @@ class App implements ScreenSwitcher {
 
   switchToScreen(screen: Screen): void {
     if (screen.type === "mainproblem") screen = checkLevelScreen(screen);
-    saveScreen(screen);
+    saveScreen(screen.type === "solution" ? { type: "adventuremap", topic: screen.topic } : screen);
 
     this.menuController.hide();
     this.maingameController.hide();
@@ -60,6 +64,7 @@ class App implements ScreenSwitcher {
     this.fractiongameController.hide();
     this.adventureMapController.hide();
     this.mainProblemController.hide();
+    this.solutionController.hide();
 
     switch (screen.type) {
       case "menu": this.menuController.show(); break;
@@ -73,6 +78,10 @@ class App implements ScreenSwitcher {
         this.mainProblemController.show();
         break;
       case "multidivgame": this.multidivController.show(); break;
+      case "solution":
+        this.solutionController.setProblem(screen.problem);
+        this.solutionController.show();
+        break;
       case "fractiongame": this.fractiongameController.show(); break;
     }
   }

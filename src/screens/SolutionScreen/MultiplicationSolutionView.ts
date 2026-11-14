@@ -63,7 +63,7 @@ export class MultiplicationSolutionView {
         }));
         this.group.add(new Konva.Text({
             x: 480, y: 290, width: 285, height: 150, padding: 20, text: explanation,
-            fontFamily: FONT_FAMILY, fontSize: 32, fill: TITLE_COLOR,
+            fontFamily: FONT_FAMILY, fontSize: 24, lineHeight: 1.3, fill: TITLE_COLOR,
             align: "center", verticalAlign: "middle",
         }));
         this.group.add(createHomeButton(this.onHome));

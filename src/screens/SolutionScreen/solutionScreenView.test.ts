@@ -17,7 +17,7 @@ it("reuses operation groups across renders and forwards multiplication callbacks
     const problem = new MainGameProblemGenerator(() => 0.5).generate({
         operation: "multiplication", operandDigits: [2, 2],
     });
-    const page = new SolutionScreenModel(problem).getMultiplicationPage();
+    const page = new SolutionScreenModel(problem, "multiplication", 3).getMultiplicationPage();
     const content = view.getGroup().getChildren()[0];
     if (!(content instanceof Konva.Group)) throw new Error("Expected content group.");
 

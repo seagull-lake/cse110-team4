@@ -7,7 +7,6 @@ import { SolutionScreenView } from "./solutionScreenView.ts";
 
 export class SolutionScreenController extends ScreenController {
     private model: SolutionScreenModel | null = null;
-    private context: { problem: SolvedMainGameProblem; topic: LevelType; difficulty: number } | null = null;
     private readonly view: SolutionScreenView;
     private readonly screenSwitcher: ScreenSwitcher;
 
@@ -18,14 +17,15 @@ export class SolutionScreenController extends ScreenController {
             () => this.handleNextStep(),
             () => this.screenSwitcher.switchToScreen({ type: "menu" }),
             () => {
-                if (this.context) this.screenSwitcher.switchToScreen({ type: "adventuremap", topic: this.context.topic });
+                if (this.model) this.screenSwitcher.switchToScreen({
+                    type: "adventuremap", topic: this.model.getContext().topic,
+                });
             },
         );
     }
 
     setProblem(problem: SolvedMainGameProblem, topic: LevelType, difficulty: number): void {
-        this.context = { problem, topic, difficulty };
-        this.model = new SolutionScreenModel(problem);
+        this.model = new SolutionScreenModel(problem, topic, difficulty);
         this.updateView();
     }
 
@@ -36,7 +36,7 @@ export class SolutionScreenController extends ScreenController {
     }
 
     private updateView(): void {
-        if (!this.model || !this.context) return;
+        if (!this.model) return;
         const page = this.model.getCurrentPage();
         switch (page.operation) {
             case "multiplication": {
@@ -47,7 +47,8 @@ export class SolutionScreenController extends ScreenController {
                 } else if (page.finalAnswer !== undefined) {
                     explanation = `${page.visibleRows.map(row => row.partialProduct).join(" + ")} = ${page.finalAnswer}`;
                 }
-                this.view.renderMultiplication(this.context.difficulty, this.context.problem, page, explanation);
+                const { problem, difficulty } = this.model.getContext();
+                this.view.renderMultiplication(difficulty, problem, page, explanation);
                 break;
             }
             case "division":

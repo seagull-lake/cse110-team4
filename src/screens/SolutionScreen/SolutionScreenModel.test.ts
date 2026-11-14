@@ -11,8 +11,15 @@ function multiplicationProblem() {
 }
 
 describe("SolutionScreenModel multiplication rows", () => {
+    it("provides the routed problem and level context", () => {
+        const problem = multiplicationProblem();
+        const model = new SolutionScreenModel(problem, "multiplication", 5);
+
+        expect(model.getContext()).toEqual({ problem, topic: "multiplication", difficulty: 5 });
+    });
+
     it("reveals one complete row at a time from right to left", () => {
-        const model = new SolutionScreenModel(multiplicationProblem());
+        const model = new SolutionScreenModel(multiplicationProblem(), "multiplication", 5);
 
         expect(model.getOperand()).toEqual([36748, 661]);
         expect(model.getMultiplicationPage().visibleRows.map(row => row.partialProduct)).toEqual([36748]);
@@ -31,7 +38,7 @@ describe("SolutionScreenModel multiplication rows", () => {
 
     it("shows the final answer on a separate page and stops there", () => {
         const problem = multiplicationProblem();
-        const model = new SolutionScreenModel(problem);
+        const model = new SolutionScreenModel(problem, "multiplication", 5);
 
         expect(model.getMultiplicationPage()).toMatchObject({ hasNext: true, finalAnswer: undefined });
         model.nextMultiplicationPage();
@@ -51,7 +58,7 @@ describe("SolutionScreenModel multiplication rows", () => {
         const problem = new MainGameProblemGenerator(() => 0.5).generate({
             operation: "multiplication", operandDigits: [2, 1],
         });
-        const model = new SolutionScreenModel(problem);
+        const model = new SolutionScreenModel(problem, "multiplication", 1);
         expect(model.getMultiplicationPage().visibleRows[0]).toBe(problem.solution.steps[0].multiplicationRows?.[0]);
         expect(model.getMultiplicationPage()).toMatchObject({ hasNext: true, finalAnswer: undefined });
         model.nextMultiplicationPage();
@@ -64,7 +71,7 @@ describe("SolutionScreenModel multiplication rows", () => {
             operandDigits: [1, 1],
         });
 
-        expect(() => new SolutionScreenModel(addition).getMultiplicationPage())
+        expect(() => new SolutionScreenModel(addition, "addition", 1).getMultiplicationPage())
             .toThrow("not multiplication");
     });
 });
@@ -73,7 +80,7 @@ describe("SolutionScreenModel common page interface", () => {
     it.each(["addition", "subtraction", "multiplication", "division"] as const)(
         "advances %s using only the common interface", operation => {
             const problem = new MainGameProblemGenerator(() => 0.5).generate({ operation, operandDigits: [3, 2] });
-            const model = new SolutionScreenModel(problem);
+            const model = new SolutionScreenModel(problem, operation, 1);
             const step = problem.solution.steps[0];
             const count = step.additionColumns?.length ?? step.subtractionColumns?.length ??
                 step.multiplicationRows?.length ?? step.divisionBoxMethod?.boxes.length ?? 0;
@@ -111,7 +118,7 @@ describe("SolutionScreenModel common page interface", () => {
     );
 
     it("keeps operation-specific navigation compatible with common navigation", () => {
-        const model = new SolutionScreenModel(multiplicationProblem());
+        const model = new SolutionScreenModel(multiplicationProblem(), "multiplication", 5);
         model.nextMultiplicationPage();
         expect(model.getCurrentPage()).toEqual(model.getMultiplicationPage());
         model.nextPage();

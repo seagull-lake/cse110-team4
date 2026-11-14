@@ -26,8 +26,8 @@ describe("adventure map model", () => {
       { difficulty: 1, operandDigits: [1, 1] },
       { difficulty: 2, operandDigits: [2, 2] },
       { difficulty: 3, operandDigits: [3, 3] },
-      { difficulty: 4, operandDigits: [3, 3, 3] },
-      { difficulty: 5, operandDigits: [5, 5, 5] },
+      { difficulty: 4, operandDigits: [4, 4] },
+      { difficulty: 5, operandDigits: [5, 5] },
     ]);
   });
 

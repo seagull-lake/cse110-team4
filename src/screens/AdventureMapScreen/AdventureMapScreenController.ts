@@ -20,6 +20,7 @@ export class AdventureMapScreenController extends ScreenController {
       () => this.handleHomeClick(),
       difficulty => this.handleLevelClick(difficulty),
       () => this.handleStartClick(),
+      () => this.handleBackClick(),
     );
   }
 
@@ -46,6 +47,11 @@ export class AdventureMapScreenController extends ScreenController {
 
   private handleHomeClick(): void {
     this.screenSwitcher.switchToScreen({ type: "menu" });
+  }
+
+  /** Back to the topic selection screen. */
+  private handleBackClick(): void {
+    this.screenSwitcher.switchToScreen({ type: "maingame" });
   }
 
   getView(): AdventureMapScreenView { return this.view; }

@@ -6,6 +6,13 @@ import { ROW_HEIGHT } from "./MainProblemLayout.ts";
 import type { FieldLayout, HorizontalLine, ProblemLayout } from "./MainProblemLayout.ts";
 
 const BACK_BUTTON = { width: 150, height: 40 };
+/** The main button in the bottom-right corner: "Submit", then "Continue" or "Review Mistakes", in the same spot. */
+const PRIMARY_BUTTON = { width: 170, height: 48 };
+/** Same distance from the edges as the Home button has in the bottom-left. */
+const SCREEN_MARGIN = 30;
+const HOME_BUTTON_BOTTOM = STAGE_HEIGHT - 22; // the Home button is 40 high and starts at STAGE_HEIGHT - 62
+const PRIMARY_BUTTON_X = STAGE_WIDTH - SCREEN_MARGIN - PRIMARY_BUTTON.width;
+const PRIMARY_BUTTON_Y = HOME_BUTTON_BOTTOM - PRIMARY_BUTTON.height;
 const BOX_INSET = 4;
 const BOX_FILL = "#FFFFFF";
 const BOX_STROKE = "#27695B";
@@ -14,6 +21,8 @@ const ACTIVE_FILL = "#FFF1B8";
 const ACTIVE_STROKE = "#E0A100";
 /** The answer once it is correct */
 const CORRECT_FILL = "#B8E6C7";
+/** The "Correct!" message */
+const CORRECT_TEXT_COLOR = "#3f9a5b";
 
 /** The screen for one level: its title and its problem, written in columns like on paper. */
 export class MainProblemScreenView implements View {
@@ -71,17 +80,15 @@ export class MainProblemScreenView implements View {
     this.group.add(this.problemGroup);
     this.group.add(this.answerGroup);
 
+    // Centered right under the title (which ends around y = 135), above the problem (which starts at y = 180)
     this.feedback = new Konva.Text({
-      x: 120, y: STAGE_HEIGHT - 190, width: 560, height: 32, align: "center",
-      text: "", fontSize: 22, fontFamily: FONT_FAMILY, fill: TITLE_COLOR,
+      x: 0, y: 142, width: STAGE_WIDTH, height: 32, align: "center",
+      text: "", fontSize: 24, fontFamily: FONT_FAMILY, fill: CORRECT_TEXT_COLOR,
     });
     this.group.add(this.feedback);
-    this.submitButton = this.makeActionButton(
-      "Submit", 330, STAGE_HEIGHT - 145, onSubmitClick,
-    );
-    this.continueButton = this.makeActionButton(
-      "Continue", 490, STAGE_HEIGHT - 145, onContinueClick,
-    );
+    // Submit and Continue share the bottom-right corner: Continue replaces Submit on a correct answer
+    this.submitButton = this.makePrimaryButton("Submit", PRIMARY_BUTTON_X, PRIMARY_BUTTON_Y, onSubmitClick);
+    this.continueButton = this.makePrimaryButton("Continue", PRIMARY_BUTTON_X, PRIMARY_BUTTON_Y, onContinueClick);
     this.continueButton.visible(false);
     this.group.add(this.submitButton, this.continueButton);
 
@@ -122,6 +129,7 @@ export class MainProblemScreenView implements View {
 
     this.fields = [...layout.steps, layout.answer];
     this.feedback.text("");
+    this.submitButton.visible(true);
     this.continueButton.visible(false);
     this.showAnswer(this.fields.map(() => ""), 0);
   }
@@ -133,6 +141,7 @@ export class MainProblemScreenView implements View {
   showCorrectAnswer(): void {
     this.answerLocked = true;
     this.feedback.text("Correct!");
+    this.submitButton.visible(false);
     this.continueButton.visible(true);
     this.showAnswer(this.entries, this.active);
   }
@@ -181,13 +190,13 @@ export class MainProblemScreenView implements View {
     return new Konva.Line({ points: [x1, y, x2, y], stroke: TITLE_COLOR, strokeWidth, lineCap: "round" });
   }
 
-  private makeActionButton(label: string, x: number, y: number, onClick: () => void): Konva.Group {
+  private makePrimaryButton(label: string, x: number, y: number, onClick: () => void): Konva.Group {
     const button = new Konva.Group({ x, y });
     button.add(new Konva.Rect({
-      width: 140, height: 48, fill: BUTTON_COLOR, cornerRadius: 8,
+      ...PRIMARY_BUTTON, fill: BUTTON_COLOR, cornerRadius: 8,
     }));
     button.add(new Konva.Text({
-      width: 140, height: 48, text: label, fontSize: 20, fontFamily: FONT_FAMILY,
+      ...PRIMARY_BUTTON, text: label, fontSize: 20, fontFamily: FONT_FAMILY,
       fill: BUTTON_TEXT_COLOR, align: "center", verticalAlign: "middle",
     }));
     button.on("click", onClick);

@@ -18,7 +18,7 @@ export class MainGameScreenView implements View {
         this.group = new Konva.Group({ visible: false });
 
         this.group.add(new Konva.Text({
-            x: 0, y: 90, width: STAGE_WIDTH, align: "center", text: "Choose Your Adventure",
+            x: 0, y: 90, width: STAGE_WIDTH, align: "center", text: "Please Select a Topic",
             fontSize: 50, fontFamily: FONT_FAMILY, fill: TITLE_COLOR,
         }));
 

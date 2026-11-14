@@ -2,6 +2,7 @@ import type {
     SolvedMainGameProblem,
     AdditionColumn, SubtractionColumn, MultiplicationRow, DivisionBoxMethod,
 } from "../../problem-engine/MainGameProblemGenerator.ts";
+import type { LevelType } from "../../levels/levelConfig.ts";
 
 export type SolutionPage = {
     hasNext: boolean;
@@ -15,13 +16,21 @@ export type SolutionPage = {
 
 export class SolutionScreenModel{
     private readonly problem: SolvedMainGameProblem;
+    private readonly topic: LevelType;
+    private readonly difficulty: number;
 
     private stepIndex = 0;
     private columnIndex = 0;
     private divisionBoxIndex = 0;
     private multiplicationRowIndex = 0;
-    constructor(problem: SolvedMainGameProblem){
+    constructor(problem: SolvedMainGameProblem, topic: LevelType, difficulty: number){
         this.problem = problem;
+        this.topic = topic;
+        this.difficulty = difficulty;
+    }
+
+    getContext() {
+        return { problem: this.problem, topic: this.topic, difficulty: this.difficulty };
     }
 
     getOperand(){

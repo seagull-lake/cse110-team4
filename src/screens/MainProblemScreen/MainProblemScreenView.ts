@@ -2,10 +2,10 @@ import Konva from "konva";
 import type { View } from "../../types.ts";
 import { STAGE_WIDTH, STAGE_HEIGHT, FONT_FAMILY, TITLE_COLOR, BUTTON_COLOR, BUTTON_TEXT_COLOR } from "../../constants.ts";
 import { createHomeButton } from "../../components/HomeButton.ts";
+import { createBackToMapButton, createProblemBox, createProblemCell, createProblemLine } from "../../components/ProblemTemplate.ts";
 import { ROW_HEIGHT } from "./MainProblemLayout.ts";
-import type { FieldLayout, HorizontalLine, ProblemLayout } from "./MainProblemLayout.ts";
+import type { FieldLayout, ProblemLayout } from "./MainProblemLayout.ts";
 
-const BACK_BUTTON = { width: 150, height: 40 };
 /** The main button in the bottom-right corner: "Submit", then "Continue" or "Review Mistakes", in the same spot. */
 const PRIMARY_BUTTON = { width: 170, height: 48 };
 /** Same distance from the edges as the Home button has in the bottom-left. */
@@ -13,7 +13,6 @@ const SCREEN_MARGIN = 30;
 const HOME_BUTTON_BOTTOM = STAGE_HEIGHT - 22; // the Home button is 40 high and starts at STAGE_HEIGHT - 62
 const PRIMARY_BUTTON_X = STAGE_WIDTH - SCREEN_MARGIN - PRIMARY_BUTTON.width;
 const PRIMARY_BUTTON_Y = HOME_BUTTON_BOTTOM - PRIMARY_BUTTON.height;
-const BOX_INSET = 4;
 const BOX_FILL = "#FFFFFF";
 const BOX_STROKE = "#27695B";
 /** The field being typed in */
@@ -94,7 +93,7 @@ export class MainProblemScreenView implements View {
 
     // Shared Home button (bottom-left) and Back to map next to it
     this.group.add(createHomeButton(onHomeClick));
-    this.group.add(this.makeBackButton(onBackClick));
+    this.group.add(createBackToMapButton(onBackClick));
   }
 
   setTitle(title: string): void {
@@ -105,20 +104,16 @@ export class MainProblemScreenView implements View {
   setProblem(layout: ProblemLayout): void {
     this.problemGroup.destroyChildren();
     this.answerLocked = false;
-    const { width, height, fontSize } = layout.cellSize;
-    layout.cells.forEach(cell => this.problemGroup.add(new Konva.Text({
-      x: cell.x, y: cell.y, width, height, align: "center", verticalAlign: "middle",
-      text: cell.text, fontSize, fontFamily: FONT_FAMILY, fill: TITLE_COLOR,
-    })));
+    layout.cells.forEach(cell => this.problemGroup.add(createProblemCell(cell, layout.cellSize)));
 
     if (layout.kind === "column") {
-      this.problemGroup.add(this.makeLine(layout.line));
-      if (layout.secondLine) this.problemGroup.add(this.makeLine(layout.secondLine));
+      this.problemGroup.add(createProblemLine(layout.line));
+      if (layout.secondLine) this.problemGroup.add(createProblemLine(layout.secondLine));
       this.carried = [];
     } else {
       // Box method: one box per division step
       layout.boxes.forEach(box => this.problemGroup.add(new Konva.Rect({ ...box, stroke: TITLE_COLOR, strokeWidth: 3 })));
-      layout.lines.forEach(line => this.problemGroup.add(this.makeLine(line, 2)));
+      layout.lines.forEach(line => this.problemGroup.add(createProblemLine(line, 2)));
       const { right, y } = layout.answerLabel;
       this.problemGroup.add(new Konva.Text({
         x: right - 200, y, width: 200, height: ROW_HEIGHT, align: "right", verticalAlign: "middle",
@@ -155,13 +150,9 @@ export class MainProblemScreenView implements View {
       const isActive = index === active && !this.answerLocked;
       const isLockedAnswer = this.answerLocked && index === this.fields.length - 1;
       field.cellXs.forEach(x => {
-        const box = new Konva.Rect({
-          x: x + BOX_INSET, y: field.y + BOX_INSET,
-          width: field.size.width - BOX_INSET * 2, height: field.size.height - BOX_INSET * 2,
-          fill: isLockedAnswer ? CORRECT_FILL : isActive ? ACTIVE_FILL : BOX_FILL,
-          stroke: isActive ? ACTIVE_STROKE : BOX_STROKE,
-          strokeWidth: 2, cornerRadius: 6,
-        });
+        const box = createProblemBox(x, field,
+          isLockedAnswer ? CORRECT_FILL : isActive ? ACTIVE_FILL : BOX_FILL,
+          isActive ? ACTIVE_STROKE : BOX_STROKE);
         box.on("click tap", () => { if (!this.answerLocked) this.onFieldClick(index); });
         box.on("mouseenter", () => (document.body.style.cursor = "text"));
         box.on("mouseleave", () => (document.body.style.cursor = "default"));
@@ -186,10 +177,6 @@ export class MainProblemScreenView implements View {
     });
   }
 
-  private makeLine({ x1, x2, y }: HorizontalLine, strokeWidth = 3): Konva.Line {
-    return new Konva.Line({ points: [x1, y, x2, y], stroke: TITLE_COLOR, strokeWidth, lineCap: "round" });
-  }
-
   private makePrimaryButton(label: string, x: number, y: number, onClick: () => void): Konva.Group {
     const button = new Konva.Group({ x, y });
     button.add(new Konva.Rect({
@@ -197,19 +184,6 @@ export class MainProblemScreenView implements View {
     }));
     button.add(new Konva.Text({
       ...PRIMARY_BUTTON, text: label, fontSize: 20, fontFamily: FONT_FAMILY,
-      fill: BUTTON_TEXT_COLOR, align: "center", verticalAlign: "middle",
-    }));
-    button.on("click", onClick);
-    button.on("mouseenter", () => (document.body.style.cursor = "pointer"));
-    button.on("mouseleave", () => (document.body.style.cursor = "default"));
-    return button;
-  }
-
-  private makeBackButton(onClick: () => void): Konva.Group {
-    const button = new Konva.Group({ x: 140, y: STAGE_HEIGHT - 62 });
-    button.add(new Konva.Rect({ ...BACK_BUTTON, fill: BUTTON_COLOR, cornerRadius: 8 }));
-    button.add(new Konva.Text({
-      ...BACK_BUTTON, text: "Back to map", fontSize: 18, fontFamily: FONT_FAMILY,
       fill: BUTTON_TEXT_COLOR, align: "center", verticalAlign: "middle",
     }));
     button.on("click", onClick);

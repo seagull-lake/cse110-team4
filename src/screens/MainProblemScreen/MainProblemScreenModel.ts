@@ -82,6 +82,7 @@ export class MainProblemScreenModel {
   private readonly level: LevelDefinition;
   private readonly difficulty: number;
   private readonly problem: MainGameProblem;
+  private answerCorrect = false;
   private readonly fields: readonly AnswerField[];
   /** What the student typed in each field, e.g. "72"; filled from the right like a calculator. */
   private readonly entries: string[];
@@ -109,6 +110,15 @@ export class MainProblemScreenModel {
   getDifficulty(): number { return this.difficulty; }
   getProblem(): MainGameProblem { return this.problem; }
 
+  /** Returns true only when every entered answer character matches the generated answer. */
+  checkAnswer(digits: readonly string[]): boolean {
+    const expected = String(this.problem.answer);
+    this.answerCorrect = digits.length === expected.length &&
+      Array.from(expected, (digit, index) => digits[index] === digit).every(Boolean);
+    return this.answerCorrect;
+  }
+
+  canContinue(): boolean { return this.answerCorrect; }
   getFields(): readonly AnswerField[] { return this.fields; }
   getEntries(): readonly string[] { return [...this.entries]; }
   getActiveField(): number { return this.active; }

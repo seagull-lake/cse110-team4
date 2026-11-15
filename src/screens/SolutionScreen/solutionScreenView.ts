@@ -1,6 +1,8 @@
 import Konva from "konva";
 import type{AdditionColumn, SolutionStep, DivisionBoxMethod} from "../../problem-engine/MainGameProblemGenerator.ts";
 import { DivisionSolutionView } from "./DivisionSolutionView.ts";
+import { SubtractionSolutionView } from "./SubtractionSolutionView.ts";
+import type { SubtractionPage } from "./SolutionScreenModel.ts";
 
 
 interface SolutionViewData{
@@ -14,9 +16,11 @@ export class SolutionScreenView {
     private readonly group: Konva.Group;
     private readonly content: Konva.Group;
     private readonly divisionView: DivisionSolutionView;
+    private readonly subtractionView: SubtractionSolutionView;
 
     constructor(onNextStep: () => void) {
         this.divisionView = new DivisionSolutionView(onNextStep);
+        this.subtractionView = new SubtractionSolutionView(onNextStep);
 
         this.group = new Konva.Group({ visible: false });
         this.content = new Konva.Group();
@@ -33,6 +37,13 @@ export class SolutionScreenView {
         this.content.removeChildren();
         this.content.add(this.divisionView.getGroup());
         this.divisionView.render(division, visibleBoxCount);
+    }
+
+    // Keep the subtraction View alive while redrawing the revealed columns.
+    renderSubtraction(page: SubtractionPage): void {
+        this.content.removeChildren();
+        this.content.add(this.subtractionView.getGroup());
+        this.subtractionView.render(page);
     }
 
     show():void{

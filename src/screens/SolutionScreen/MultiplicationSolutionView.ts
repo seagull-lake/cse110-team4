@@ -7,6 +7,10 @@ import { getProblemLayout } from "../MainProblemScreen/MainProblemLayout.ts";
 import type { SolutionPage } from "./SolutionScreenModel.ts";
 
 const CALCULATION_OFFSET_X = -120;
+const FIELD_STROKE = "#27695B";
+const CORRECT_FILL = "#B8E6C7";
+const WORKING_ROW_STROKE_WIDTH = 4;
+const DIGIT_HIGHLIGHT_INSET = 4;
 
 /** Draws the multiplication solution on a Konva group. */
 export class MultiplicationSolutionView {
@@ -25,6 +29,8 @@ export class MultiplicationSolutionView {
         page: Extract<SolutionPage, { operation: "multiplication" }>, explanation: string): void {
         const layout = getProblemLayout("multiplication", problem);
         if (layout.kind !== "column") throw new Error("Expected a multiplication column layout.");
+        const shownRow = Math.max(0, page.visibleRows.length - 1);
+        const shownProduct = page.currentRow ?? page.visibleRows[shownRow];
         let productFields = layout.steps.filter(field => !field.carry);
         let secondLine = layout.secondLine;
         let answerField = layout.answer;
@@ -42,11 +48,11 @@ export class MultiplicationSolutionView {
         }));
         this.group.add(new Konva.Text({
             x: 0,
-            y: 75,
+            y: 90,
             width: STAGE_WIDTH,
             text: `Multiplication – Level ${level}`,
             fontFamily: FONT_FAMILY,
-            fontSize: 40,
+            fontSize: 50,
             fill: TITLE_COLOR,
             align: "center",
         }));
@@ -60,17 +66,39 @@ export class MultiplicationSolutionView {
                 align: "center", verticalAlign: "middle",
             }));
         });
+        const multiplierCell = layout.multiplierCells[shownRow];
+        if (multiplierCell) {
+            const side = Math.min(multiplierCell.width, multiplierCell.height) - DIGIT_HIGHLIGHT_INSET * 2;
+            calculation.add(new Konva.Rect({
+                x: multiplierCell.x + (multiplierCell.width - side) / 2,
+                y: multiplierCell.y + (multiplierCell.height - side) / 2,
+                width: side, height: side,
+                stroke: TITLE_COLOR, strokeWidth: 3, cornerRadius: 8, listening: false,
+            }));
+        }
         for (const line of [layout.line, secondLine]) {
             if (line) calculation.add(new Konva.Line({
                 points: [line.x1, line.y, line.x2, line.y], stroke: TITLE_COLOR, strokeWidth: 3,
             }));
         }
+        layout.steps.filter(field => field.carry && field.row === shownRow)
+            .forEach((field, index) => {
+                const carry = shownProduct?.columns[index]?.carryOut;
+                calculation.add(createNumberField(field, carry ? String(carry) : "", {
+                    fill: "#FFFFFF", stroke: FIELD_STROKE, strokeWidth: 2,
+                    textName: "carry-digit",
+                }));
+            });
         for (const [index, field] of [...productFields, answerField].entries()) {
             const row = page.visibleRows[index];
             const value = index === productFields.length ? page.finalAnswer : row?.partialProduct;
+            const isCurrentProduct = page.currentRow !== undefined && index === shownRow;
+            const isFinalAnswer = index === productFields.length;
             calculation.add(createNumberField(field, value === undefined ? "" : String(value), {
-                fill: "#FFFFFF", stroke: BUTTON_COLOR, strokeWidth: 2,
-                textName: index === productFields.length ? "final-answer" : "partial-product",
+                fill: isFinalAnswer && page.finalAnswer !== undefined ? CORRECT_FILL : "#FFFFFF",
+                stroke: FIELD_STROKE,
+                strokeWidth: isCurrentProduct ? WORKING_ROW_STROKE_WIDTH : 2,
+                textName: isFinalAnswer ? "final-answer" : "partial-product",
             }));
         }
         this.group.add(calculation);

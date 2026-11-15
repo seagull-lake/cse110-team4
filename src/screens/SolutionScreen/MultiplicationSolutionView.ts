@@ -30,7 +30,6 @@ export class MultiplicationSolutionView {
         const layout = getProblemLayout("multiplication", problem);
         if (layout.kind !== "column") throw new Error("Expected a multiplication column layout.");
         const shownRow = Math.max(0, page.visibleRows.length - 1);
-        const shownProduct = page.currentRow ?? page.visibleRows[shownRow];
         let productFields = layout.steps.filter(field => !field.carry);
         let secondLine = layout.secondLine;
         let answerField = layout.answer;
@@ -67,7 +66,7 @@ export class MultiplicationSolutionView {
             }));
         });
         const multiplierCell = layout.multiplierCells[shownRow];
-        if (multiplierCell) {
+        if (page.currentRow && multiplierCell) {
             const side = Math.min(multiplierCell.width, multiplierCell.height) - DIGIT_HIGHLIGHT_INSET * 2;
             calculation.add(new Konva.Rect({
                 x: multiplierCell.x + (multiplierCell.width - side) / 2,
@@ -81,14 +80,16 @@ export class MultiplicationSolutionView {
                 points: [line.x1, line.y, line.x2, line.y], stroke: TITLE_COLOR, strokeWidth: 3,
             }));
         }
-        layout.steps.filter(field => field.carry && field.row === shownRow)
-            .forEach((field, index) => {
-                const carry = shownProduct?.columns[index]?.carryOut;
-                calculation.add(createNumberField(field, carry ? String(carry) : "", {
-                    fill: "#FFFFFF", stroke: FIELD_STROKE, strokeWidth: 2,
-                    textName: "carry-digit",
-                }));
-            });
+        if (page.currentRow) {
+            layout.steps.filter(field => field.carry && field.row === shownRow)
+                .forEach((field, index) => {
+                    const carry = page.currentRow?.columns[index]?.carryOut;
+                    if (carry) calculation.add(createNumberField(field, String(carry), {
+                        fill: "#FFFFFF", stroke: FIELD_STROKE, strokeWidth: 2,
+                        textName: "carry-digit",
+                    }));
+                });
+        }
         for (const [index, field] of [...productFields, answerField].entries()) {
             const row = page.visibleRows[index];
             const value = index === productFields.length ? page.finalAnswer : row?.partialProduct;

@@ -25,7 +25,7 @@ export class SolutionScreenModel{
         return this.problem.solution.steps[this.stepIndex];
     }
 
-    getCurrentColumn(){
+    getCurrentColumn(){//this returns the current column that should be visible on the screen
         return this.getCurrentStep().additionColumns?.[this.columnIndex];
     }
 
@@ -35,20 +35,20 @@ export class SolutionScreenModel{
         return columns.slice(0, this.columnIndex + 1);
     }  
 
-    hasNextColumn(){
+    hasNextColumn(){//check if there is a next column to reveal
         const columns = this.getCurrentStep().additionColumns;
         if(!columns) return false;
         return this.columnIndex < columns.length - 1;
     }
 
-    nextColumn(){
+    nextColumn(){//reveal the next column, stopping at the last column
         if(this.hasNextColumn()){
             this.columnIndex++;
         }
     }
 
-    // Return the division data and how many boxes should be filled in.
-    getDivisionPage() {
+    
+    getDivisionPage() {//get the current division page from the model
         const division = this.getCurrentStep().divisionBoxMethod;
         if (!division) throw new Error("The current solution step is not division.");
         return {
@@ -62,6 +62,7 @@ export class SolutionScreenModel{
     nextDivisionPage(): void {
         if (this.getDivisionPage().hasNext) this.divisionBoxIndex++;
     }
+
     getMultiplicationPage() {
         const rows = this.getCurrentStep().multiplicationRows;
         if (!rows) {

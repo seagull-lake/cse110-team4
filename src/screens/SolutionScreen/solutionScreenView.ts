@@ -11,13 +11,12 @@ interface SolutionViewData{
 }
 
 export class SolutionScreenView {
-    private readonly group: Konva.Group;
-    private readonly content: Konva.Group;
-    private readonly divisionView: DivisionSolutionView;
+    private readonly group: Konva.Group;//the main group that contains all the content of the solution screen
+    private readonly content: Konva.Group;//the group that contains the content of the solution screen, which can be cleared and redrawn
+    private readonly divisionView: DivisionSolutionView;//the view that displays the division solution, which is kept alive while redrawing the revealed boxes
 
-    constructor(onNextStep: () => void) {
+    constructor(onNextStep: () => void) {//report button clicks to the Controller, which updates the Model
         this.divisionView = new DivisionSolutionView(onNextStep);
-
         this.group = new Konva.Group({ visible: false });
         this.content = new Konva.Group();
 

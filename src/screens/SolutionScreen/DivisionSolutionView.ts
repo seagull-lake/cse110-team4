@@ -7,7 +7,7 @@ const ROW_HEIGHT = 38;
 const BOX_PADDING = 8;
 
 export class DivisionSolutionView{
-    private readonly group = new Konva.Group();
+    private readonly group = new Konva.Group();//the main group that contains all the content of the division solution view
     private readonly onNextStep: () => void;
 
     // Report button clicks to the Controller, which updates the Model.
@@ -25,6 +25,7 @@ export class DivisionSolutionView{
             height: STAGE_HEIGHT,
             fill: "#FFF0CF",
         }));
+
         this.drawText(this.group, "Division Solution",
             0, 85, STAGE_WIDTH, 55, 40);//title above the diagram
 
@@ -37,7 +38,7 @@ export class DivisionSolutionView{
 
         //scale wide diagrams so every box remains inside the canvas.
         const scale = Math.min(1, (STAGE_WIDTH - 60) / diagramWidth);
-        const diagram = new Konva.Group({
+        const diagram = new Konva.Group({//the diagram is centered horizontally and positioned below the title
             x: (STAGE_WIDTH - diagramWidth * scale) / 2,
             y: 190,
             scaleX: scale,
@@ -45,18 +46,18 @@ export class DivisionSolutionView{
         });
         this.group.add(diagram);
 
-        const boxTop = ROW_HEIGHT + 4;
-        const amountY = boxTop + BOX_PADDING;
+        const boxTop = ROW_HEIGHT + 4; 
+        const amountY = boxTop + BOX_PADDING; 
         const productY = amountY + ROW_HEIGHT;
         const remainingY = productY + ROW_HEIGHT;
 
-        this.drawText(diagram, divisor, 0, amountY, divisorWidth - BOX_PADDING, ROW_HEIGHT, 26);
+        this.drawText(diagram, divisor, 0, amountY, divisorWidth - BOX_PADDING, ROW_HEIGHT, 26);//the divisor is drawn to the left of the first box
 
         for (let i = 0; i < division.boxes.length; i++) {
-            const box = division.boxes[i];
-            const x = divisorWidth + i * boxWidth;
-            const right = x + boxWidth - BOX_PADDING;
-            const productLength = String(box.amountSubtracted).length;
+            const box = division.boxes[i];//the box contains the starting amount, partial quotient, product, and remaining amount for this step of the division solution
+            const x = divisorWidth + i * boxWidth;//the left edge of the box, used to position the box and its contents
+            const right = x + boxWidth - BOX_PADDING;//the right edge of the box, used to align the digits inside it
+            const productLength = String(box.amountSubtracted).length;//the product is drawn with the same number of slots as its digits
 
             diagram.add(new Konva.Rect({
                 x, y: boxTop, width: boxWidth, height: boxHeight,
@@ -64,9 +65,9 @@ export class DivisionSolutionView{
             }));
 
             //the partial quotient sits above the box; product and remainder sit inside it.
-            this.drawEmptySlots(diagram, right, 0, String(box.partialQuotient).length);
-            this.drawEmptySlots(diagram, right, productY, productLength);
-            this.drawEmptySlots(diagram, right, remainingY, String(box.remainingAmount).length);
+            this.drawEmptySlots(diagram, right, 0, String(box.partialQuotient).length);//the partial quotient is drawn with the same number of slots as its digits
+            this.drawEmptySlots(diagram, right, productY, productLength);//the product is drawn with the same number of slots as its digits
+            this.drawEmptySlots(diagram, right, remainingY, String(box.remainingAmount).length);//the remaining amount is drawn with the same number of slots as its digits
 
             //keep earlier boxes filled and show the starting amount of each revealed box.
             if (i === 0 || i < count) {
@@ -106,7 +107,7 @@ export class DivisionSolutionView{
             width: 160, height: 40, fill: "#FFE28A", stroke: TITLE_COLOR,
             cornerRadius: 6, opacity: hasNext ? 1 : 0.5,
         }));
-        this.drawText(button, hasNext ? "Next Step →" : "Completed", 0, 0, 160, 40, 22);
+        this.drawText(button, hasNext ? "Next Step →" : "Completed", 0, 0, 160, 40, 22);//the button text changes when all boxes are revealed
         button.on("click tap", () => {
             if (hasNext) this.onNextStep();
         });
@@ -117,8 +118,8 @@ export class DivisionSolutionView{
     private drawEmptySlots(parent: Konva.Group, right: number, y: number, count: number): void {
         for (let i = 0; i < count; i++) {
             parent.add(new Konva.Rect({
-                x: right - (count - i) * CELL_WIDTH + 4,
-                y: y + 4,
+                x: right - (count - i) * CELL_WIDTH + 4,//the left edge of the slot, aligned with the right edge of the box
+                y: y + 4,//the top edge of the slot, aligned with the top edge of the box
                 width: CELL_WIDTH - 8,
                 height: ROW_HEIGHT - 8,
                 fill: "white",

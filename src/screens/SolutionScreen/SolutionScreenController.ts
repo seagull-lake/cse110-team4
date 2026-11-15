@@ -10,32 +10,32 @@ export class SolutionScreenController extends ScreenController{
 
     constructor() {
         super();
-        this.view = new SolutionScreenView(() => {
-        this.handleNextStep();
+        this.view = new SolutionScreenView(() => {//report button clicks to the Controller, which updates the Model
+          this.handleNextStep();
         });
     }
-    setProblem(problem: SolvedMainGameProblem): void {
+    setProblem(problem: SolvedMainGameProblem): void {//initialize the model with the solved problem and update the view
         this.model = new SolutionScreenModel(problem);
         this.updateView();
     }
-    private handleNextStep(): void {
-        if (!this.model) return;
+    private handleNextStep(): void {//reveal the next column or division box in the solution
+        if (!this.model) return;//if the model is not initialized, do nothing
         if (this.model.getCurrentStep().operation === "division") {
-            this.model.nextDivisionPage();
+            this.model.nextDivisionPage();//reveal the next box in the division solution
         } else {
             this.model.nextColumn();
         }
-        this.updateView();
+        this.updateView();//update the view after user click next step button
     }
 
   private updateView(): void {
     if (!this.model) return;
     if (this.model.getCurrentStep().operation === "division") {
-      const page = this.model.getDivisionPage();
-      this.view.renderDivision(page.division, page.visibleBoxCount);
+      const page = this.model.getDivisionPage();//get the current division page from the model
+      this.view.renderDivision(page.division, page.visibleBoxCount);//render the division page in the view
       return;
     }
-    this.view.render({
+    this.view.render({//render the current step in the view
       step: this.model.getCurrentStep(),
       currentColumn: this.model.getCurrentColumn(),
       visibleColumns: this.model.getVisibleColumns(),

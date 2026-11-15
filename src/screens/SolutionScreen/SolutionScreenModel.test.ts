@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MainGameProblemGenerator } from "../../problem-engine/MainGameProblemGenerator.ts";
-import { SolutionScreenModel } from "./SolutionScreenModel.ts";
+import { SolutionScreenModel, explainSubtractionColumn } from "./SolutionScreenModel.ts";
 
 function multiplicationProblem() {
     const randomValues = [0.2972, 0.6234];
@@ -49,5 +49,88 @@ describe("SolutionScreenModel multiplication rows", () => {
 
         expect(() => new SolutionScreenModel(addition).getMultiplicationPage())
             .toThrow("not multiplication");
+    });
+});
+
+/** A solved subtraction problem with these exact numbers, made by the real generator. */
+function subtractionProblem(left: number, right: number) {
+    // The generator picks each operand as min + floor(random * (max - min + 1))
+    const randomValues = [left, right].map(operand => {
+        const minimum = 10 ** (String(operand).length - 1);
+        return (operand - minimum + 0.5) / (minimum * 9);
+    });
+    return new MainGameProblemGenerator(() => randomValues.shift()!).generate({
+        operation: "subtraction",
+        operandDigits: [String(left).length, String(right).length],
+    });
+}
+
+describe("SolutionScreenModel subtraction columns", () => {
+    it("starts with only the ones column revealed", () => {
+        const model = new SolutionScreenModel(subtractionProblem(604, 278));
+
+        expect(model.getOperand()).toEqual([604, 278]);
+        expect(model.getSubtractionPage()).toMatchObject({
+            top: 604, bottom: 278, isNegative: false, visibleColumnCount: 1, hasNext: true, finalAnswer: undefined,
+        });
+        expect(model.getSubtractionPage().currentColumn).toMatchObject({ leftDigit: 4, rightDigit: 8, borrowOut: 1, resultDigit: 6 });
+    });
+
+    it("reveals one more column on every next step and stops at the last one", () => {
+        const model = new SolutionScreenModel(subtractionProblem(604, 278));
+
+        model.nextSubtractionPage();
+        expect(model.getSubtractionPage().visibleColumnCount).toBe(2);
+        expect(model.getSubtractionPage().currentColumn).toMatchObject({ borrowIn: 1, borrowOut: 1, resultDigit: 2 });
+
+        model.nextSubtractionPage();
+        model.nextSubtractionPage();
+        expect(model.getSubtractionPage()).toMatchObject({ visibleColumnCount: 3, hasNext: false, finalAnswer: 326 });
+        expect(model.getSubtractionPage().columns.map(column => column.resultDigit)).toEqual([6, 2, 3]);
+    });
+
+    it("explains larger − smaller for a negative answer and keeps the minus in the answer", () => {
+        const model = new SolutionScreenModel(subtractionProblem(472, 546));
+
+        expect(model.getSubtractionPage()).toMatchObject({ top: 546, bottom: 472, isNegative: true });
+        model.nextSubtractionPage();
+        model.nextSubtractionPage();
+        expect(model.getSubtractionPage().finalAnswer).toBe(-74);
+    });
+
+    it("has a column for every digit, even when the answer is shorter", () => {
+        const model = new SolutionScreenModel(subtractionProblem(1000, 999));
+
+        expect(model.getSubtractionPage().columns.map(column => column.resultDigit)).toEqual([1, 0, 0, 0]);
+    });
+
+    it("rejects subtraction navigation for another operation", () => {
+        expect(() => new SolutionScreenModel(multiplicationProblem()).getSubtractionPage()).toThrow("not subtraction");
+    });
+});
+
+describe("explaining a subtraction column", () => {
+    const column = (leftDigit: number, rightDigit: number, borrowIn: number, borrowOut: number) => {
+        const total = leftDigit - rightDigit - borrowIn + borrowOut * 10;
+        return { placeValue: 1, leftDigit, rightDigit, borrowIn, borrowOut, total, resultDigit: total };
+    };
+
+    it("just subtracts when nothing is borrowed", () => {
+        expect(explainSubtractionColumn(column(9, 3, 0, 0), 0)).toBe("Ones: 9 − 3 = 6");
+    });
+
+    it("borrows from the next column when the top digit is smaller", () => {
+        expect(explainSubtractionColumn(column(4, 8, 0, 1), 0))
+            .toBe("Ones: 4 is smaller than 8, so borrow 1 from the tens. 14 − 8 = 6");
+    });
+
+    it("takes off the 1 that was lent to the column before", () => {
+        expect(explainSubtractionColumn(column(6, 2, 1, 0), 2))
+            .toBe("Hundreds (lent 1 to the tens): 6 − 1 − 2 = 3");
+    });
+
+    it("can lend and borrow in the same column", () => {
+        expect(explainSubtractionColumn(column(0, 7, 1, 1), 1))
+            .toBe("Tens (lent 1 to the ones): 0 − 1 is smaller than 7, so borrow 1 from the hundreds. 10 − 1 − 7 = 2");
     });
 });

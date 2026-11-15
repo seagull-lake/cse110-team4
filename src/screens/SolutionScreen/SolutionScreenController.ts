@@ -41,7 +41,7 @@ export class SolutionScreenController extends ScreenController{
             this.model.nextAdditionPage();
         }
         else if (operation === "subtraction") {
-            //this.model.nextSubtractionPage();
+            this.model.nextSubtractionPage();
         }
         else {
             this.model.nextColumn();
@@ -69,7 +69,8 @@ export class SolutionScreenController extends ScreenController{
     }
 
     if (operation === "subtraction") {
-      //
+      this.view.renderSubtraction(this.model.getSubtractionPage());
+      return;
     }
 
     this.view.render({

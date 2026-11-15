@@ -2,29 +2,48 @@ import type{ SolvedMainGameProblem } from "../../problem-engine/MainGameProblemG
 import  {SolutionScreenModel} from "./SolutionScreenModel.ts";
 import  {SolutionScreenView} from "./solutionScreenView.ts";
 import { ScreenController } from "../../types.ts";
-
+import type { ScreenSwitcher } from "../../types.ts";
+import type { LevelType } from "../../levels/levelConfig.ts";
 
 export class SolutionScreenController extends ScreenController{
     private model: SolutionScreenModel | null = null;
     private readonly view: SolutionScreenView;
+    private readonly screenSwitcher: ScreenSwitcher;
+    private topic: LevelType = "addition";
+    private difficulty = 1;
 
-    constructor() {
+  constructor(screenSwitcher: ScreenSwitcher) {
         super();
-        this.view = new SolutionScreenView(() => {
-        this.handleNextStep();
-        });
+        this.screenSwitcher = screenSwitcher;
+        this.view = new SolutionScreenView(
+          () => this.handleNextStep(),
+          () => this.screenSwitcher.switchToScreen({ type: "menu" }),                           
+          () => this.screenSwitcher.switchToScreen({ type: "adventuremap", topic: this.topic }), 
+        );
     }
-    setProblem(problem: SolvedMainGameProblem): void {
+  setProblem(problem: SolvedMainGameProblem, topic: LevelType, difficulty: number): void {
         this.model = new SolutionScreenModel(problem);
+        this.topic = topic;
+        this.difficulty = difficulty;
         this.updateView();
     }
+
     private handleNextStep(): void {
         if (!this.model) return;
-        if (this.model.getCurrentStep().operation === "division") {
+        const operation = this.model.getCurrentStep().operation;
+        if (operation === "division") {
             this.model.nextDivisionPage();
-        } else if (this.model.getCurrentStep().subtractionColumns) {
+        } 
+        else if (operation === "multiplication") {
+            //this.model.nextMultiplicationPage();
+        }
+        else if (operation === "addition") {
+            this.model.nextAdditionPage();
+        }
+        else if (operation === "subtraction") {
             this.model.nextSubtractionPage();
-        } else {
+        }
+        else {
             this.model.nextColumn();
         }
         this.updateView();
@@ -32,15 +51,28 @@ export class SolutionScreenController extends ScreenController{
 
   private updateView(): void {
     if (!this.model) return;
-    if (this.model.getCurrentStep().operation === "division") {
+    const operation = this.model.getCurrentStep().operation;
+    if (operation === "division") {
       const page = this.model.getDivisionPage();
       this.view.renderDivision(page.division, page.visibleBoxCount);
       return;
     }
-    if (this.model.getCurrentStep().subtractionColumns) {
+
+    if (operation === "multiplication") {
+      //
+    }
+
+    if (operation === "addition") {
+      const page = this.model.getAdditionPage();
+      this.view.renderAddition(page.step, page.pageIndex, this.difficulty);
+      return;
+    }
+
+    if (operation === "subtraction") {
       this.view.renderSubtraction(this.model.getSubtractionPage());
       return;
     }
+
     this.view.render({
       step: this.model.getCurrentStep(),
       currentColumn: this.model.getCurrentColumn(),

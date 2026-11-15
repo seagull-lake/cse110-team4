@@ -49,7 +49,9 @@ export class SolutionScreenModel{
     private columnIndex = 0;
     private divisionBoxIndex = 0;
     private multiplicationRowIndex = 0;
+    private additionPageIndex = 0;
     private subtractionColumnIndex = 0;
+
     constructor(problem: SolvedMainGameProblem){
         this.problem = problem;
     }
@@ -123,6 +125,24 @@ export class SolutionScreenModel{
         }
     }
 
+    // Return the addition data and how many columns should be filled in.
+    // Which page to draw, and whether "Next Step" can go further.
+    getAdditionPage() {
+        const step = this.getCurrentStep();
+        const columns = step.additionColumns;
+        if (!columns) throw new Error("The current solution step is not addition.");
+        return {
+            step,                                               // the view reads the digits from this
+            pageIndex: this.additionPageIndex,
+            hasNext: this.additionPageIndex < columns.length,   // false only on the Full Solution page
+        };
+    }
+
+    // Move to the next page, stopping at the Full Solution page.
+    nextAdditionPage(): void {
+        if (this.getAdditionPage().hasNext) this.additionPageIndex++;
+    }
+    
     // Return the subtraction columns revealed so far, one more on every Next Step.
     getSubtractionPage(): SubtractionPage {
         const step = this.getCurrentStep();

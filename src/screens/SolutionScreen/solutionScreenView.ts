@@ -1,6 +1,7 @@
 import Konva from "konva";
 import type{AdditionColumn, SolutionStep, DivisionBoxMethod} from "../../problem-engine/MainGameProblemGenerator.ts";
 import { DivisionSolutionView } from "./DivisionSolutionView.ts";
+import { AdditionSolutionView } from "./AdditionSolutionView.ts";
 import { SubtractionSolutionView } from "./SubtractionSolutionView.ts";
 import type { SubtractionPage } from "./SolutionScreenModel.ts";
 
@@ -16,10 +17,12 @@ export class SolutionScreenView {
     private readonly group: Konva.Group;
     private readonly content: Konva.Group;
     private readonly divisionView: DivisionSolutionView;
+    private readonly additionView: AdditionSolutionView;
     private readonly subtractionView: SubtractionSolutionView;
 
-    constructor(onNextStep: () => void) {
+    constructor(onNextStep: () => void, onHome: () => void = () => { }, onBackToMap: () => void = () => { }) {
         this.divisionView = new DivisionSolutionView(onNextStep);
+        this.additionView = new AdditionSolutionView(onNextStep, onHome, onBackToMap);
         this.subtractionView = new SubtractionSolutionView(onNextStep);
 
         this.group = new Konva.Group({ visible: false });
@@ -39,6 +42,13 @@ export class SolutionScreenView {
         this.divisionView.render(division, visibleBoxCount);
     }
 
+    // Same idea as renderDivision: keep the addition view alive and redraw its page.
+    renderAddition(step: SolutionStep, pageIndex: number, level?: number): void {
+        this.content.removeChildren();
+        this.content.add(this.additionView.getGroup());
+        this.additionView.render(step, pageIndex, level);
+    }
+  
     // Keep the subtraction View alive while redrawing the revealed columns.
     renderSubtraction(page: SubtractionPage): void {
         this.content.removeChildren();

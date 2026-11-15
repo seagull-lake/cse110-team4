@@ -11,6 +11,7 @@ const view = vi.hoisted(() => ({
   onBackClick: () => {},
   onSubmitClick: () => {},
   onContinueClick: () => {},
+  onTryAgainClick: () => {},
   onKey: (_key: string) => {},
   onFieldClick: (_index: number) => {},
   /** What was typed in each field, and the field being typed in */
@@ -32,6 +33,7 @@ vi.mock("./MainProblemScreenView.ts", () => ({
       onBackClick: () => void,
       onSubmitClick: () => void,
       onContinueClick: () => void,
+      onTryAgainClick: () => void,
       onKey: (key: string) => void,
       onFieldClick: (index: number) => void,
     ) {
@@ -39,6 +41,7 @@ vi.mock("./MainProblemScreenView.ts", () => ({
       view.onBackClick = onBackClick;
       view.onSubmitClick = onSubmitClick;
       view.onContinueClick = onContinueClick;
+      view.onTryAgainClick = onTryAgainClick;
       view.onKey = onKey;
       view.onFieldClick = onFieldClick;
     }
@@ -46,6 +49,10 @@ vi.mock("./MainProblemScreenView.ts", () => ({
       view.entries = entries;
       view.active = active;
       view.answer = entries.at(-1) ?? "";
+      view.enteredAnswer = Array.from(
+        { length: view.layout?.answer.cellXs.length ?? 0 },
+        (_, index) => Array.from(view.answer)[index] ?? "",
+      );
     }
     setTitle(title: string) { view.title = title; }
     setProblem(layout: ProblemLayout) {
@@ -55,6 +62,9 @@ vi.mock("./MainProblemScreenView.ts", () => ({
     }
     getEnteredAnswer() { return view.enteredAnswer; }
     showCorrectAnswer() { view.correctAnswerShown = true; }
+    resetForRetry() {
+      view.correctAnswerShown = false;
+    }
     show() { view.visible = true; }
     hide() { view.visible = false; }
   },
@@ -232,7 +242,7 @@ describe("main problem screen controller", () => {
   });
 
   it.each(["addition", "subtraction", "multiplication", "division"] as const)(
-    "passes the same solved %s problem to the solution screen on a wrong answer", topic => {
+    "keeps the existing solution flow after an incorrect %s answer", topic => {
       const problem = new MainGameProblemGenerator(() => 0.5).generate({ operation: topic, operandDigits: [2, 1] });
       const generate = vi.fn(() => problem);
       const { controller, screens } = setup({ generate });
@@ -255,29 +265,33 @@ describe("main problem screen controller", () => {
       expect(route.problem).toBe(problem);
       expect(route.problem.solution).toBe(problem.solution);
       expect(generate).toHaveBeenCalledTimes(1);
-      view.onContinueClick();
+      view.onTryAgainClick();
+      expect(view.enteredAnswer).toEqual(digits.map(() => "0"));
       expect(screens).toHaveLength(1);
     },
   );
 
-  it("only shows correct feedback and continues after a fully correct submission", () => {
+  it("offers Try Again and Continue after a correct submission", () => {
     const problem = new MainGameProblemGenerator(() => 0.5).generate({ operation: "addition", operandDigits: [2, 1] });
-    const { controller, screens } = setup({ generate: () => problem });
+    const generate = vi.fn(() => problem);
+    const { controller, screens } = setup({ generate });
     controller.setLevel("addition", 1);
-    view.enteredAnswer = Array.from(String(problem.answer), () => "0");
-    view.onSubmitClick();
-    expect(view.correctAnswerShown).toBe(false);
-    expect(screens).toEqual([{ type: "solution", problem, topic: "addition", difficulty: 1 }]);
-    screens.length = 0;
-
-    view.onContinueClick();
-    expect(screens).toEqual([]);
-
     view.enteredAnswer = Array.from(String(problem.answer));
     view.onSubmitClick();
     expect(view.correctAnswerShown).toBe(true);
     expect(screens).toEqual([]);
+
+    view.onTryAgainClick();
+    expect(view.correctAnswerShown).toBe(false);
+    expect(view.enteredAnswer).toEqual(Array(String(problem.answer).length).fill(""));
+    expect(screens).toEqual([]);
+    expect(generate).toHaveBeenCalledTimes(1);
+
+    view.enteredAnswer = Array.from(String(problem.answer));
+    view.onSubmitClick();
+    expect(view.correctAnswerShown).toBe(true);
     view.onContinueClick();
     expect(screens).toEqual([{ type: "adventuremap", topic: "addition" }]);
+    expect(generate).toHaveBeenCalledTimes(1);
   });
 });

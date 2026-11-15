@@ -35,7 +35,7 @@ class App implements ScreenSwitcher {
     this.multidivController = new MultiplicationDivisionScreenController(this);
     this.adventureMapController = new AdventureMapScreenController(this);
     this.mainProblemController = new MainProblemScreenController(this);
-    this.solutionController = new SolutionScreenController();
+    this.solutionController = new SolutionScreenController(this);
 
     this.layer.add(this.menuController.getView().getGroup());
     this.layer.add(this.fractiongameController.getView().getGroup());
@@ -79,7 +79,7 @@ class App implements ScreenSwitcher {
         break;
       case "multidivgame": this.multidivController.show(); break;
       case "solution":
-        this.solutionController.setProblem(screen.problem);
+        this.solutionController.setProblem(screen.problem, screen.topic, screen.difficulty);
         this.solutionController.show();
         break;
       case "fractiongame": this.fractiongameController.show(); break;

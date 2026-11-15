@@ -1,7 +1,7 @@
 import Konva from "konva";
 import type{AdditionColumn, SolutionStep, DivisionBoxMethod} from "../../problem-engine/MainGameProblemGenerator.ts";
 import { DivisionSolutionView } from "./DivisionSolutionView.ts";
-
+import { AdditionSolutionView } from "./AdditionSolutionView.ts";
 
 interface SolutionViewData{
     step: SolutionStep;
@@ -14,9 +14,11 @@ export class SolutionScreenView {
     private readonly group: Konva.Group;
     private readonly content: Konva.Group;
     private readonly divisionView: DivisionSolutionView;
+    private readonly additionView: AdditionSolutionView;
 
-    constructor(onNextStep: () => void) {
+    constructor(onNextStep: () => void, onHome: () => void = () => { }, onBackToMap: () => void = () => { }) {
         this.divisionView = new DivisionSolutionView(onNextStep);
+        this.additionView = new AdditionSolutionView(onNextStep, onHome, onBackToMap);
 
         this.group = new Konva.Group({ visible: false });
         this.content = new Konva.Group();
@@ -33,6 +35,13 @@ export class SolutionScreenView {
         this.content.removeChildren();
         this.content.add(this.divisionView.getGroup());
         this.divisionView.render(division, visibleBoxCount);
+    }
+
+    // Same idea as renderDivision: keep the addition view alive and redraw its page.
+    renderAddition(step: SolutionStep, pageIndex: number, level?: number): void {
+        this.content.removeChildren();
+        this.content.add(this.additionView.getGroup());
+        this.additionView.render(step, pageIndex, level);
     }
 
     show():void{

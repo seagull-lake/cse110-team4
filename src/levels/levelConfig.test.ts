@@ -18,10 +18,15 @@ describe("problemDifficultyConfig", () => {
     expect(new Set(levels.map(digits => digits.join(","))).size).toBe(MAX_DIFFICULTY);
   });
 
+  it.each(operations)("uses exactly two operands at every %s level", operation => {
+    for (const digits of levelsFor(operation)) {
+      expect(digits).toHaveLength(2);
+    }
+  });
+
   it.each(operations)("reaches 5-digit numbers at the top %s level", operation => {
     expect(Math.max(...levelsFor(operation)[MAX_DIFFICULTY - 1])).toBe(5);
   });
-
 });
 
 describe("operation level definitions", () => {

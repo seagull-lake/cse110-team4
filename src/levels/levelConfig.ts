@@ -24,12 +24,13 @@ export interface ProblemDifficultyConfig {
 
 // Main-game difficulty per operation. Each array is one problem: one entry per operand,
 // each number is that operand's digit count. For division it is [dividend, divisor].
+// Every main-game level has exactly two operands, which is what the problem screen shows.
 export const problemDifficultyConfig: ProblemDifficultyConfig = {
   mainGame: {
-    addition:       { 1: [1, 1], 2: [2, 2], 3: [3, 3], 4: [3, 3, 3], 5: [5, 5, 5] },
-    subtraction:    { 1: [2, 1], 2: [3, 2], 3: [3, 3], 4: [4, 4],    5: [5, 4, 4] },
-    multiplication: { 1: [1, 1], 2: [2, 1], 3: [2, 2], 4: [3, 2],    5: [5, 3] },
-    division:       { 1: [2, 1], 2: [3, 1], 3: [3, 2], 4: [4, 2],    5: [5, 3] },
+    addition:       { 1: [1, 1], 2: [2, 2], 3: [3, 3], 4: [4, 4], 5: [5, 5] },
+    subtraction:    { 1: [2, 1], 2: [3, 2], 3: [3, 3], 4: [4, 4], 5: [5, 5] },
+    multiplication: { 1: [1, 1], 2: [2, 1], 3: [2, 2], 4: [3, 2], 5: [5, 3] },
+    division:       { 1: [2, 1], 2: [3, 1], 3: [3, 2], 4: [4, 2], 5: [5, 3] },
   },
   miniGameOne: { 1: [1, 1] },
 };

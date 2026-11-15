@@ -66,7 +66,7 @@ describe("MainGameScreenModel topics", () => {
 
     it.each([
         [1, [1, 1], 2], [2, [10, 10], 20], [3, [100, 100], 200],
-        [4, [100, 100, 100], 300], [5, [10000, 10000, 10000], 30000],
+        [4, [1000, 1000], 2000], [5, [10000, 10000], 20000],
     ])("uses the configured addition operands at difficulty %i", (difficulty, operands, answer) => {
         const model = new MainGameScreenModel();
         model.selectTopic("addition");

@@ -184,8 +184,6 @@ describe("card height", () => {
         expect(level.card.height).toBe(getCardHeight(level.card.lines.length));
       }
     }
-    const addition = getMapLayout(mapData("addition"));
-    expect(addition[2].card.height).toBeLessThan(addition[3].card.height); // 2 operands vs 3
   });
 });
 

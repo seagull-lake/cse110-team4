@@ -1,5 +1,6 @@
 import type { Group } from "konva/lib/Group";
 import type { LevelType } from "./levels/levelConfig.ts";
+import type { SolvedMainGameProblem } from "./problem-engine/MainGameProblemGenerator.ts";
 
 export interface View {
     getGroup(): Group;
@@ -13,6 +14,7 @@ export type Screen =
     { type: "maingame" } |
     { type: "adventuremap"; topic: LevelType } |
     { type: "mainproblem"; topic: LevelType; difficulty: number } |
+    { type: "solution"; problem: SolvedMainGameProblem; topic: LevelType; difficulty: number } |
     { type: "fractiongame" } |
     { type: "multidivgame"};
 

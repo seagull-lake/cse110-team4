@@ -22,6 +22,8 @@ export class SolutionScreenController extends ScreenController{
         if (!this.model) return;
         if (this.model.getCurrentStep().operation === "division") {
             this.model.nextDivisionPage();
+        } else if (this.model.getCurrentStep().subtractionColumns) {
+            this.model.nextSubtractionPage();
         } else {
             this.model.nextColumn();
         }
@@ -33,6 +35,10 @@ export class SolutionScreenController extends ScreenController{
     if (this.model.getCurrentStep().operation === "division") {
       const page = this.model.getDivisionPage();
       this.view.renderDivision(page.division, page.visibleBoxCount);
+      return;
+    }
+    if (this.model.getCurrentStep().subtractionColumns) {
+      this.view.renderSubtraction(this.model.getSubtractionPage());
       return;
     }
     this.view.render({

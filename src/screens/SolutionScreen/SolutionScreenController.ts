@@ -10,6 +10,7 @@ export class SolutionScreenController extends ScreenController {
     private readonly view: SolutionScreenView;
     private readonly screenSwitcher: ScreenSwitcher;
 
+    /** Connect solution controls to page and screen navigation. */
     constructor(screenSwitcher: ScreenSwitcher) {
         super();
         this.screenSwitcher = screenSwitcher;
@@ -24,17 +25,20 @@ export class SolutionScreenController extends ScreenController {
         );
     }
 
+    /** Open the supplied problem at its first solution page. */
     setProblem(problem: SolvedMainGameProblem, topic: LevelType, difficulty: number): void {
         this.model = new SolutionScreenModel(problem, topic, difficulty);
         this.updateView();
     }
 
+    /** Advance one page through the model, then redraw. */
     private handleNextStep(): void {
         if (!this.model) return;
         this.model.nextPage();
         this.updateView();
     }
 
+    /** Render the current page using its operation-specific view. */
     private updateView(): void {
         if (!this.model) return;
         const page = this.model.getCurrentPage();
@@ -65,6 +69,7 @@ export class SolutionScreenController extends ScreenController {
         }
     }
 
+    /** Expose the reusable solution view to the application. */
     getView(): SolutionScreenView { return this.view; }
 }
 

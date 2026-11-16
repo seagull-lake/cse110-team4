@@ -59,6 +59,7 @@ export class MultiplicationSolutionView {
 
         const calculation = new Konva.Group({ x: CALCULATION_OFFSET_X });
         const { width, height, fontSize } = layout.cellSize;
+        // Draw the operands and multiplication symbol.
         layout.cells.forEach(cell => {
             calculation.add(new Konva.Text({
                 x: cell.x,
@@ -87,12 +88,14 @@ export class MultiplicationSolutionView {
                 listening: false,
             }));
         }
+        // Draw the calculation separators.
         for (const line of [layout.line, secondLine]) {
             if (line) calculation.add(new Konva.Line({
                 points: [line.x1, line.y, line.x2, line.y], stroke: TITLE_COLOR, strokeWidth: 3,
             }));
         }
         if (page.currentRow) {
+            // Show nonzero carries for the active row.
             layout.steps.filter(field => field.carry && field.row === shownRow)
                 .forEach((field, index) => {
                     const carry = page.currentRow?.columns[index]?.carryOut;
@@ -196,6 +199,7 @@ function createNumberField(
 ): Konva.Group {
     const group = new Konva.Group();
     const firstFilled = field.cellXs.length - value.length;
+    // Align digits to the rightmost cells.
     field.cellXs.forEach((x, index) => {
         const box = new Konva.Rect({
             x: x + 4,

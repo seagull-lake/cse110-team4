@@ -1,7 +1,6 @@
 import Konva from "konva";
 import type { DivisionBoxMethod } from "../../problem-engine/MainGameProblemGenerator.ts";
-import { FONT_FAMILY, STAGE_WIDTH, STAGE_HEIGHT, TITLE_COLOR, BUTTON_COLOR, BUTTON_TEXT_COLOR } from "../../constants.ts";
-import { createHomeButton } from "../../components/HomeButton.ts";
+import { FONT_FAMILY, STAGE_WIDTH, STAGE_HEIGHT, TITLE_COLOR } from "../../constants.ts";
 
 const CELL_WIDTH = 30;
 const ROW_HEIGHT = 38;
@@ -10,15 +9,10 @@ const BOX_PADDING = 8;
 export class DivisionSolutionView{
     private readonly group = new Konva.Group();//the entire diagram is drawn inside this group, which is returned to the parent screen for display
     private readonly onNextStep: () => void;
-    private readonly onHome: () => void;
-    private readonly onBackToMap: () => void;
 
     // Report button clicks to the Controller, which updates the Model.
-    constructor(onNextStep: () => void = () => {},
-        onHome: () => void = () => {}, onBackToMap: () => void = () => {}) {
+    constructor(onNextStep: () => void = () => {}) {
         this.onNextStep = onNextStep;
-        this.onHome = onHome;
-        this.onBackToMap = onBackToMap;
     }
 
     // Draw all boxes and fill only those revealed by the Model.
@@ -100,14 +94,9 @@ export class DivisionSolutionView{
             this.drawSlotNumber(diagram, answerRight, answerY, division.quotient);
         }
         this.drawNextButton(count < division.boxes.length);//draw next step if there are more boxes to reveal, otherwise show a disabled button with "Completed"
-        this.group.add(createHomeButton(this.onHome));
-        this.drawBackButton();
         this.group.getLayer()?.batchDraw();//redraw the layer to reflect the changes
     }
 
-    // Return to the current operation's map through the Controller callback.
-    private drawBackButton(): void {
-    }
     // Request the next box, disabling the button when all boxes are visible.
     private drawNextButton(hasNext: boolean): void {
         const button = new Konva.Group({ x: STAGE_WIDTH - 190, y: STAGE_HEIGHT - 62 });

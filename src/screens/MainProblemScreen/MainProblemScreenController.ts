@@ -95,9 +95,7 @@ export class MainProblemScreenController extends ScreenController {
 
   private handleTryAgainClick(): void {
     if (!this.model?.canContinue()) return;
-    this.model.clearAnswer();
-    this.view.resetForRetry();
-    this.showAnswer();
+    this.setLevel(this.model.getTopic(), this.model.getDifficulty());
   }
 
   private handleContinueClick(): void {

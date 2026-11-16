@@ -1,18 +1,24 @@
 import Konva from "konva";
 import type { DivisionBoxMethod } from "../../problem-engine/MainGameProblemGenerator.ts";
-import { FONT_FAMILY, STAGE_WIDTH, STAGE_HEIGHT, TITLE_COLOR } from "../../constants.ts";
+import { FONT_FAMILY, STAGE_WIDTH, STAGE_HEIGHT, TITLE_COLOR, BUTTON_COLOR, BUTTON_TEXT_COLOR } from "../../constants.ts";
+import { createHomeButton } from "../../components/HomeButton.ts";
 
 const CELL_WIDTH = 30;
 const ROW_HEIGHT = 38;
 const BOX_PADDING = 8;
 
 export class DivisionSolutionView{
-    private readonly group = new Konva.Group();
+    private readonly group = new Konva.Group();//the entire diagram is drawn inside this group, which is returned to the parent screen for display
     private readonly onNextStep: () => void;
+    private readonly onHome: () => void;
+    private readonly onBackToMap: () => void;
 
     // Report button clicks to the Controller, which updates the Model.
-    constructor(onNextStep: () => void = () => {}) {
+    constructor(onNextStep: () => void = () => {},
+        onHome: () => void = () => {}, onBackToMap: () => void = () => {}) {
         this.onNextStep = onNextStep;
+        this.onHome = onHome;
+        this.onBackToMap = onBackToMap;
     }
 
     // Draw all boxes and fill only those revealed by the Model.
@@ -28,7 +34,7 @@ export class DivisionSolutionView{
         this.drawText(this.group, "Division Solution",
             0, 85, STAGE_WIDTH, 55, 40);//title above the diagram
 
-        const dividend = String(division.dividend);//the starting amount is shown above the first box
+        const dividend = String(division.dividend);//the dividend is shown inside the first box, and in all revealed boxes
         const divisor = String(division.divisor);//the divisor is shown to the left of the boxes
         const boxWidth = (dividend.length + 1) * CELL_WIDTH + BOX_PADDING * 2;//each box is wide enough to hold the starting amount plus one extra digit for the next partial quotient
         const boxHeight = ROW_HEIGHT * 3 + BOX_PADDING * 2;//each box has three rows: partial quotient, product, and remaining amount
@@ -38,12 +44,12 @@ export class DivisionSolutionView{
         //scale wide diagrams so every box remains inside the canvas.
         const scale = Math.min(1, (STAGE_WIDTH - 60) / diagramWidth);
         const diagram = new Konva.Group({
-            x: (STAGE_WIDTH - diagramWidth * scale) / 2,
+            x: (STAGE_WIDTH - diagramWidth * scale) / 2, //center the diagram horizontally
             y: 190,
             scaleX: scale,
             scaleY: scale,
         });
-        this.group.add(diagram);
+        this.group.add(diagram);//the diagram is drawn inside this group, which is scaled to fit the canvas
 
         const boxTop = ROW_HEIGHT + 4;
         const amountY = boxTop + BOX_PADDING;
@@ -54,12 +60,12 @@ export class DivisionSolutionView{
 
         for (let i = 0; i < division.boxes.length; i++) {
             const box = division.boxes[i];
-            const x = divisorWidth + i * boxWidth;
-            const right = x + boxWidth - BOX_PADDING;
+            const left = divisorWidth + i * boxWidth;
+            const right = left + boxWidth - BOX_PADDING;
             const productLength = String(box.amountSubtracted).length;
 
             diagram.add(new Konva.Rect({
-                x, y: boxTop, width: boxWidth, height: boxHeight,
+                x: left, y: boxTop, width: boxWidth, height: boxHeight,
                 stroke: TITLE_COLOR, strokeWidth: 2,
             }));
 
@@ -69,19 +75,17 @@ export class DivisionSolutionView{
             this.drawEmptySlots(diagram, right, remainingY, String(box.remainingAmount).length);
 
             //keep earlier boxes filled and show the starting amount of each revealed box.
-            if (i === 0 || i < count) {
-                this.drawSlotNumber(diagram, right, amountY, box.startingAmount);//the starting amount is always shown in the first box, and in all revealed boxes
-            }
-            if (i < count) {//fill the revealed boxes with the partial quotient, product, and remaining amount.
+            // Fill the starting amount and solution numbers of each revealed box.
+            if (i < count) {
+                this.drawSlotNumber(diagram, right, amountY, box.startingAmount);
                 this.drawSlotNumber(diagram, right, 0, box.partialQuotient);
                 this.drawSlotNumber(diagram, right, productY, box.amountSubtracted);
                 this.drawSlotNumber(diagram, right, remainingY, box.remainingAmount);
             }
 
-            this.drawText(diagram, "−", right - (productLength + 1) * CELL_WIDTH,
-                productY, CELL_WIDTH, ROW_HEIGHT, 26);
+            this.drawText(diagram, "−", right - (productLength + 1) * CELL_WIDTH, productY, CELL_WIDTH, ROW_HEIGHT, 26);
             diagram.add(new Konva.Line({
-                points: [x + BOX_PADDING, remainingY, right, remainingY],
+                points: [left + BOX_PADDING, remainingY, right, remainingY],
                 stroke: TITLE_COLOR, strokeWidth: 2,
             }));
         }
@@ -89,15 +93,20 @@ export class DivisionSolutionView{
         const answerLength = String(division.quotient).length;
         const answerY = boxTop + boxHeight + 24;
         const answerRight = diagramWidth - BOX_PADDING;
-        this.drawText(diagram, "Answer", answerRight - answerLength * CELL_WIDTH - 110,
-            answerY, 100, ROW_HEIGHT, 22);
+        this.drawText(diagram, "Answer", answerRight - answerLength * CELL_WIDTH - 110,answerY, 100, ROW_HEIGHT, 22);
         this.drawEmptySlots(diagram, answerRight, answerY, answerLength);
         //reveal the final quotient only after every box has been shown.
         if (count === division.boxes.length) {
             this.drawSlotNumber(diagram, answerRight, answerY, division.quotient);
         }
-        this.drawNextButton(count < division.boxes.length);
-        this.group.getLayer()?.batchDraw();
+        this.drawNextButton(count < division.boxes.length);//draw next step if there are more boxes to reveal, otherwise show a disabled button with "Completed"
+        this.group.add(createHomeButton(this.onHome));
+        this.drawBackButton();
+        this.group.getLayer()?.batchDraw();//redraw the layer to reflect the changes
+    }
+
+    // Return to the current operation's map through the Controller callback.
+    private drawBackButton(): void {
     }
     // Request the next box, disabling the button when all boxes are visible.
     private drawNextButton(hasNext: boolean): void {
@@ -136,8 +145,7 @@ export class DivisionSolutionView{
         }
     }
     //draw a label or number without intercepting mouse events.
-    private drawText(parent: Konva.Group, text: string, x: number, y: number,
-        width: number, height: number, fontSize: number): void {
+    private drawText(parent: Konva.Group, text: string, x: number, y: number,width: number, height: number, fontSize: number): void {
         parent.add(new Konva.Text({
             x, y, width, height, text, fontSize,
             fontFamily: FONT_FAMILY, fill: TITLE_COLOR,

@@ -18,12 +18,14 @@ export class MultiplicationSolutionView {
     private readonly onBackToMap: () => void;
     private readonly onNextStep: () => void;
 
+    /** Keep navigation callbacks separate from drawing. */
     constructor(onHome: () => void, onBackToMap: () => void, onNextStep: () => void) {
         this.onHome = onHome;
         this.onBackToMap = onBackToMap;
         this.onNextStep = onNextStep;
     }
 
+    /** Draw the supplied multiplication page without generating a problem. */
     render(level: number, problem: MainGameProblem,
         page: ReturnType<SolutionScreenModel["getMultiplicationPage"]>, explanation: string): void {
         const layout = getProblemLayout("multiplication", problem);
@@ -59,9 +61,16 @@ export class MultiplicationSolutionView {
         const { width, height, fontSize } = layout.cellSize;
         layout.cells.forEach(cell => {
             calculation.add(new Konva.Text({
-                x: cell.x, y: cell.y, width, height, text: cell.text,
-                fontFamily: FONT_FAMILY, fontSize, fill: TITLE_COLOR,
-                align: "center", verticalAlign: "middle",
+                x: cell.x,
+                y: cell.y,
+                width,
+                height,
+                text: cell.text,
+                fontFamily: FONT_FAMILY,
+                fontSize,
+                fill: TITLE_COLOR,
+                align: "center",
+                verticalAlign: "middle",
             }));
         });
         const multiplierCell = layout.multiplierCells[shownRow];
@@ -70,8 +79,12 @@ export class MultiplicationSolutionView {
             calculation.add(new Konva.Rect({
                 x: multiplierCell.x + (multiplierCell.width - side) / 2,
                 y: multiplierCell.y + (multiplierCell.height - side) / 2,
-                width: side, height: side,
-                stroke: TITLE_COLOR, strokeWidth: 3, cornerRadius: 8, listening: false,
+                width: side,
+                height: side,
+                stroke: TITLE_COLOR,
+                strokeWidth: 3,
+                cornerRadius: 8,
+                listening: false,
             }));
         }
         for (const line of [layout.line, secondLine]) {
@@ -105,18 +118,30 @@ export class MultiplicationSolutionView {
         const explanationPanel = new Konva.Label({ x: 480, y: 290 });
         explanationPanel.add(new Konva.Tag({ fill: "#FFE9AE", cornerRadius: 8 }));
         explanationPanel.add(new Konva.Text({
-            width: 285, height: 150, padding: 20,
+            width: 285,
+            height: 150,
+            padding: 20,
             text: explanation,
-            fontFamily: FONT_FAMILY, fontSize: 24, lineHeight: 1.3, fill: TITLE_COLOR,
-            align: "center", verticalAlign: "middle",
+            fontFamily: FONT_FAMILY,
+            fontSize: 24,
+            lineHeight: 1.3,
+            fill: TITLE_COLOR,
+            align: "center",
+            verticalAlign: "middle",
         }));
         this.group.add(explanationPanel);
         this.group.add(createHomeButton(this.onHome));
         const backButton = new Konva.Group({ x: 140, y: STAGE_HEIGHT - 62 });
         backButton.add(new Konva.Rect({ width: 150, height: 40, fill: BUTTON_COLOR, cornerRadius: 8 }));
         backButton.add(new Konva.Text({
-            width: 150, height: 40, text: "Back to map", fontSize: 18, fontFamily: FONT_FAMILY,
-            fill: BUTTON_TEXT_COLOR, align: "center", verticalAlign: "middle",
+            width: 150,
+            height: 40,
+            text: "Back to map",
+            fontSize: 18,
+            fontFamily: FONT_FAMILY,
+            fill: BUTTON_TEXT_COLOR,
+            align: "center",
+            verticalAlign: "middle",
         }));
         backButton.on("click", this.onBackToMap);
         backButton.on("mouseenter", () => (document.body.style.cursor = "pointer"));
@@ -129,6 +154,7 @@ export class MultiplicationSolutionView {
         this.group.getLayer()?.batchDraw();
     }
 
+    /** Expose this view for attachment to the solution screen. */
     getGroup(): Konva.Group {
         return this.group;
     }
@@ -138,11 +164,22 @@ export class MultiplicationSolutionView {
 function createActionButton(label: string, x = STAGE_WIDTH - 200, y = STAGE_HEIGHT - 70): Konva.Group {
     const button = new Konva.Group({ x, y });
     button.add(new Konva.Rect({
-        width: 170, height: 45, fill: "#fbe7a9", stroke: TITLE_COLOR, strokeWidth: 3, cornerRadius: 8,
+        width: 170,
+        height: 45,
+        fill: "#fbe7a9",
+        stroke: TITLE_COLOR,
+        strokeWidth: 3,
+        cornerRadius: 8,
     }));
     button.add(new Konva.Text({
-        text: label, width: 170, height: 45, fontSize: 22, fontFamily: FONT_FAMILY, fill: TITLE_COLOR,
-        align: "center", verticalAlign: "middle",
+        text: label,
+        width: 170,
+        height: 45,
+        fontSize: 22,
+        fontFamily: FONT_FAMILY,
+        fill: TITLE_COLOR,
+        align: "center",
+        verticalAlign: "middle",
     }));
     button.on("mouseenter", () => { document.body.style.cursor = "pointer"; });
     button.on("mouseleave", () => { document.body.style.cursor = "default"; });
@@ -160,8 +197,14 @@ function createNumberField(
     const firstFilled = field.cellXs.length - value.length;
     field.cellXs.forEach((x, index) => {
         const box = new Konva.Rect({
-            x: x + 4, y: field.y + 4, width: field.size.width - 8, height: field.size.height - 8,
-            fill: style.fill, stroke: style.stroke, strokeWidth: style.strokeWidth, cornerRadius: 6,
+            x: x + 4,
+            y: field.y + 4,
+            width: field.size.width - 8,
+            height: field.size.height - 8,
+            fill: style.fill,
+            stroke: style.stroke,
+            strokeWidth: style.strokeWidth,
+            cornerRadius: 6,
         });
         if (onClick) {
             box.on("click tap", onClick);
@@ -171,9 +214,17 @@ function createNumberField(
         group.add(box);
         const character = index >= firstFilled ? value[index - firstFilled] : "";
         if (character) group.add(new Konva.Text({
-            name: style.textName, x, y: field.y, width: field.size.width, height: field.size.height,
-            text: character === "-" ? "−" : character, fontSize: field.size.fontSize,
-            fontFamily: FONT_FAMILY, fill: TITLE_COLOR, align: "center", verticalAlign: "middle",
+            name: style.textName,
+            x,
+            y: field.y,
+            width: field.size.width,
+            height: field.size.height,
+            text: character === "-" ? "−" : character,
+            fontSize: field.size.fontSize,
+            fontFamily: FONT_FAMILY,
+            fill: TITLE_COLOR,
+            align: "center",
+            verticalAlign: "middle",
             listening: style.textListening ?? true,
         }));
     });

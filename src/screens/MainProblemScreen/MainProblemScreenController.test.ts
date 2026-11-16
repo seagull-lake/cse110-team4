@@ -4,6 +4,9 @@ import type { ProblemLayout } from "./MainProblemLayout.ts";
 import { MainProblemScreenController } from "./MainProblemScreenController.ts";
 import { solvedDivision } from "./testProblems.ts";
 import { MainGameProblemGenerator } from "../../problem-engine/MainGameProblemGenerator.ts";
+import type { SolvedMainGameProblem } from "../../problem-engine/MainGameProblemGenerator.ts";
+import { getAnswerFields } from "./MainProblemScreenModel.ts";
+import type { LevelType } from "../../levels/levelConfig.ts";
 
 // Konva can't draw text in tests, so the view is replaced with one that records what it was told
 const view = vi.hoisted(() => ({
@@ -12,6 +15,7 @@ const view = vi.hoisted(() => ({
   onSubmitClick: () => {},
   onContinueClick: () => {},
   onTryAgainClick: () => {},
+  onReviewClick: () => {},
   onKey: (_key: string) => {},
   onFieldClick: (_index: number) => {},
   /** What was typed in each field, and the field being typed in */
@@ -23,6 +27,9 @@ const view = vi.hoisted(() => ({
   layout: null as ProblemLayout | null,
   enteredAnswer: [] as string[],
   correctAnswerShown: false,
+  incorrectAnswerShown: false,
+  incompleteMessageShown: false,
+  submitEnabled: false,
   visible: false,
 }));
 
@@ -34,9 +41,11 @@ vi.mock("./MainProblemScreenView.ts", () => ({
       onSubmitClick: () => void,
       onContinueClick: () => void,
       onTryAgainClick: () => void,
+      onReviewClick: () => void,
       onKey: (key: string) => void,
       onFieldClick: (index: number) => void,
     ) {
+      view.onReviewClick = onReviewClick;
       view.onHomeClick = onHomeClick;
       view.onBackClick = onBackClick;
       view.onSubmitClick = onSubmitClick;
@@ -59,11 +68,18 @@ vi.mock("./MainProblemScreenView.ts", () => ({
       view.layout = layout;
       view.enteredAnswer = Array.from({ length: layout.answer.cellXs.length }, () => "");
       view.correctAnswerShown = false;
+      view.incorrectAnswerShown = false;
+      view.incompleteMessageShown = false;
     }
     getEnteredAnswer() { return view.enteredAnswer; }
     showCorrectAnswer() { view.correctAnswerShown = true; }
+    showIncorrectAnswer() { view.incorrectAnswerShown = true; }
+    showIncompleteMessage() { view.incompleteMessageShown = true; }
+    setSubmitEnabled(enabled: boolean) { view.submitEnabled = enabled; }
     resetForRetry() {
       view.correctAnswerShown = false;
+      view.incorrectAnswerShown = false;
+      view.incompleteMessageShown = false;
     }
     show() { view.visible = true; }
     hide() { view.visible = false; }
@@ -241,35 +257,137 @@ describe("main problem screen controller", () => {
     expect(view.visible).toBe(false);
   });
 
-  it.each(["addition", "subtraction", "multiplication", "division"] as const)(
-    "keeps the existing solution flow after an incorrect %s answer", topic => {
-      const problem = new MainGameProblemGenerator(() => 0.5).generate({ operation: topic, operandDigits: [2, 1] });
-      const generate = vi.fn(() => problem);
-      const { controller, screens } = setup({ generate });
+  /**
+   * Types every field like a student would: each step field is filled with zeros and the answer with
+   * `answer` (fields are typed from the ones digit to the left, so the characters go in reversed).
+   * With `skipSteps`, only the answer is typed.
+   */
+  function fillOut(topic: LevelType, problem: SolvedMainGameProblem, answer: string, skipSteps = false) {
+    const fields = getAnswerFields(topic, problem);
+    fields.forEach((field, index) => {
+      view.onFieldClick(index);
+      view.onKey("Escape");
+      const text = field.kind === "answer" ? answer : skipSteps ? "" : "0".repeat(field.length);
+      Array.from(text).reverse().forEach(key => view.onKey(key));
+    });
+  }
+  /** An answer with the right number of boxes that isn't the correct one. */
+  function wrongAnswer(problem: SolvedMainGameProblem): string {
+    const length = String(problem.answer).length;
+    return String(problem.answer) === "9".repeat(length) ? "8".repeat(length) : "9".repeat(length);
+  }
+  const topics = ["addition", "subtraction", "multiplication", "division"] as const;
+
+  describe("submitting only once everything is filled out", () => {
+    it.each(topics)("ignores Submit for %s until every box is filled in", topic => {
+      const problem = new MainGameProblemGenerator(() => 0.5).generate({ operation: topic, operandDigits: [3, 2] });
+      const { controller, screens } = setup({ generate: () => problem });
       controller.setLevel(topic, 1);
-      const digits = Array.from(String(problem.answer));
+      expect(view.submitEnabled).toBe(false);
 
-      for (const incomplete of [digits.slice(1), digits.map(() => "")]) {
-        view.enteredAnswer = incomplete;
-        view.onSubmitClick();
-        expect(screens).toEqual([]);
-      }
+      view.onSubmitClick();
+      expect(view.incompleteMessageShown).toBe(true);
+      expect(view.correctAnswerShown || view.incorrectAnswerShown).toBe(false);
 
-      view.enteredAnswer = digits.map(() => "0");
+      // Every field but the answer
+      fillOut(topic, problem, "", false);
+      expect(view.submitEnabled).toBe(false);
+      view.onSubmitClick();
+      expect(view.correctAnswerShown || view.incorrectAnswerShown).toBe(false);
+
+      fillOut(topic, problem, String(problem.answer));
+      expect(view.submitEnabled).toBe(true);
+      view.onSubmitClick();
+      expect(view.correctAnswerShown).toBe(true);
+      expect(screens).toEqual([]);
+    });
+
+    it("ignores Submit when only the answer is filled in but a step box is empty", () => {
+      const problem = new MainGameProblemGenerator(() => 0.5).generate({ operation: "division", operandDigits: [3, 1] });
+      const { controller } = setup({ generate: () => problem });
+      controller.setLevel("division", 1);
+      fillOut("division", problem, String(problem.answer), true);
+      expect(view.submitEnabled).toBe(false);
       view.onSubmitClick();
       expect(view.correctAnswerShown).toBe(false);
-      expect(screens).toHaveLength(1);
-      const route = screens[0];
-      expect(route).toEqual({ type: "solution", problem, topic, difficulty: 1 });
-      if (route.type !== "solution") throw new Error("Expected a solution route.");
-      expect(route.problem).toBe(problem);
-      expect(route.problem.solution).toBe(problem.solution);
-      expect(generate).toHaveBeenCalledTimes(1);
-      view.onTryAgainClick();
-      expect(view.enteredAnswer).toEqual(digits.map(() => "0"));
-      expect(screens).toHaveLength(1);
-    },
-  );
+      expect(view.incompleteMessageShown).toBe(true);
+    });
+  });
+
+  it.each(topics)("shows the Incorrect state first after an incorrect %s answer", topic => {
+    const problem = new MainGameProblemGenerator(() => 0.5).generate({ operation: topic, operandDigits: [2, 1] });
+    const generate = vi.fn(() => problem);
+    const { controller, screens } = setup({ generate });
+    controller.setLevel(topic, 1);
+
+    fillOut(topic, problem, wrongAnswer(problem));
+    view.onSubmitClick();
+    expect(view.incorrectAnswerShown).toBe(true);
+    expect(view.correctAnswerShown).toBe(false);
+    expect(screens).toEqual([]); // stays on this screen; no jump to the solution yet
+
+    // Continue isn't offered after an incorrect answer, and Submit can't be pressed again
+    view.onContinueClick();
+    view.onSubmitClick();
+    expect(screens).toEqual([]);
+
+    view.onReviewClick();
+    expect(screens).toEqual([{ type: "solution", problem, topic, difficulty: 1 }]);
+    const route = screens[0];
+    if (route.type !== "solution") throw new Error("Expected a solution route.");
+    expect(route.problem).toBe(problem);
+    expect(generate).toHaveBeenCalledTimes(1);
+  });
+
+  it("Try Again after an incorrect answer opens a new problem of the same level with every box empty", () => {
+    const problem = new MainGameProblemGenerator(() => 0.5).generate({ operation: "addition", operandDigits: [2, 1] });
+    const nextProblem = new MainGameProblemGenerator(() => 0.1).generate({ operation: "addition", operandDigits: [2, 1] });
+    const generate = vi.fn().mockReturnValueOnce(problem).mockReturnValueOnce(nextProblem);
+    const { controller, screens } = setup({ generate });
+    controller.setLevel("addition", 1);
+    const firstLayout = view.layout;
+    fillOut("addition", problem, wrongAnswer(problem));
+    view.onSubmitClick();
+    expect(view.incorrectAnswerShown).toBe(true);
+
+    view.onTryAgainClick();
+    expect(view.incorrectAnswerShown).toBe(false);
+    expect(view.layout).not.toEqual(firstLayout);
+    expect(view.entries.every(entry => entry === "")).toBe(true);
+    expect(view.submitEnabled).toBe(false);
+    expect(generate).toHaveBeenCalledTimes(2);
+    expect(generate.mock.calls[1][0]).toEqual({ gameType: "main-game", operation: "addition", difficulty: 1 });
+    // The new problem hasn't been answered yet, so there is nothing to review
+    view.onReviewClick();
+    expect(screens).toEqual([]);
+
+    fillOut("addition", nextProblem, String(nextProblem.answer));
+    view.onSubmitClick();
+    expect(view.correctAnswerShown).toBe(true);
+  });
+
+  it("Review Mistakes after Try Again shows the new problem's solution, not the old one", () => {
+    const problem = new MainGameProblemGenerator(() => 0.5).generate({ operation: "subtraction", operandDigits: [2, 1] });
+    const nextProblem = new MainGameProblemGenerator(() => 0.1).generate({ operation: "subtraction", operandDigits: [2, 1] });
+    const generate = vi.fn().mockReturnValueOnce(problem).mockReturnValueOnce(nextProblem);
+    const { controller, screens } = setup({ generate });
+    controller.setLevel("subtraction", 2);
+    fillOut("subtraction", problem, wrongAnswer(problem));
+    view.onSubmitClick();
+    view.onTryAgainClick();
+    fillOut("subtraction", nextProblem, wrongAnswer(nextProblem));
+    view.onSubmitClick();
+    view.onReviewClick();
+    expect(screens).toEqual([{ type: "solution", problem: nextProblem, topic: "subtraction", difficulty: 2 }]);
+  });
+
+  it("Try Again does nothing before an answer is submitted", () => {
+    const generate = vi.fn(() => new MainGameProblemGenerator(() => 0.5).generate({ operation: "addition", operandDigits: [2, 1] }));
+    const { controller } = setup({ generate });
+    controller.setLevel("addition", 1);
+    view.onTryAgainClick();
+    expect(generate).toHaveBeenCalledTimes(1);
+  });
 
   it("offers Try Again and Continue after a correct submission", () => {
     const problem = new MainGameProblemGenerator(() => 0.5).generate({ operation: "addition", operandDigits: [2, 1] });
@@ -278,21 +396,23 @@ describe("main problem screen controller", () => {
     const { controller, screens } = setup({ generate });
     controller.setLevel("addition", 1);
     const firstLayout = view.layout;
-    view.enteredAnswer = Array.from(String(problem.answer));
+    fillOut("addition", problem, String(problem.answer));
     view.onSubmitClick();
     expect(view.correctAnswerShown).toBe(true);
+    expect(screens).toEqual([]);
+    view.onReviewClick();
     expect(screens).toEqual([]);
 
     view.onTryAgainClick();
     expect(view.correctAnswerShown).toBe(false);
     expect(view.layout).not.toEqual(firstLayout);
-    expect(view.enteredAnswer).toEqual(Array(String(nextProblem.answer).length).fill(""));
+    expect(view.answer).toBe("");
     expect(screens).toEqual([]);
     expect(generate).toHaveBeenCalledTimes(2);
     expect(generate.mock.calls[0][0]).toEqual({ gameType: "main-game", operation: "addition", difficulty: 1 });
     expect(generate.mock.calls[1][0]).toEqual(generate.mock.calls[0][0]);
 
-    view.enteredAnswer = Array.from(String(nextProblem.answer));
+    fillOut("addition", nextProblem, String(nextProblem.answer));
     view.onSubmitClick();
     expect(view.correctAnswerShown).toBe(true);
     view.onContinueClick();

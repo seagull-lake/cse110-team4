@@ -102,7 +102,8 @@ export class MainProblemScreenModel {
   private readonly level: LevelDefinition;
   private readonly difficulty: number;
   private readonly problem: SolvedMainGameProblem;
-  private answerCorrect = false;
+  /** The result of the last submission, or null while the student is still working on it. */
+  private result: "correct" | "incorrect" | null = null;
   private readonly fields: readonly AnswerField[];
   /** What the student typed in each field as it reads on screen, e.g. "72"; typing fills it from the right. */
   private readonly entries: string[];
@@ -133,12 +134,23 @@ export class MainProblemScreenModel {
   /** Returns true only when every entered answer character matches the generated answer. */
   checkAnswer(digits: readonly string[]): boolean {
     const expected = String(this.problem.answer);
-    this.answerCorrect = digits.length === expected.length &&
+    const correct = digits.length === expected.length &&
       Array.from(expected, (digit, index) => digits[index] === digit).every(Boolean);
-    return this.answerCorrect;
+    this.result = correct ? "correct" : "incorrect";
+    return correct;
   }
 
-  canContinue(): boolean { return this.answerCorrect; }
+  /** True once every box of every field (steps and the answer) has been filled in. */
+  isComplete(): boolean {
+    return this.fields.every((field, index) => this.entries[index].length === field.length);
+  }
+
+  /** Continue is offered after a correct answer. */
+  canContinue(): boolean { return this.result === "correct"; }
+  /** Review Mistakes (the solution screen) is offered after an incorrect answer. */
+  canReviewMistakes(): boolean { return this.result === "incorrect"; }
+  /** Try Again is offered after any submitted answer. */
+  canTryAgain(): boolean { return this.result !== null; }
   getFields(): readonly AnswerField[] { return this.fields; }
   getEntries(): readonly string[] { return [...this.entries]; }
   getActiveField(): number { return this.active; }
@@ -191,7 +203,7 @@ export class MainProblemScreenModel {
   clearAnswer(): void {
     this.entries.fill("");
     this.active = 0;
-    this.answerCorrect = false;
+    this.result = null;
   }
 
   /** The typed answer as a number, or null while nothing (or only "-") has been typed. */

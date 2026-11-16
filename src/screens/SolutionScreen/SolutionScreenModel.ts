@@ -1,7 +1,18 @@
 import type {
     SolvedMainGameProblem,
-    SubtractionColumn,
+    AdditionColumn, SubtractionColumn, MultiplicationRow, DivisionBoxMethod,
 } from "../../problem-engine/MainGameProblemGenerator.ts";
+import type { LevelType } from "../../levels/levelConfig.ts";
+
+export type SolutionPage = {
+    hasNext: boolean;
+    finalAnswer?: number;
+} & (
+    | { operation: "addition"; currentColumn: AdditionColumn | undefined; visibleColumns: readonly AdditionColumn[] }
+    | { operation: "subtraction"; currentColumn: SubtractionColumn | undefined; visibleColumns: readonly SubtractionColumn[] }
+    | { operation: "multiplication"; currentRow: MultiplicationRow | undefined; visibleRows: readonly MultiplicationRow[] }
+    | { operation: "division"; division: DivisionBoxMethod; visibleBoxCount: number }
+);
 
 const PLACE_NAMES = ["ones", "tens", "hundreds", "thousands", "ten thousands"];
 
@@ -44,6 +55,8 @@ export function explainSubtractionColumn(column: SubtractionColumn, index: numbe
 
 export class SolutionScreenModel{
     private readonly problem: SolvedMainGameProblem;
+    private readonly topic: LevelType;
+    private readonly difficulty: number;
 
     private stepIndex = 0;
     private columnIndex = 0;
@@ -51,9 +64,14 @@ export class SolutionScreenModel{
     private multiplicationRowIndex = 0;
     private additionPageIndex = 0;
     private subtractionColumnIndex = 0;
-
-    constructor(problem: SolvedMainGameProblem){
+    constructor(problem: SolvedMainGameProblem, topic: LevelType, difficulty: number){
         this.problem = problem;
+        this.topic = topic;
+        this.difficulty = difficulty;
+    }
+
+    getContext() {
+        return { problem: this.problem, topic: this.topic, difficulty: this.difficulty };
     }
 
     getOperand(){
@@ -72,11 +90,11 @@ export class SolutionScreenModel{
         return this.getCurrentStep().additionColumns?.[this.columnIndex];
     }
 
-    getVisibleColumns(){//this returns the columns that should be visible on the screeen 
+    getVisibleColumns(){//this returns the columns that should be visible on the screeen
         const columns = this.getCurrentStep().additionColumns;
         if(!columns) return [];
         return columns.slice(0, this.columnIndex + 1);
-    }  
+    }
 
     hasNextColumn(){
         const columns = this.getCurrentStep().additionColumns;
@@ -87,6 +105,44 @@ export class SolutionScreenModel{
     nextColumn(){
         if(this.hasNextColumn()){
             this.columnIndex++;
+        }
+    }
+
+    getCurrentPage(): SolutionPage {
+        const step = this.getCurrentStep();
+        switch (step.operation) {
+            case "multiplication": return this.getMultiplicationPage();
+            case "division": {
+                const page = this.getDivisionPage();
+                return { operation: "division", ...page, finalAnswer: page.hasNext ? undefined : this.getFinalAnswer() };
+            }
+            case "addition": {
+                const { hasNext, pageIndex, step: addition } = this.getAdditionPage();
+                return {
+                    operation: "addition", currentColumn: addition.additionColumns?.[pageIndex],
+                    visibleColumns: addition.additionColumns?.slice(0, pageIndex + 1) ?? [], hasNext,
+                    finalAnswer: hasNext ? undefined : this.getFinalAnswer(),
+                };
+            }
+            case "subtraction": {
+                const page = this.getSubtractionPage();
+                return {
+                    operation: "subtraction", currentColumn: page.currentColumn,
+                    visibleColumns: page.columns.slice(0, page.visibleColumnCount),
+                    hasNext: page.hasNext, finalAnswer: page.finalAnswer,
+                };
+            }
+        }
+    }
+
+    nextPage(): void {
+        const page = this.getCurrentPage();
+        if (!page.hasNext) return;
+        switch (page.operation) {
+            case "multiplication": this.nextMultiplicationPage(); break;
+            case "division": this.nextDivisionPage(); break;
+            case "addition": this.nextAdditionPage(); break;
+            case "subtraction": this.nextSubtractionPage(); break;
         }
     }
 
@@ -101,17 +157,18 @@ export class SolutionScreenModel{
         };
     }
 
-    // Reveal one more box, stopping at the last box.
     nextDivisionPage(): void {
         if (this.getDivisionPage().hasNext) this.divisionBoxIndex++;
     }
-    getMultiplicationPage() {
+
+    getMultiplicationPage(): Extract<SolutionPage, { operation: "multiplication" }> {
         const rows = this.getCurrentStep().multiplicationRows;
         if (!rows) {
             throw new Error("The current solution step is not multiplication.");
         }
         const hasNext = this.multiplicationRowIndex < rows.length;
         return {
+            operation: "multiplication",
             currentRow: hasNext ? rows[this.multiplicationRowIndex] : undefined,
             visibleRows: rows.slice(0, this.multiplicationRowIndex + 1),
             hasNext,
@@ -142,7 +199,7 @@ export class SolutionScreenModel{
     nextAdditionPage(): void {
         if (this.getAdditionPage().hasNext) this.additionPageIndex++;
     }
-    
+
     // Return the subtraction columns revealed so far, one more on every Next Step.
     getSubtractionPage(): SubtractionPage {
         const step = this.getCurrentStep();

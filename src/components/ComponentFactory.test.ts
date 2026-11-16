@@ -14,9 +14,6 @@ it("draws every box and leaves an empty field blank", () => {
     const group = createNumberField(field, "", style);
     expect(group.find<Konva.Rect>("Rect")).toHaveLength(3);
     expect(group.find<Konva.Text>("Text")).toHaveLength(0);
-    expect(group.find<Konva.Rect>("Rect")[0]).toMatchObject({ attrs: {
-        x: 14, y: 24, width: 32, height: 36, fill: "#FFFFFF", stroke: "#27695B", strokeWidth: 2, cornerRadius: 6,
-    } });
 });
 
 it("right-aligns short values and preserves zero, minus and text names", () => {

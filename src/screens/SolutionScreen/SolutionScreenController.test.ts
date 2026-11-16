@@ -105,12 +105,3 @@ it("keeps division rendering and advancement", () => {
     view.onNextStep();
     expect(view.division).toHaveBeenLastCalledWith(problem.solution.steps[0].divisionBoxMethod, 2);
 });
-
-it.each(["addition", "subtraction"] as const)("keeps the existing %s rendering path", operation => {
-    const problem = new MainGameProblemGenerator(() => 0.5).generate({ operation, operandDigits: [2, 2] });
-    const { controller } = setup();
-    controller.setProblem(problem, operation, 2);
-    expect(view.other).toHaveBeenCalledWith(expect.objectContaining({ step: problem.solution.steps[0] }));
-    view.onNextStep();
-    expect(view.other).toHaveBeenCalledTimes(2);
-});

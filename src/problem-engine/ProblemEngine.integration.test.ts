@@ -53,25 +53,67 @@ describe("ProblemDispatcher and MainGameProblemGenerator integration", () => {
     });
   });
 
-  it.each([
-    ["subtraction", -31],
-    ["multiplication", 12416],
-    ["division", 0.7578125],
-  ] as const)("preserves the requested %s operation and its solution", (operation, answer) => {
+  it("returns the subtraction steps for 97 - 128 through the dispatcher", () => {
     const randomValues = [0.97, 0.032];
     const dispatcher = createDispatcher(() => randomValues.shift()!, mixedDigitConfig);
 
-    expect(dispatcher.generate({ gameType: "main-game", operation, difficulty: 1 })).toEqual({
+    const result = dispatcher.generate({ gameType: "main-game", operation: "subtraction", difficulty: 1 });
+
+    expect(result).toMatchObject({
       operands: [97, 128],
-      answer,
+      answer: -31,
       solution: {
-        finalAnswer: answer,
-        steps: [{
-          operation, leftOperand: 97, rightOperand: 128, result: answer,
-          additionColumns: undefined,
-        }],
+        finalAnswer: -31,
+        steps: [{ operation: "subtraction", leftOperand: 97, rightOperand: 128, result: -31 }],
       },
     });
+    // The columns explain 128 - 97 (larger - smaller); the answer keeps the minus sign.
+    expect(result).toHaveProperty("solution.steps.0.subtractionColumns.length", 3);
+  });
+
+  it("returns the multiplication rows for 97 × 128 through the dispatcher", () => {
+    const randomValues = [0.97, 0.032];
+    const dispatcher = createDispatcher(() => randomValues.shift()!, mixedDigitConfig);
+
+    const result = dispatcher.generate({ gameType: "main-game", operation: "multiplication", difficulty: 1 });
+
+    expect(result).toMatchObject({
+      operands: [97, 128],
+      answer: 12416,
+      solution: {
+        finalAnswer: 12416,
+        steps: [{ operation: "multiplication", leftOperand: 97, rightOperand: 128, result: 12416 }],
+      },
+    });
+    // One row per digit of 128
+    expect(result).toHaveProperty("solution.steps.0.multiplicationRows.length", 3);
+  });
+
+  it("returns an exact division with its box method steps through the dispatcher", () => {
+    // Division answers are whole numbers, so use digit counts like a real level (3-digit ÷ 2-digit)
+    const dispatcher = createDispatcher(() => 0, {
+      mainGame: forAllOperations({ 1: [3, 2] }),
+      miniGameOne: { 1: [1, 1] },
+    });
+
+    const result = dispatcher.generate({ gameType: "main-game", operation: "division", difficulty: 1 });
+
+    expect(result).toMatchObject({
+      operands: [100, 10],
+      answer: 10,
+      solution: {
+        finalAnswer: 10,
+        steps: [{ operation: "division", leftOperand: 100, rightOperand: 10, result: 10 }],
+      },
+    });
+    expect(result).toHaveProperty("solution.steps.0.divisionBoxMethod.quotient", 10);
+  });
+
+  it("refuses division digit counts that cannot divide exactly (2-digit ÷ 3-digit)", () => {
+    const dispatcher = createDispatcher(() => 0, mixedDigitConfig);
+
+    expect(() => dispatcher.generate({ gameType: "main-game", operation: "division", difficulty: 1 }))
+      .toThrow("cannot produce an exact division");
   });
 
   it("returns both steps of 9 + 9 + 9", () => {

@@ -74,6 +74,10 @@ export class SolutionScreenModel{
         return { problem: this.problem, topic: this.topic, difficulty: this.difficulty };
     }
 
+    getProblem(): SolvedMainGameProblem {
+        return this.problem;
+    }
+
     getOperand(){
         return this.problem.operands;
     }

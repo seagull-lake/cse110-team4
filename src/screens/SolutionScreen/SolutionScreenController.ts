@@ -47,8 +47,8 @@ export class SolutionScreenController extends ScreenController {
                 } else if (page.finalAnswer !== undefined) {
                     explanation = `${page.visibleRows.map(row => row.partialProduct).join(" + ")} = ${page.finalAnswer}`;
                 }
-                const { problem, difficulty } = this.model.getContext();
-                this.view.renderMultiplication(difficulty, problem, page, explanation);
+                const { difficulty } = this.model.getContext();
+                this.view.renderMultiplication(difficulty, this.model.getProblem(), page, explanation);
                 break;
             }
             case "division":

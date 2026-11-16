@@ -14,7 +14,11 @@ const switchToScreen = vi.fn<(screen: Screen) => void>();
 beforeEach(() => {
     // Only text measurement needs a canvas substitute; the MVC and Konva nodes are real.
     vi.spyOn(Konva.Util, "createCanvasElement").mockReturnValue({
-        getContext: () => ({ save() {}, restore() {}, measureText: (text: string) => ({ width: text.length * 10 }) }),
+        getContext: () => ({
+            save() {},
+            restore() {},
+            measureText: (text: string) => ({ width: text.length * 10 }),
+        }),
     } as unknown as HTMLCanvasElement);
     switchToScreen.mockReset();
     controller = new SolutionScreenController({ switchToScreen });
@@ -30,14 +34,24 @@ afterEach(() => {
 
 function problem(left: number, right: number) {
     const digits = [left, right].map(value => String(value).length);
-    const random = [left, right].map((value, i) => (value - 10 ** (digits[i] - 1) + 0.01) / (9 * 10 ** (digits[i] - 1)));
-    return new MainGameProblemGenerator(() => random.shift() ?? 0).generate({ operation: "multiplication", operandDigits: digits });
+    const random = [left, right].map((value, i) => {
+        const minimum = 10 ** (digits[i] - 1);
+        return (value - minimum + 0.01) / (9 * minimum);
+    });
+    return new MainGameProblemGenerator(() => random.shift() ?? 0).generate({
+        operation: "multiplication",
+        operandDigits: digits,
+    });
 }
 function nodes(name: string) {
     return controller.getView().getGroup().find<Konva.Text>(name).filter(node => node.isVisible());
 }
+function digitsIn(name: string) {
+    return nodes(name).map(node => node.text()).join("");
+}
 function click(label: string, group = controller.getView().getGroup()) {
-    const button = group.find<Konva.Text>("Text").find(node => node.isVisible() && node.text() === label)?.getParent();
+    const text = group.find<Konva.Text>("Text").find(node => node.isVisible() && node.text() === label);
+    const button = text?.getParent();
     if (!button) throw new Error(`Missing visible button: ${label}`);
     button.fire("click");
 }
@@ -49,13 +63,15 @@ it.each([
 ] as const)("renders generated %s × %s through real Next Step events", (left, right, pages, answer) => {
     controller.setProblem(problem(left, right), "multiplication", 5);
     for (const partialProducts of pages) {
-        expect(nodes(".partial-product").map(node => node.text()).join("")).toBe(partialProducts);
+        expect(digitsIn(".partial-product")).toBe(partialProducts);
         expect(nodes(".final-answer")).toHaveLength(0);
         click("Next Step");
     }
-    expect(nodes(".final-answer").map(node => node.text()).join("")).toBe(answer);
+    expect(digitsIn(".final-answer")).toBe(answer);
     expect(nodes("Text").some(node => node.text() === "Next Step")).toBe(false);
-    expect(nodes(".final-answer").every(node => node.getParent()?.find<Konva.Rect>("Rect").every(box => box.fill() === "#B8E6C7"))).toBe(true);
+    const answerBoxes = nodes(".final-answer")[0]?.getParent()?.find<Konva.Rect>("Rect") ?? [];
+    expect(answerBoxes).not.toHaveLength(0);
+    expect(answerBoxes.every(box => box.fill() === "#B8E6C7")).toBe(true);
 });
 
 it("replaces the current row's carries instead of leaving old carries visible", () => {
@@ -70,7 +86,10 @@ it.each(["Home", "Back to map"] as const)("routes an incorrect game answer throu
     const generator = new MainGameProblemGenerator(() => 0.5);
     const generated = vi.spyOn(generator, "generate");
     const routes: Screen[] = [];
-    main = new MainProblemScreenController({ switchToScreen }, new ProblemDispatcher(generator, new MultiplicationDivisionGenerator()));
+    main = new MainProblemScreenController(
+        { switchToScreen },
+        new ProblemDispatcher(generator, new MultiplicationDivisionGenerator()),
+    );
     const game = main;
     switchToScreen.mockImplementation(screen => {
         routes.push(screen);
@@ -101,15 +120,21 @@ it.each(["Home", "Back to map"] as const)("routes an incorrect game answer throu
     expect(routes).toEqual([]); // Incomplete answers must stay on the problem.
     for (let i = 1; i < String(result.value.answer).length; i++) press("0");
     press("Enter");
-    expect(routes).toEqual([{ type: "solution", problem: result.value, topic: "multiplication", difficulty: 3 }]);
+    expect(routes).toEqual([{
+        type: "solution",
+        problem: result.value,
+        topic: "multiplication",
+        difficulty: 3,
+    }]);
     expect(routes[0].type === "solution" && routes[0].problem).toBe(result.value);
     expect(generated).toHaveBeenCalledTimes(1);
-    expect(nodes(".partial-product").map(node => node.text()).join("")).toBe("275");
+    expect(digitsIn(".partial-product")).toBe("275");
     click("Next Step");
     click("Next Step");
-    expect(nodes(".final-answer").map(node => node.text()).join("")).toBe("3025");
+    expect(digitsIn(".final-answer")).toBe("3025");
     click(destination);
-    expect(routes.at(-1)).toEqual(destination === "Home" ? { type: "menu" } : { type: "adventuremap", topic: "multiplication" });
+    const expected = destination === "Home" ? { type: "menu" } : { type: "adventuremap", topic: "multiplication" };
+    expect(routes.at(-1)).toEqual(expected);
 });
 
 it("resets the page, answer and level when another multiplication problem opens", () => {
@@ -117,9 +142,9 @@ it("resets the page, answer and level when another multiplication problem opens"
     click("Next Step");
     click("Next Step");
     controller.setProblem(problem(12, 5), "multiplication", 2);
-    expect(nodes(".partial-product").map(node => node.text()).join("")).toBe("60");
+    expect(digitsIn(".partial-product")).toBe("60");
     expect(nodes(".final-answer")).toHaveLength(0);
     expect(nodes("Text").some(node => node.text() === "Multiplication – Level 2")).toBe(true);
     click("Next Step");
-    expect(nodes(".final-answer").map(node => node.text()).join("")).toBe("60");
+    expect(digitsIn(".final-answer")).toBe("60");
 });

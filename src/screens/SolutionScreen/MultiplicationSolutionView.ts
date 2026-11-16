@@ -19,12 +19,14 @@ export class MultiplicationSolutionView {
     private readonly onBackToMap: () => void;
     private readonly onNextStep: () => void;
 
+    /** Keep navigation callbacks separate from drawing. */
     constructor(onHome: () => void, onBackToMap: () => void, onNextStep: () => void) {
         this.onHome = onHome;
         this.onBackToMap = onBackToMap;
         this.onNextStep = onNextStep;
     }
 
+    /** Draw the supplied multiplication page without generating a problem. */
     render(level: number, problem: MainGameProblem,
         page: Extract<SolutionPage, { operation: "multiplication" }>, explanation: string): void {
         const layout = getProblemLayout("multiplication", problem);
@@ -60,9 +62,16 @@ export class MultiplicationSolutionView {
         const { width, height, fontSize } = layout.cellSize;
         layout.cells.forEach(cell => {
             calculation.add(new Konva.Text({
-                x: cell.x, y: cell.y, width, height, text: cell.text,
-                fontFamily: FONT_FAMILY, fontSize, fill: TITLE_COLOR,
-                align: "center", verticalAlign: "middle",
+                x: cell.x,
+                y: cell.y,
+                width,
+                height,
+                text: cell.text,
+                fontFamily: FONT_FAMILY,
+                fontSize,
+                fill: TITLE_COLOR,
+                align: "center",
+                verticalAlign: "middle",
             }));
         });
         const multiplierCell = layout.multiplierCells[shownRow];
@@ -71,8 +80,12 @@ export class MultiplicationSolutionView {
             calculation.add(new Konva.Rect({
                 x: multiplierCell.x + (multiplierCell.width - side) / 2,
                 y: multiplierCell.y + (multiplierCell.height - side) / 2,
-                width: side, height: side,
-                stroke: TITLE_COLOR, strokeWidth: 3, cornerRadius: 8, listening: false,
+                width: side,
+                height: side,
+                stroke: TITLE_COLOR,
+                strokeWidth: 3,
+                cornerRadius: 8,
+                listening: false,
             }));
         }
         for (const line of [layout.line, secondLine]) {
@@ -106,18 +119,30 @@ export class MultiplicationSolutionView {
         const explanationPanel = new Konva.Label({ x: 480, y: 290 });
         explanationPanel.add(new Konva.Tag({ fill: "#FFE9AE", cornerRadius: 8 }));
         explanationPanel.add(new Konva.Text({
-            width: 285, height: 150, padding: 20,
+            width: 285,
+            height: 150,
+            padding: 20,
             text: explanation,
-            fontFamily: FONT_FAMILY, fontSize: 24, lineHeight: 1.3, fill: TITLE_COLOR,
-            align: "center", verticalAlign: "middle",
+            fontFamily: FONT_FAMILY,
+            fontSize: 24,
+            lineHeight: 1.3,
+            fill: TITLE_COLOR,
+            align: "center",
+            verticalAlign: "middle",
         }));
         this.group.add(explanationPanel);
         this.group.add(createHomeButton(this.onHome));
         const backButton = new Konva.Group({ x: 140, y: STAGE_HEIGHT - 62 });
         backButton.add(new Konva.Rect({ width: 150, height: 40, fill: BUTTON_COLOR, cornerRadius: 8 }));
         backButton.add(new Konva.Text({
-            width: 150, height: 40, text: "Back to map", fontSize: 18, fontFamily: FONT_FAMILY,
-            fill: BUTTON_TEXT_COLOR, align: "center", verticalAlign: "middle",
+            width: 150,
+            height: 40,
+            text: "Back to map",
+            fontSize: 18,
+            fontFamily: FONT_FAMILY,
+            fill: BUTTON_TEXT_COLOR,
+            align: "center",
+            verticalAlign: "middle",
         }));
         backButton.on("click", this.onBackToMap);
         backButton.on("mouseenter", () => (document.body.style.cursor = "pointer"));
@@ -130,6 +155,7 @@ export class MultiplicationSolutionView {
         this.group.getLayer()?.batchDraw();
     }
 
+    /** Expose this view for attachment to the solution screen. */
     getGroup(): Konva.Group {
         return this.group;
     }

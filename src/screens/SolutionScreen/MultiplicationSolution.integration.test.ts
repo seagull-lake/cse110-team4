@@ -7,7 +7,11 @@ let controller: SolutionScreenController;
 beforeEach(() => {
     // Only text measurement needs a canvas substitute; the MVC and Konva nodes are real.
     vi.spyOn(Konva.Util, "createCanvasElement").mockReturnValue({
-        getContext: () => ({ save() {}, restore() {}, measureText: (text: string) => ({ width: text.length * 10 }) }),
+        getContext: () => ({
+            save() {},
+            restore() {},
+            measureText: (text: string) => ({ width: text.length * 10 }),
+        }),
     } as unknown as HTMLCanvasElement);
     controller = new SolutionScreenController({ switchToScreen: vi.fn() });
     controller.show();
@@ -19,11 +23,20 @@ afterEach(() => {
 
 function problem(left: number, right: number) {
     const digits = [left, right].map(value => String(value).length);
-    const random = [left, right].map((value, i) => (value - 10 ** (digits[i] - 1) + 0.01) / (9 * 10 ** (digits[i] - 1)));
-    return new MainGameProblemGenerator(() => random.shift() ?? 0).generate({ operation: "multiplication", operandDigits: digits });
+    const random = [left, right].map((value, i) => {
+        const minimum = 10 ** (digits[i] - 1);
+        return (value - minimum + 0.01) / (9 * minimum);
+    });
+    return new MainGameProblemGenerator(() => random.shift() ?? 0).generate({
+        operation: "multiplication",
+        operandDigits: digits,
+    });
 }
 function nodes(name: string) {
     return controller.getView().getGroup().find<Konva.Text>(name).filter(node => node.isVisible());
+}
+function digitsIn(name: string) {
+    return nodes(name).map(node => node.text()).join("");
 }
 function click(label: string) {
     const button = nodes("Text").find(node => node.text() === label)?.getParent();
@@ -38,13 +51,15 @@ it.each([
 ] as const)("renders generated %s × %s through real Next Step events", (left, right, pages, answer) => {
     controller.setProblem(problem(left, right), "multiplication", 5);
     for (const partialProducts of pages) {
-        expect(nodes(".partial-product").map(node => node.text()).join("")).toBe(partialProducts);
+        expect(digitsIn(".partial-product")).toBe(partialProducts);
         expect(nodes(".final-answer")).toHaveLength(0);
         click("Next Step");
     }
-    expect(nodes(".final-answer").map(node => node.text()).join("")).toBe(answer);
+    expect(digitsIn(".final-answer")).toBe(answer);
     expect(nodes("Text").some(node => node.text() === "Next Step")).toBe(false);
-    expect(nodes(".final-answer").every(node => node.getParent()?.find<Konva.Rect>("Rect").every(box => box.fill() === "#B8E6C7"))).toBe(true);
+    const answerBoxes = nodes(".final-answer")[0]?.getParent()?.find<Konva.Rect>("Rect") ?? [];
+    expect(answerBoxes).not.toHaveLength(0);
+    expect(answerBoxes.every(box => box.fill() === "#B8E6C7")).toBe(true);
 });
 
 it("replaces the current row's carries instead of leaving old carries visible", () => {

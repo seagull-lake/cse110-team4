@@ -7,6 +7,7 @@ import type { LevelType } from "../../levels/levelConfig.ts";
 
 export class SolutionScreenController extends ScreenController{
     private model: SolutionScreenModel | null = null;
+    private problem: SolvedMainGameProblem | null = null;
     private readonly view: SolutionScreenView;
     private readonly screenSwitcher: ScreenSwitcher;
     private topic: LevelType = "addition";
@@ -23,6 +24,7 @@ export class SolutionScreenController extends ScreenController{
     }
   setProblem(problem: SolvedMainGameProblem, topic: LevelType, difficulty: number): void {
         this.model = new SolutionScreenModel(problem);
+        this.problem = problem;
         this.topic = topic;
         this.difficulty = difficulty;
         this.updateView();
@@ -35,7 +37,7 @@ export class SolutionScreenController extends ScreenController{
             this.model.nextDivisionPage();
         } 
         else if (operation === "multiplication") {
-            //this.model.nextMultiplicationPage();
+            this.model.nextMultiplicationPage();
         }
         else if (operation === "addition") {
             this.model.nextAdditionPage();
@@ -58,8 +60,17 @@ export class SolutionScreenController extends ScreenController{
       return;
     }
 
-    if (operation === "multiplication") {
-      //
+    if (operation === "multiplication" && this.problem) {
+      const page = this.model.getMultiplicationPage();
+      let explanation = "";
+      if (page.currentRow) {
+        const { multiplierDigit, multiplierPlaceValue, partialProduct } = page.currentRow;
+        explanation = `${this.model.getCurrentStep().leftOperand} × ${multiplierDigit * multiplierPlaceValue} = ${partialProduct}`;
+      } else if (page.finalAnswer !== undefined) {
+        explanation = `${page.visibleRows.map(row => row.partialProduct).join(" + ")} = ${page.finalAnswer}`;
+      }
+      this.view.renderMultiplication(this.difficulty, this.problem, page, explanation);
+      return;
     }
 
     if (operation === "addition") {

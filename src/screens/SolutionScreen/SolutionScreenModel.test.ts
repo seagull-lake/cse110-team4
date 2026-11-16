@@ -16,29 +16,46 @@ describe("SolutionScreenModel multiplication rows", () => {
 
         expect(model.getOperand()).toEqual([36748, 661]);
         expect(model.getMultiplicationPage().visibleRows.map(row => row.partialProduct)).toEqual([36748]);
-        expect(model.getMultiplicationPage().currentRow.multiplierDigit).toBe(1);
+        expect(model.getMultiplicationPage().currentRow?.multiplierDigit).toBe(1);
 
         model.nextMultiplicationPage();
         expect(model.getMultiplicationPage().visibleRows.map(row => row.partialProduct))
             .toEqual([36748, 2204880]);
-        expect(model.getMultiplicationPage().currentRow.multiplierDigit).toBe(6);
+        expect(model.getMultiplicationPage().currentRow?.multiplierDigit).toBe(6);
 
         model.nextMultiplicationPage();
         expect(model.getMultiplicationPage().visibleRows.map(row => row.partialProduct))
             .toEqual([36748, 2204880, 22048800]);
-        expect(model.getMultiplicationPage().currentRow.multiplierPlaceValue).toBe(100);
+        expect(model.getMultiplicationPage().currentRow?.multiplierPlaceValue).toBe(100);
     });
 
-    it("stops at the final row", () => {
-        const model = new SolutionScreenModel(multiplicationProblem());
+    it("shows the final answer on a separate page and stops there", () => {
+        const problem = multiplicationProblem();
+        const model = new SolutionScreenModel(problem);
 
         expect(model.getMultiplicationPage()).toMatchObject({ hasNext: true, finalAnswer: undefined });
         model.nextMultiplicationPage();
         model.nextMultiplicationPage();
+        expect(model.getMultiplicationPage()).toMatchObject({ hasNext: true, finalAnswer: undefined });
+        expect(model.getMultiplicationPage().currentRow).toBe(problem.solution.steps[0].multiplicationRows?.[2]);
         model.nextMultiplicationPage();
 
-        expect(model.getMultiplicationPage()).toMatchObject({ hasNext: false, finalAnswer: 24290428 });
+        expect(model.getMultiplicationPage()).toMatchObject({ hasNext: false, finalAnswer: 24290428, currentRow: undefined });
         expect(model.getMultiplicationPage().visibleRows).toHaveLength(3);
+        const finalPage = model.getMultiplicationPage();
+        model.nextMultiplicationPage();
+        expect(model.getMultiplicationPage()).toEqual(finalPage);
+    });
+
+    it("also needs a final page for a one-digit multiplier", () => {
+        const problem = new MainGameProblemGenerator(() => 0.5).generate({
+            operation: "multiplication", operandDigits: [2, 1],
+        });
+        const model = new SolutionScreenModel(problem);
+        expect(model.getMultiplicationPage().visibleRows[0]).toBe(problem.solution.steps[0].multiplicationRows?.[0]);
+        expect(model.getMultiplicationPage()).toMatchObject({ hasNext: true, finalAnswer: undefined });
+        model.nextMultiplicationPage();
+        expect(model.getMultiplicationPage()).toMatchObject({ hasNext: false, currentRow: undefined, finalAnswer: problem.solution.finalAnswer });
     });
 
     it("rejects multiplication navigation for another operation", () => {

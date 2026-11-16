@@ -24,6 +24,7 @@ export class MainProblemScreenController extends ScreenController {
       () => this.handleBackClick(),
       () => this.handleSubmitClick(),
       () => this.handleContinueClick(),
+      () => this.handleTryAgainClick(),
       key => this.handleKey(key),
       index => this.handleFieldClick(index),
     );
@@ -90,6 +91,13 @@ export class MainProblemScreenController extends ScreenController {
         difficulty: this.model.getDifficulty(),
       });
     }
+  }
+
+  private handleTryAgainClick(): void {
+    if (!this.model?.canContinue()) return;
+    this.model.clearAnswer();
+    this.view.resetForRetry();
+    this.showAnswer();
   }
 
   private handleContinueClick(): void {

@@ -191,6 +191,7 @@ export class MainProblemScreenModel {
   clearAnswer(): void {
     this.entries.fill("");
     this.active = 0;
+    this.answerCorrect = false;
   }
 
   /** The typed answer as a number, or null while nothing (or only "-") has been typed. */

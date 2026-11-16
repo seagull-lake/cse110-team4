@@ -9,7 +9,8 @@ const view = vi.hoisted(() => ({
     onBackToMap: () => {},
     multiplication: vi.fn((..._args: unknown[]) => {}),
     division: vi.fn((..._args: unknown[]) => {}),
-    other: vi.fn((..._args: unknown[]) => {}),
+    addition: vi.fn((..._args: unknown[]) => {}),
+    subtraction: vi.fn((..._args: unknown[]) => {}),
 }));
 
 vi.mock("./solutionScreenView.ts", () => ({
@@ -21,7 +22,8 @@ vi.mock("./solutionScreenView.ts", () => ({
         }
         renderMultiplication(...args: unknown[]) { view.multiplication(...args); }
         renderDivision(...args: unknown[]) { view.division(...args); }
-        render(...args: unknown[]) { view.other(...args); }
+        renderAddition(...args: unknown[]) { view.addition(...args); }
+        renderSubtraction(...args: unknown[]) { view.subtraction(...args); }
     },
 }));
 
@@ -104,4 +106,31 @@ it("keeps division rendering and advancement", () => {
 
     view.onNextStep();
     expect(view.division).toHaveBeenLastCalledWith(problem.solution.steps[0].divisionBoxMethod, 2);
+});
+
+it("renders addition columns through the dedicated view, including its full-solution page", () => {
+    const problem = new MainGameProblemGenerator(() => 0.5).generate({ operation: "addition", operandDigits: [2, 2] });
+    const { controller } = setup();
+    controller.setProblem(problem, "addition", 2);
+    expect(view.addition).toHaveBeenLastCalledWith(problem.solution.steps[0], 0, 2);
+
+    const columns = problem.solution.steps[0].additionColumns;
+    if (!columns) throw new Error("Expected addition columns.");
+    for (let index = 0; index < columns.length; index++) view.onNextStep();
+    expect(view.addition).toHaveBeenLastCalledWith(problem.solution.steps[0], columns.length, 2);
+});
+
+it("renders subtraction columns through the dedicated view and reveals the final answer", () => {
+    const problem = new MainGameProblemGenerator(() => 0.5).generate({ operation: "subtraction", operandDigits: [3, 2] });
+    const { controller } = setup();
+    controller.setProblem(problem, "subtraction", 2);
+    expect(view.subtraction).toHaveBeenLastCalledWith(expect.objectContaining({
+        top: 550, bottom: 55, visibleColumnCount: 1, finalAnswer: undefined,
+    }));
+
+    view.onNextStep();
+    view.onNextStep();
+    expect(view.subtraction).toHaveBeenLastCalledWith(expect.objectContaining({
+        visibleColumnCount: 3, hasNext: false, finalAnswer: 495,
+    }));
 });

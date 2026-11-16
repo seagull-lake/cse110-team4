@@ -14,6 +14,45 @@ export type SolutionPage = {
     | { operation: "division"; division: DivisionBoxMethod; visibleBoxCount: number }
 );
 
+const PLACE_NAMES = ["ones", "tens", "hundreds", "thousands", "ten thousands"];
+
+/** One page of the subtraction solution: the columns revealed so far, from the ones place up. */
+export interface SubtractionPage {
+    /** The number on top and the number under it. For a negative answer this is larger − smaller. */
+    readonly top: number;
+    readonly bottom: number;
+    /** True when the problem was smaller − larger, so the answer gets a minus. */
+    readonly isNegative: boolean;
+    readonly columns: readonly SubtractionColumn[];
+    readonly visibleColumnCount: number;
+    /** The column explained on this page (the last one revealed). */
+    readonly currentColumn: SubtractionColumn;
+    readonly hasNext: boolean;
+    /** Only on the last page. */
+    readonly finalAnswer?: number;
+}
+
+function placeName(index: number): string {
+    return PLACE_NAMES[index] ?? `10^${index}`;
+}
+
+/**
+ * What happens in one column, e.g. "Ones: 4 is smaller than 8, so borrow 1 from the tens. 14 − 8 = 6".
+ * A column that lent 1 to the column before shows it as "− 1".
+ */
+export function explainSubtractionColumn(column: SubtractionColumn, index: number): string {
+    const name = placeName(index);
+    const lent = column.borrowIn ? ` (lent 1 to the ${placeName(index - 1)})` : "";
+    const minusLent = column.borrowIn ? " − 1" : "";
+    const label = `${name[0].toUpperCase()}${name.slice(1)}${lent}: `;
+    if (!column.borrowOut) {
+        return `${label}${column.leftDigit}${minusLent} − ${column.rightDigit} = ${column.resultDigit}`;
+    }
+    return `${label}${column.leftDigit}${minusLent} is smaller than ${column.rightDigit}, ` +
+        `so borrow 1 from the ${placeName(index + 1)}. ` +
+        `${column.leftDigit + 10}${minusLent} − ${column.rightDigit} = ${column.resultDigit}`;
+}
+
 export class SolutionScreenModel{
     private readonly problem: SolvedMainGameProblem;
     private readonly topic: LevelType;
@@ -23,6 +62,8 @@ export class SolutionScreenModel{
     private columnIndex = 0;
     private divisionBoxIndex = 0;
     private multiplicationRowIndex = 0;
+    private additionPageIndex = 0;
+    private subtractionColumnIndex = 0;
     constructor(problem: SolvedMainGameProblem, topic: LevelType, difficulty: number){
         this.problem = problem;
         this.topic = topic;
@@ -49,11 +90,11 @@ export class SolutionScreenModel{
         return this.getCurrentStep().additionColumns?.[this.columnIndex];
     }
 
-    getVisibleColumns(){//this returns the columns that should be visible on the screeen 
+    getVisibleColumns(){//this returns the columns that should be visible on the screeen
         const columns = this.getCurrentStep().additionColumns;
         if(!columns) return [];
         return columns.slice(0, this.columnIndex + 1);
-    }  
+    }
 
     hasNextColumn(){
         const columns = this.getCurrentStep().additionColumns;
@@ -76,21 +117,19 @@ export class SolutionScreenModel{
                 return { operation: "division", ...page, finalAnswer: page.hasNext ? undefined : this.getFinalAnswer() };
             }
             case "addition": {
-                const hasNext = this.hasNextColumn();
+                const { hasNext, pageIndex, step: addition } = this.getAdditionPage();
                 return {
-                    operation: "addition", currentColumn: this.getCurrentColumn(),
-                    visibleColumns: this.getVisibleColumns(), hasNext,
+                    operation: "addition", currentColumn: addition.additionColumns?.[pageIndex],
+                    visibleColumns: addition.additionColumns?.slice(0, pageIndex + 1) ?? [], hasNext,
                     finalAnswer: hasNext ? undefined : this.getFinalAnswer(),
                 };
             }
             case "subtraction": {
-                const columns = step.subtractionColumns;
-                if (!columns) throw new Error("The current solution step has no subtraction columns.");
-                const hasNext = this.columnIndex < columns.length - 1;
+                const page = this.getSubtractionPage();
                 return {
-                    operation: "subtraction", currentColumn: columns[this.columnIndex],
-                    visibleColumns: columns.slice(0, this.columnIndex + 1), hasNext,
-                    finalAnswer: hasNext ? undefined : this.getFinalAnswer(),
+                    operation: "subtraction", currentColumn: page.currentColumn,
+                    visibleColumns: page.columns.slice(0, page.visibleColumnCount),
+                    hasNext: page.hasNext, finalAnswer: page.finalAnswer,
                 };
             }
         }
@@ -102,8 +141,8 @@ export class SolutionScreenModel{
         switch (page.operation) {
             case "multiplication": this.nextMultiplicationPage(); break;
             case "division": this.nextDivisionPage(); break;
-            case "addition": this.nextColumn(); break;
-            case "subtraction": this.columnIndex++; break;
+            case "addition": this.nextAdditionPage(); break;
+            case "subtraction": this.nextSubtractionPage(); break;
         }
     }
 
@@ -143,4 +182,45 @@ export class SolutionScreenModel{
         }
     }
 
+    // Return the addition data and how many columns should be filled in.
+    // Which page to draw, and whether "Next Step" can go further.
+    getAdditionPage() {
+        const step = this.getCurrentStep();
+        const columns = step.additionColumns;
+        if (!columns) throw new Error("The current solution step is not addition.");
+        return {
+            step,                                               // the view reads the digits from this
+            pageIndex: this.additionPageIndex,
+            hasNext: this.additionPageIndex < columns.length,   // false only on the Full Solution page
+        };
+    }
+
+    // Move to the next page, stopping at the Full Solution page.
+    nextAdditionPage(): void {
+        if (this.getAdditionPage().hasNext) this.additionPageIndex++;
+    }
+
+    // Return the subtraction columns revealed so far, one more on every Next Step.
+    getSubtractionPage(): SubtractionPage {
+        const step = this.getCurrentStep();
+        const columns = step.subtractionColumns;
+        if (!columns) throw new Error("The current solution step is not subtraction.");
+        const isNegative = step.leftOperand < step.rightOperand;
+        const hasNext = this.subtractionColumnIndex < columns.length - 1;
+        return {
+            top: isNegative ? step.rightOperand : step.leftOperand,
+            bottom: isNegative ? step.leftOperand : step.rightOperand,
+            isNegative,
+            columns,
+            visibleColumnCount: this.subtractionColumnIndex + 1,
+            currentColumn: columns[this.subtractionColumnIndex],
+            hasNext,
+            finalAnswer: hasNext ? undefined : this.getFinalAnswer(),
+        };
+    }
+
+    // Reveal one more column, stopping at the last one.
+    nextSubtractionPage(): void {
+        if (this.getSubtractionPage().hasNext) this.subtractionColumnIndex++;
+    }
 }

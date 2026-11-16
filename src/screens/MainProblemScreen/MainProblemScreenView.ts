@@ -16,6 +16,8 @@ const SCREEN_MARGIN = 30;
 const HOME_BUTTON_BOTTOM = STAGE_HEIGHT - 22; // the Home button is 40 high and starts at STAGE_HEIGHT - 62
 const PRIMARY_BUTTON_X = STAGE_WIDTH - SCREEN_MARGIN - PRIMARY_BUTTON.width;
 const PRIMARY_BUTTON_Y = HOME_BUTTON_BOTTOM - PRIMARY_BUTTON.height;
+const BUTTON_GAP = 12;
+const TRY_AGAIN_BUTTON_X = PRIMARY_BUTTON_X - PRIMARY_BUTTON.width - BUTTON_GAP;
 const BOX_FILL = "#FFFFFF";
 const BOX_STROKE = "#27695B";
 /** The field being typed in */
@@ -48,6 +50,7 @@ export class MainProblemScreenView implements View {
   private readonly feedback: Konva.Text;
   private readonly submitButton: Konva.Group;
   private readonly continueButton: Konva.Group;
+  private readonly tryAgainButton: Konva.Group;
   // The input boxes of every field, and the typed characters drawn inside them
   private readonly answerGroup = new Konva.Group();
   // Solution content sits above the question and below the navigation buttons.
@@ -81,6 +84,7 @@ export class MainProblemScreenView implements View {
     onBackClick: () => void,
     onSubmitClick: () => void,
     onContinueClick: () => void,
+    onTryAgainClick: () => void,
     onKey: (key: string) => void = () => {},
     onFieldClick: (index: number) => void = () => {},
   ) {
@@ -112,11 +116,13 @@ export class MainProblemScreenView implements View {
       text: "", fontSize: 24, fontFamily: FONT_FAMILY, fill: CORRECT_TEXT_COLOR,
     });
     this.group.add(this.feedback);
-    // Submit and Continue share the bottom-right corner: Continue replaces Submit on a correct answer
+    // Continue and Try Again appear beside each other after a correct answer.
     this.submitButton = this.makePrimaryButton("Submit", PRIMARY_BUTTON_X, PRIMARY_BUTTON_Y, onSubmitClick);
     this.continueButton = this.makePrimaryButton("Continue", PRIMARY_BUTTON_X, PRIMARY_BUTTON_Y, onContinueClick);
+    this.tryAgainButton = this.makePrimaryButton("Try Again", TRY_AGAIN_BUTTON_X, PRIMARY_BUTTON_Y, onTryAgainClick);
     this.continueButton.visible(false);
-    this.group.add(this.submitButton, this.continueButton);
+    this.tryAgainButton.visible(false);
+    this.group.add(this.submitButton, this.continueButton, this.tryAgainButton);
     this.group.add(this.solutionGroup);
 
     // Shared Home button (bottom-left) and Back to map next to it
@@ -166,8 +172,10 @@ export class MainProblemScreenView implements View {
     this.fields = [...layout.steps, layout.answer];
     this.shownRow = 0;
     this.feedback.text("");
+    this.feedback.fill(CORRECT_TEXT_COLOR);
     this.submitButton.visible(true);
     this.continueButton.visible(false);
+    this.tryAgainButton.visible(false);
     this.showAnswer(this.fields.map(() => ""), 0);
   }
 
@@ -180,6 +188,7 @@ export class MainProblemScreenView implements View {
     this.feedback.hide();
     this.submitButton.hide();
     this.continueButton.hide();
+    this.tryAgainButton.hide();
     this.solutionGroup.destroyChildren();
     this.solutionGroup.add(view.getGroup());
     view.show();
@@ -195,7 +204,18 @@ export class MainProblemScreenView implements View {
     this.feedback.text("Correct!");
     this.submitButton.visible(false);
     this.continueButton.visible(true);
+    this.tryAgainButton.visible(true);
     this.showAnswer(this.entries, this.active);
+  }
+
+  /** Clears the answer and feedback so the same problem can be attempted again. */
+  resetForRetry(): void {
+    this.answerLocked = false;
+    this.feedback.text("");
+    this.feedback.fill(CORRECT_TEXT_COLOR);
+    this.submitButton.visible(true);
+    this.continueButton.visible(false);
+    this.tryAgainButton.visible(false);
   }
 
   /** Draws every field's boxes with what was typed in them (right-aligned like a calculator); the active field is highlighted. */

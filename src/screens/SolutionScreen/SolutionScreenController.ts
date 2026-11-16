@@ -54,14 +54,13 @@ export class SolutionScreenController extends ScreenController {
             case "division":
                 this.view.renderDivision(page.division, page.visibleBoxCount);
                 break;
-            case "addition":
+            case "addition": {
+                const addition = this.model.getAdditionPage();
+                this.view.renderAddition(addition.step, addition.pageIndex, this.model.getContext().difficulty);
+                break;
+            }
             case "subtraction":
-                this.view.render({
-                    step: this.model.getCurrentStep(),
-                    currentColumn: this.model.getCurrentColumn(),
-                    visibleColumns: this.model.getVisibleColumns(),
-                    hasNextColumn: this.model.hasNextColumn(),
-                });
+                this.view.renderSubtraction(this.model.getSubtractionPage());
                 break;
         }
     }

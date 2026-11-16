@@ -49,6 +49,7 @@ export class SolutionScreenController extends ScreenController {
                     const { multiplierDigit, multiplierPlaceValue, partialProduct } = page.currentRow;
                     explanation = `${this.model.getCurrentStep().leftOperand} × ${multiplierDigit * multiplierPlaceValue} = ${partialProduct}`;
                 } else if (page.finalAnswer !== undefined) {
+                    // Sum the revealed partial products.
                     explanation = `${page.visibleRows.map(row => row.partialProduct).join(" + ")} = ${page.finalAnswer}`;
                 }
                 const { difficulty } = this.model.getContext();

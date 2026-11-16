@@ -5,11 +5,22 @@ import { FONT_FAMILY, STAGE_HEIGHT, STAGE_WIDTH, TITLE_COLOR } from "../constant
 export function createActionButton(label: string, x = STAGE_WIDTH - 200, y = STAGE_HEIGHT - 70): Konva.Group {
     const button = new Konva.Group({ x, y });
     button.add(new Konva.Rect({
-        width: 170, height: 45, fill: "#fbe7a9", stroke: TITLE_COLOR, strokeWidth: 3, cornerRadius: 8,
+        width: 170,
+        height: 45,
+        fill: "#fbe7a9",
+        stroke: TITLE_COLOR,
+        strokeWidth: 3,
+        cornerRadius: 8,
     }));
     button.add(new Konva.Text({
-        text: label, width: 170, height: 45, fontSize: 22, fontFamily: FONT_FAMILY, fill: TITLE_COLOR,
-        align: "center", verticalAlign: "middle",
+        text: label,
+        width: 170,
+        height: 45,
+        fontSize: 22,
+        fontFamily: FONT_FAMILY,
+        fill: TITLE_COLOR,
+        align: "center",
+        verticalAlign: "middle",
     }));
     button.on("mouseenter", () => { document.body.style.cursor = "pointer"; });
     button.on("mouseleave", () => { document.body.style.cursor = "default"; });
@@ -27,8 +38,14 @@ export function createNumberField(
     const firstFilled = field.cellXs.length - value.length;
     field.cellXs.forEach((x, index) => {
         const box = new Konva.Rect({
-            x: x + 4, y: field.y + 4, width: field.size.width - 8, height: field.size.height - 8,
-            fill: style.fill, stroke: style.stroke, strokeWidth: style.strokeWidth, cornerRadius: 6,
+            x: x + 4,
+            y: field.y + 4,
+            width: field.size.width - 8,
+            height: field.size.height - 8,
+            fill: style.fill,
+            stroke: style.stroke,
+            strokeWidth: style.strokeWidth,
+            cornerRadius: 6,
         });
         if (onClick) {
             box.on("click tap", onClick);
@@ -38,9 +55,17 @@ export function createNumberField(
         group.add(box);
         const character = index >= firstFilled ? value[index - firstFilled] : "";
         if (character) group.add(new Konva.Text({
-            name: style.textName, x, y: field.y, width: field.size.width, height: field.size.height,
-            text: character === "-" ? "−" : character, fontSize: field.size.fontSize,
-            fontFamily: FONT_FAMILY, fill: TITLE_COLOR, align: "center", verticalAlign: "middle",
+            name: style.textName,
+            x,
+            y: field.y,
+            width: field.size.width,
+            height: field.size.height,
+            text: character === "-" ? "−" : character,
+            fontSize: field.size.fontSize,
+            fontFamily: FONT_FAMILY,
+            fill: TITLE_COLOR,
+            align: "center",
+            verticalAlign: "middle",
             listening: style.textListening ?? true,
         }));
     });

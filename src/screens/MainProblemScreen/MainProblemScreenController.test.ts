@@ -273,9 +273,11 @@ describe("main problem screen controller", () => {
 
   it("offers Try Again and Continue after a correct submission", () => {
     const problem = new MainGameProblemGenerator(() => 0.5).generate({ operation: "addition", operandDigits: [2, 1] });
-    const generate = vi.fn(() => problem);
+    const nextProblem = new MainGameProblemGenerator(() => 0.1).generate({ operation: "addition", operandDigits: [2, 1] });
+    const generate = vi.fn().mockReturnValueOnce(problem).mockReturnValueOnce(nextProblem);
     const { controller, screens } = setup({ generate });
     controller.setLevel("addition", 1);
+    const firstLayout = view.layout;
     view.enteredAnswer = Array.from(String(problem.answer));
     view.onSubmitClick();
     expect(view.correctAnswerShown).toBe(true);
@@ -283,15 +285,18 @@ describe("main problem screen controller", () => {
 
     view.onTryAgainClick();
     expect(view.correctAnswerShown).toBe(false);
-    expect(view.enteredAnswer).toEqual(Array(String(problem.answer).length).fill(""));
+    expect(view.layout).not.toEqual(firstLayout);
+    expect(view.enteredAnswer).toEqual(Array(String(nextProblem.answer).length).fill(""));
     expect(screens).toEqual([]);
-    expect(generate).toHaveBeenCalledTimes(1);
+    expect(generate).toHaveBeenCalledTimes(2);
+    expect(generate.mock.calls[0][0]).toEqual({ gameType: "main-game", operation: "addition", difficulty: 1 });
+    expect(generate.mock.calls[1][0]).toEqual(generate.mock.calls[0][0]);
 
-    view.enteredAnswer = Array.from(String(problem.answer));
+    view.enteredAnswer = Array.from(String(nextProblem.answer));
     view.onSubmitClick();
     expect(view.correctAnswerShown).toBe(true);
     view.onContinueClick();
     expect(screens).toEqual([{ type: "adventuremap", topic: "addition" }]);
-    expect(generate).toHaveBeenCalledTimes(1);
+    expect(generate).toHaveBeenCalledTimes(2);
   });
 });

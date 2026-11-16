@@ -103,6 +103,7 @@ export class MultiplicationSolutionView {
                     }));
                 });
         }
+        // Draw partial products and the final answer.
         for (const [index, field] of [...productFields, answerField].entries()) {
             const row = page.visibleRows[index];
             const value = index === productFields.length ? page.finalAnswer : row?.partialProduct;

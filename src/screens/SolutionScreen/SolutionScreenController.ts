@@ -7,7 +7,6 @@ import type { LevelType } from "../../levels/levelConfig.ts";
 
 export class SolutionScreenController extends ScreenController{
     private model: SolutionScreenModel | null = null;
-    private problem: SolvedMainGameProblem | null = null;
     private readonly view: SolutionScreenView;
     private readonly screenSwitcher: ScreenSwitcher;
     private topic: LevelType = "addition";
@@ -24,7 +23,6 @@ export class SolutionScreenController extends ScreenController{
     }
   setProblem(problem: SolvedMainGameProblem, topic: LevelType, difficulty: number): void {
         this.model = new SolutionScreenModel(problem);
-        this.problem = problem;
         this.topic = topic;
         this.difficulty = difficulty;
         this.updateView();
@@ -60,7 +58,7 @@ export class SolutionScreenController extends ScreenController{
       return;
     }
 
-    if (operation === "multiplication" && this.problem) {
+    if (operation === "multiplication") {
       const page = this.model.getMultiplicationPage();
       let explanation = "";
       if (page.currentRow) {
@@ -69,7 +67,7 @@ export class SolutionScreenController extends ScreenController{
       } else if (page.finalAnswer !== undefined) {
         explanation = `${page.visibleRows.map(row => row.partialProduct).join(" + ")} = ${page.finalAnswer}`;
       }
-      this.view.renderMultiplication(this.difficulty, this.problem, page, explanation);
+      this.view.renderMultiplication(this.difficulty, this.model.getProblem(), page, explanation);
       return;
     }
 

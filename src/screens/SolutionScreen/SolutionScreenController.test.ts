@@ -75,15 +75,17 @@ it("explains a zero partial product using the generated row", () => {
     expect(view.multiplication.mock.lastCall?.[3]).toBe("23 × 0 = 0");
 });
 
-it("reopens a problem from its first page", () => {
+it("opens the newly routed problem from its first page", () => {
     const problem = multiplicationProblem();
     const { controller } = setup();
     controller.setProblem(problem, "multiplication", 5);
     view.onNextStep();
-    controller.setProblem(problem, "multiplication", 5);
+    const nextProblem = multiplicationProblem(0.003); // 23 × 102
+    controller.setProblem(nextProblem, "multiplication", 5);
 
+    expect(view.multiplication.mock.lastCall?.[1]).toBe(nextProblem);
     expect(view.multiplication.mock.lastCall?.[3]).toBe("23 × 2 = 46");
-    expect(view.multiplication.mock.lastCall?.[2]).toMatchObject({ visibleRows: [problem.solution.steps[0].multiplicationRows?.[0]] });
+    expect(view.multiplication.mock.lastCall?.[2]).toMatchObject({ visibleRows: [nextProblem.solution.steps[0].multiplicationRows?.[0]] });
 });
 
 it("routes Home to the menu and Back to the current topic map", () => {

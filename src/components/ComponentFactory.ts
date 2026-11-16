@@ -36,6 +36,7 @@ export function createNumberField(
 ): Konva.Group {
     const group = new Konva.Group();
     const firstFilled = field.cellXs.length - value.length;
+    // Align digits to the rightmost cells.
     field.cellXs.forEach((x, index) => {
         const box = new Konva.Rect({
             x: x + 4,

@@ -1,6 +1,7 @@
 import Konva from "konva";
 import { BUTTON_COLOR, BUTTON_TEXT_COLOR, FONT_FAMILY, STAGE_HEIGHT, STAGE_WIDTH, TITLE_COLOR } from "../../constants.ts";
 import { createHomeButton } from "../../components/HomeButton.ts";
+import { createActionButton, createNumberField } from "../../components/ComponentFactory.ts";
 import type { MainGameProblem } from "../../domain/problem.ts";
 import { getProblemLayout } from "../MainProblemScreen/MainProblemLayout.ts";
 import type { SolutionScreenModel } from "./SolutionScreenModel.ts";
@@ -162,76 +163,4 @@ export class MultiplicationSolutionView {
     getGroup(): Konva.Group {
         return this.group;
     }
-}
-
-/** Draw the solution navigation button. */
-function createActionButton(label: string, x = STAGE_WIDTH - 200, y = STAGE_HEIGHT - 70): Konva.Group {
-    const button = new Konva.Group({ x, y });
-    button.add(new Konva.Rect({
-        width: 170,
-        height: 45,
-        fill: "#fbe7a9",
-        stroke: TITLE_COLOR,
-        strokeWidth: 3,
-        cornerRadius: 8,
-    }));
-    button.add(new Konva.Text({
-        text: label,
-        width: 170,
-        height: 45,
-        fontSize: 22,
-        fontFamily: FONT_FAMILY,
-        fill: TITLE_COLOR,
-        align: "center",
-        verticalAlign: "middle",
-    }));
-    button.on("mouseenter", () => { document.body.style.cursor = "pointer"; });
-    button.on("mouseleave", () => { document.body.style.cursor = "default"; });
-    return button;
-}
-
-/** Draw one right-aligned number field, leaving field selection to its caller. */
-function createNumberField(
-    field: { y: number; cellXs: readonly number[]; size: { width: number; height: number; fontSize: number } },
-    value: string,
-    style: { fill: string; stroke: string; strokeWidth: number; textName?: string; textListening?: boolean },
-    onClick?: () => void,
-): Konva.Group {
-    const group = new Konva.Group();
-    const firstFilled = field.cellXs.length - value.length;
-    // Align digits to the rightmost cells.
-    field.cellXs.forEach((x, index) => {
-        const box = new Konva.Rect({
-            x: x + 4,
-            y: field.y + 4,
-            width: field.size.width - 8,
-            height: field.size.height - 8,
-            fill: style.fill,
-            stroke: style.stroke,
-            strokeWidth: style.strokeWidth,
-            cornerRadius: 6,
-        });
-        if (onClick) {
-            box.on("click tap", onClick);
-            box.on("mouseenter", () => (document.body.style.cursor = "text"));
-            box.on("mouseleave", () => (document.body.style.cursor = "default"));
-        }
-        group.add(box);
-        const character = index >= firstFilled ? value[index - firstFilled] : "";
-        if (character) group.add(new Konva.Text({
-            name: style.textName,
-            x,
-            y: field.y,
-            width: field.size.width,
-            height: field.size.height,
-            text: character === "-" ? "−" : character,
-            fontSize: field.size.fontSize,
-            fontFamily: FONT_FAMILY,
-            fill: TITLE_COLOR,
-            align: "center",
-            verticalAlign: "middle",
-            listening: style.textListening ?? true,
-        }));
-    });
-    return group;
 }

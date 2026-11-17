@@ -62,6 +62,41 @@ describe("the problem a level asks for", () => {
     expect(model.getEnteredAnswer()).toBe("");
     expect(model.canContinue()).toBe(false);
   });
+
+  it("offers Review Mistakes only after an incorrect answer, and Try Again after either", () => {
+    const model = new MainProblemScreenModel(
+      "addition", 1, { generate: () => ({ operands: [482, 315], answer: 797 }) } as never,
+    );
+    expect(model.canTryAgain()).toBe(false);
+    expect(model.canReviewMistakes()).toBe(false);
+    model.checkAnswer(["7", "9", "8"]);
+    expect(model.canReviewMistakes()).toBe(true);
+    expect(model.canTryAgain()).toBe(true);
+    model.clearAnswer();
+    expect(model.canReviewMistakes()).toBe(false);
+    expect(model.canTryAgain()).toBe(false);
+    model.checkAnswer(["7", "9", "7"]);
+    expect(model.canReviewMistakes()).toBe(false);
+    expect(model.canTryAgain()).toBe(true);
+  });
+
+  it("is complete only once every carry box and the answer are filled in", () => {
+    // 482 + 315: carries above the tens and hundreds, then a 3-digit answer
+    const model = new MainProblemScreenModel(
+      "addition", 1, { generate: () => ({ operands: [482, 315], answer: 797 }) } as never,
+    );
+    expect(model.isComplete()).toBe(false);
+    model.selectField(2);
+    ["7", "9", "7"].forEach(key => model.typeCharacter(key));
+    expect(model.isComplete()).toBe(false); // the carries are still empty
+    model.selectField(0);
+    model.typeCharacter("0");
+    expect(model.isComplete()).toBe(false);
+    model.typeCharacter("1");
+    expect(model.isComplete()).toBe(true);
+    model.deleteLastCharacter();
+    expect(model.isComplete()).toBe(false);
+  });
 });
 
 describe("filling out the answer", () => {

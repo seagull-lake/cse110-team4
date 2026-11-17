@@ -25,6 +25,7 @@ export class MainProblemScreenController extends ScreenController {
       () => this.handleSubmitClick(),
       () => this.handleContinueClick(),
       () => this.handleTryAgainClick(),
+      () => this.handleReviewMistakesClick(),
       key => this.handleKey(key),
       index => this.handleFieldClick(index),
     );
@@ -61,7 +62,9 @@ export class MainProblemScreenController extends ScreenController {
   }
 
   private showAnswer(): void {
-    if (this.model) this.view.showAnswer(this.model.getEntries(), this.model.getActiveField());
+    if (!this.model) return;
+    this.view.showAnswer(this.model.getEntries(), this.model.getActiveField());
+    this.view.setSubmitEnabled(this.model.isComplete());
   }
 
   private handleHomeClick(): void {
@@ -77,24 +80,38 @@ export class MainProblemScreenController extends ScreenController {
     this.screenSwitcher.switchToScreen({ type: "adventuremap", topic: this.model.getTopic() });
   }
 
+  /**
+   * Only checks the answer once every box (the in-between steps and the answer) is filled in;
+   * otherwise the student is told to finish first. A correct answer offers Continue, an incorrect
+   * one shows the Incorrect state, which offers Try Again or Review Mistakes (the solution screen).
+   */
   private handleSubmitClick(): void {
-    if (!this.model) return;
-    const answer = this.view.getEnteredAnswer();
-    if (answer.length !== this.model.getAnswerLength() || answer.some(digit => digit === "")) return;
-    if (this.model.checkAnswer(answer)) {
+    if (!this.model || this.model.canTryAgain()) return;
+    if (!this.model.isComplete()) {
+      this.view.showIncompleteMessage();
+      return;
+    }
+    if (this.model.checkAnswer(Array.from(this.model.getEnteredAnswer()))) {
       this.view.showCorrectAnswer();
     } else {
-      this.screenSwitcher.switchToScreen({
-        type: "solution",
-        problem: this.model.getProblem(),
-        topic: this.model.getTopic(),
-        difficulty: this.model.getDifficulty(),
-      });
+      this.view.showIncorrectAnswer();
     }
   }
 
+  /** From the Incorrect state: walk through the solution of this same problem. */
+  private handleReviewMistakesClick(): void {
+    if (!this.model?.canReviewMistakes()) return;
+    this.screenSwitcher.switchToScreen({
+      type: "solution",
+      problem: this.model.getProblem(),
+      topic: this.model.getTopic(),
+      difficulty: this.model.getDifficulty(),
+    });
+  }
+
+  /** After a correct or incorrect answer: a new problem of the same level, with every box empty. */
   private handleTryAgainClick(): void {
-    if (!this.model?.canContinue()) return;
+    if (!this.model?.canTryAgain()) return;
     this.setLevel(this.model.getTopic(), this.model.getDifficulty());
   }
 

@@ -27,6 +27,13 @@ const ACTIVE_STROKE = "#E0A100";
 const CORRECT_FILL = "#B8E6C7";
 /** The "Correct!" message */
 const CORRECT_TEXT_COLOR = "#3f9a5b";
+/** The answer once it is incorrect, and the "Incorrect" message */
+const INCORRECT_FILL = "#F6C1BF";
+const INCORRECT_TEXT_COLOR = "#C62828";
+/** The "fill in every box" reminder */
+const HINT_TEXT_COLOR = "#B26A00";
+/** Submit is drawn faded until every box is filled in. */
+const DISABLED_OPACITY = 0.45;
 /** The circle beside a multiplication row: no carries filled in yet / some of them / all of them. */
 const MARKER_FILL: Record<RowProgress, string> = {
   empty: "#E53935",
@@ -51,6 +58,7 @@ export class MainProblemScreenView implements View {
   private readonly submitButton: Konva.Group;
   private readonly continueButton: Konva.Group;
   private readonly tryAgainButton: Konva.Group;
+  private readonly reviewButton: Konva.Group;
   // The input boxes of every field, and the typed characters drawn inside them
   private readonly answerGroup = new Konva.Group();
   // Solution content sits above the question and below the navigation buttons.
@@ -72,8 +80,10 @@ export class MainProblemScreenView implements View {
   /** What showAnswer last drew, so the answer can be read back and redrawn. */
   private entries: readonly string[] = [];
   private active = 0;
-  /** Once the answer is correct, typing and clicking boxes does nothing. */
+  /** Once the answer is submitted, typing and clicking boxes does nothing. */
   private answerLocked = false;
+  /** How the answer boxes are colored once the answer is locked. */
+  private lockedAnswerFill = CORRECT_FILL;
 
   /**
    * onKey gets every key pressed while this screen is shown, e.g. "7", "-", "Backspace" or "Tab"
@@ -85,6 +95,7 @@ export class MainProblemScreenView implements View {
     onSubmitClick: () => void,
     onContinueClick: () => void,
     onTryAgainClick: () => void,
+    onReviewClick: () => void = () => {},
     onKey: (key: string) => void = () => {},
     onFieldClick: (index: number) => void = () => {},
   ) {
@@ -116,13 +127,15 @@ export class MainProblemScreenView implements View {
       text: "", fontSize: 24, fontFamily: FONT_FAMILY, fill: CORRECT_TEXT_COLOR,
     });
     this.group.add(this.feedback);
-    // Continue and Try Again appear beside each other after a correct answer.
+    // Try Again appears beside Continue after a correct answer, or beside Review Mistakes after an incorrect one.
     this.submitButton = this.makePrimaryButton("Submit", PRIMARY_BUTTON_X, PRIMARY_BUTTON_Y, onSubmitClick);
     this.continueButton = this.makePrimaryButton("Continue", PRIMARY_BUTTON_X, PRIMARY_BUTTON_Y, onContinueClick);
+    this.reviewButton = this.makePrimaryButton("Review Mistakes", PRIMARY_BUTTON_X, PRIMARY_BUTTON_Y, onReviewClick);
     this.tryAgainButton = this.makePrimaryButton("Try Again", TRY_AGAIN_BUTTON_X, PRIMARY_BUTTON_Y, onTryAgainClick);
     this.continueButton.visible(false);
+    this.reviewButton.visible(false);
     this.tryAgainButton.visible(false);
-    this.group.add(this.submitButton, this.continueButton, this.tryAgainButton);
+    this.group.add(this.submitButton, this.continueButton, this.reviewButton, this.tryAgainButton);
     this.group.add(this.solutionGroup);
 
     // Shared Home button (bottom-left) and Back to map next to it
@@ -171,11 +184,7 @@ export class MainProblemScreenView implements View {
 
     this.fields = [...layout.steps, layout.answer];
     this.shownRow = 0;
-    this.feedback.text("");
-    this.feedback.fill(CORRECT_TEXT_COLOR);
-    this.submitButton.visible(true);
-    this.continueButton.visible(false);
-    this.tryAgainButton.visible(false);
+    this.resetButtons();
     this.showAnswer(this.fields.map(() => ""), 0);
   }
 
@@ -188,6 +197,7 @@ export class MainProblemScreenView implements View {
     this.feedback.hide();
     this.submitButton.hide();
     this.continueButton.hide();
+    this.reviewButton.hide();
     this.tryAgainButton.hide();
     this.solutionGroup.destroyChildren();
     this.solutionGroup.add(view.getGroup());
@@ -201,20 +211,57 @@ export class MainProblemScreenView implements View {
   /** Turns the answer boxes green, locks the answer and offers Continue. */
   showCorrectAnswer(): void {
     this.answerLocked = true;
+    this.lockedAnswerFill = CORRECT_FILL;
     this.feedback.text("Correct!");
+    this.feedback.fill(CORRECT_TEXT_COLOR);
     this.submitButton.visible(false);
     this.continueButton.visible(true);
     this.tryAgainButton.visible(true);
     this.showAnswer(this.entries, this.active);
   }
 
+  /**
+   * Turns the answer boxes red, locks the answer and offers Try Again or Review Mistakes. The student's
+   * work stays on screen so they can see what they wrote before looking at the solution.
+   */
+  showIncorrectAnswer(): void {
+    this.answerLocked = true;
+    this.lockedAnswerFill = INCORRECT_FILL;
+    this.feedback.text("Incorrect – try again or review your mistakes");
+    this.feedback.fill(INCORRECT_TEXT_COLOR);
+    this.submitButton.visible(false);
+    this.reviewButton.visible(true);
+    this.tryAgainButton.visible(true);
+    this.showAnswer(this.entries, this.active);
+  }
+
+  /** Shown when Submit is pressed before every box is filled in. */
+  showIncompleteMessage(): void {
+    this.feedback.text("Fill in every box before submitting");
+    this.feedback.fill(HINT_TEXT_COLOR);
+    this.group.getLayer()?.draw();
+  }
+
+  /** Submit looks pressable only once every box is filled in; filling the last box clears the reminder. */
+  setSubmitEnabled(enabled: boolean): void {
+    this.submitButton.opacity(enabled ? 1 : DISABLED_OPACITY);
+    if (enabled && !this.answerLocked && this.feedback.fill() === HINT_TEXT_COLOR) this.feedback.text("");
+    this.group.getLayer()?.draw();
+  }
+
   /** Clears the answer and feedback so the same problem can be attempted again. */
   resetForRetry(): void {
+    this.resetButtons();
+  }
+
+  /** Back to answering: no feedback, only Submit. */
+  private resetButtons(): void {
     this.answerLocked = false;
     this.feedback.text("");
     this.feedback.fill(CORRECT_TEXT_COLOR);
     this.submitButton.visible(true);
     this.continueButton.visible(false);
+    this.reviewButton.visible(false);
     this.tryAgainButton.visible(false);
   }
 
@@ -231,7 +278,7 @@ export class MainProblemScreenView implements View {
       const isActive = index === active && !this.answerLocked;
       const isLockedAnswer = this.answerLocked && index === this.fields.length - 1;
       this.answerGroup.add(createNumberField(field, entries[index] ?? "", {
-        fill: isLockedAnswer ? CORRECT_FILL : isActive ? ACTIVE_FILL : BOX_FILL,
+        fill: isLockedAnswer ? this.lockedAnswerFill : isActive ? ACTIVE_FILL : BOX_FILL,
         stroke: isActive ? ACTIVE_STROKE : BOX_STROKE,
         strokeWidth: inWorkingRow ? WORKING_ROW_STROKE_WIDTH : 2,
         textListening: false,

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Screen } from "../../types.ts";
 import { MainGameProblemGenerator } from "../../problem-engine/MainGameProblemGenerator.ts";
 import type { DivisionBoxMethod, SolutionStep } from "../../problem-engine/MainGameProblemGenerator.ts";
-import type { SubtractionPage } from "./SolutionScreenModel.ts";
+import type { SolutionPage } from "./SolutionScreenModel.ts";
 import { SolutionScreenController } from "./SolutionScreenController.ts";
 
 const view = vi.hoisted(() => ({
@@ -29,8 +29,8 @@ vi.mock("./solutionScreenView.ts", () => ({
         renderAddition(step: SolutionStep, page: number, level: number) {
             view.renderAddition(step, page, level);
         }
-        renderSubtraction(page: SubtractionPage) {
-            view.renderSubtraction(page);
+        renderSubtraction(step: SolutionStep, page: Extract<SolutionPage, { operation: "subtraction" }>) {
+            view.renderSubtraction(step, page);
         }
         show() { view.show(); }
         hide() { view.hide(); }
@@ -120,10 +120,10 @@ describe("SolutionScreenController", () => {
         const controller = new SolutionScreenController({ switchToScreen: () => {} });
         controller.setProblem(problem, "subtraction", 2);
 
-        expect(view.renderSubtraction.mock.calls[0][0].visibleColumnCount).toBe(1);
+        expect(view.renderSubtraction.mock.calls[0][1].visibleColumns).toHaveLength(1);
         view.onNextStep();
-        expect(view.renderSubtraction.mock.calls[1][0].visibleColumnCount).toBe(2);
-        expect(view.renderSubtraction.mock.calls[1][0].hasNext).toBe(false);
+        expect(view.renderSubtraction.mock.calls[1][1].visibleColumns).toHaveLength(2);
+        expect(view.renderSubtraction.mock.calls[1][1].hasNext).toBe(false);
         expect(view.renderDivision).not.toHaveBeenCalled();
     });
 

@@ -145,7 +145,7 @@ describe("SolutionScreenModel subtraction columns", () => {
 
         expect(model.getOperand()).toEqual([604, 278]);
         expect(model.getSubtractionPage()).toMatchObject({
-            top: 604, bottom: 278, isNegative: false, visibleColumnCount: 1, hasNext: true, finalAnswer: undefined,
+            operation: "subtraction", visibleColumns: [expect.any(Object)], hasNext: true, finalAnswer: undefined,
         });
         expect(model.getSubtractionPage().currentColumn).toMatchObject({ leftDigit: 4, rightDigit: 8, borrowOut: 1, resultDigit: 6 });
     });
@@ -154,19 +154,19 @@ describe("SolutionScreenModel subtraction columns", () => {
         const model = new SolutionScreenModel(subtractionProblem(604, 278), "subtraction", 3);
 
         model.nextSubtractionPage();
-        expect(model.getSubtractionPage().visibleColumnCount).toBe(2);
+        expect(model.getSubtractionPage().visibleColumns).toHaveLength(2);
         expect(model.getSubtractionPage().currentColumn).toMatchObject({ borrowIn: 1, borrowOut: 1, resultDigit: 2 });
 
         model.nextSubtractionPage();
         model.nextSubtractionPage();
-        expect(model.getSubtractionPage()).toMatchObject({ visibleColumnCount: 3, hasNext: false, finalAnswer: 326 });
-        expect(model.getSubtractionPage().columns.map(column => column.resultDigit)).toEqual([6, 2, 3]);
+        expect(model.getSubtractionPage()).toMatchObject({ hasNext: false, finalAnswer: 326 });
+        expect(model.getSubtractionPage().visibleColumns.map(column => column.resultDigit)).toEqual([6, 2, 3]);
     });
 
-    it("explains larger − smaller for a negative answer and keeps the minus in the answer", () => {
+    it("preserves the original operands and negative final answer", () => {
         const model = new SolutionScreenModel(subtractionProblem(472, 546), "subtraction", 3);
 
-        expect(model.getSubtractionPage()).toMatchObject({ top: 546, bottom: 472, isNegative: true });
+        expect(model.getOperand()).toEqual([472, 546]);
         model.nextSubtractionPage();
         model.nextSubtractionPage();
         expect(model.getSubtractionPage().finalAnswer).toBe(-74);
@@ -175,7 +175,10 @@ describe("SolutionScreenModel subtraction columns", () => {
     it("has a column for every digit, even when the answer is shorter", () => {
         const model = new SolutionScreenModel(subtractionProblem(1000, 999), "subtraction", 3);
 
-        expect(model.getSubtractionPage().columns.map(column => column.resultDigit)).toEqual([1, 0, 0, 0]);
+        model.nextPage();
+        model.nextPage();
+        model.nextPage();
+        expect(model.getSubtractionPage().visibleColumns.map(column => column.resultDigit)).toEqual([1, 0, 0, 0]);
     });
 
     it("rejects subtraction navigation for another operation", () => {

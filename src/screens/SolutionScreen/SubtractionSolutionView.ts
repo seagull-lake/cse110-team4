@@ -3,7 +3,8 @@ import { BUTTON_COLOR, FONT_FAMILY, STAGE_HEIGHT, STAGE_WIDTH, TITLE_COLOR } fro
 import { getProblemLayout } from "../MainProblemScreen/MainProblemLayout.ts";
 import type { FieldLayout } from "../MainProblemScreen/MainProblemLayout.ts";
 import { explainSubtractionColumn } from "./SolutionScreenModel.ts";
-import type { SubtractionPage } from "./SolutionScreenModel.ts";
+import type { SolutionPage } from "./SolutionScreenModel.ts";
+import type { SolutionStep } from "../../problem-engine/MainGameProblemGenerator.ts";
 
 /** The column being explained is shaded so the student can follow it. */
 const CURRENT_COLUMN_FILL = "#FFE28A";
@@ -18,23 +19,27 @@ export class SubtractionSolutionView {
         this.onNextStep = onNextStep;
     }
 
-    render(page: SubtractionPage): void {
+    /** Draw revealed columns from the common page and the original operands. */
+    render(step: SolutionStep, page: Extract<SolutionPage, { operation: "subtraction" }>): void {
+        // Negative solutions display larger minus smaller, as the generator's columns do.
+        const topOperand = Math.max(step.leftOperand, step.rightOperand);
+        const bottomOperand = Math.min(step.leftOperand, step.rightOperand);
         this.group.destroyChildren();
         this.group.add(new Konva.Rect({ width: STAGE_WIDTH, height: STAGE_HEIGHT, fill: "#FFF0CF" }));
         this.drawText(this.group, "Subtraction Solution", 0, 85, STAGE_WIDTH, 55, 40);
-        if (page.isNegative) {
-            this.drawText(this.group, `${page.bottom} is smaller than ${page.top}, so work out ` +
-                `${page.top} − ${page.bottom} and put a minus in front.`, 0, 140, STAGE_WIDTH, 30, 18);
+        if (step.leftOperand < step.rightOperand) {
+            this.drawText(this.group, `${bottomOperand} is smaller than ${topOperand}, so work out ` +
+                `${topOperand} − ${bottomOperand} and put a minus in front.`, 0, 140, STAGE_WIDTH, 30, 18);
         }
 
         // Same columns and boxes as the problem screen, so the solution looks like what the student filled in
-        const layout = getProblemLayout("subtraction", { operands: [page.top, page.bottom], answer: page.top - page.bottom });
+        const layout = getProblemLayout("subtraction", { operands: [topOperand, bottomOperand], answer: topOperand - bottomOperand });
         if (layout.kind !== "column") throw new Error("Expected a subtraction column layout.");
         const { width: cell, height: row, fontSize } = layout.cellSize;
         const right = layout.line.x2;
 
         // Shade the column being explained, from the borrow row down to the answer
-        const current = page.visibleColumnCount - 1;
+        const current = page.visibleColumns.length - 1;
         const top = layout.steps[0]?.y ?? layout.cells[0].y;
         this.group.add(new Konva.Rect({
             x: right - (current + 1) * cell, y: top, width: cell,
@@ -51,13 +56,13 @@ export class SubtractionSolutionView {
         // so it is filled in together with that column
         layout.steps.forEach((field, index) => {
             this.drawBoxes(field);
-            if (index < page.visibleColumnCount) this.drawDigits(field, String(page.columns[index].borrowOut));
+            if (index < page.visibleColumns.length) this.drawDigits(field, String(page.visibleColumns[index].borrowOut));
         });
 
         // Result digits under the line, ones first. Leading zeros (e.g. 1000 − 999) have no box.
         this.drawBoxes(layout.answer);
         const answerXs = [...layout.answer.cellXs].reverse();
-        page.columns.slice(0, page.visibleColumnCount).forEach((column, index) => {
+        page.visibleColumns.forEach((column, index) => {
             const x = answerXs[index];
             if (x !== undefined) this.drawText(this.group, String(column.resultDigit), x, layout.answer.y, cell, row, fontSize);
         });

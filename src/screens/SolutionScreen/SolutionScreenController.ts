@@ -2,7 +2,7 @@ import type { SolvedMainGameProblem } from "../../problem-engine/MainGameProblem
 import type { LevelType } from "../../levels/levelConfig.ts";
 import type { ScreenSwitcher } from "../../types.ts";
 import { ScreenController } from "../../types.ts";
-import { SolutionScreenModel } from "./SolutionScreenModel.ts";
+import { SolutionScreenModel, explainMultiplicationRow } from "./SolutionScreenModel.ts";
 import { SolutionScreenView } from "./solutionScreenView.ts";
 
 export class SolutionScreenController extends ScreenController {
@@ -46,8 +46,7 @@ export class SolutionScreenController extends ScreenController {
             case "multiplication": {
                 let explanation = "";
                 if (page.currentRow) {
-                    const { multiplierDigit, multiplierPlaceValue, partialProduct } = page.currentRow;
-                    explanation = `${this.model.getCurrentStep().leftOperand} × ${multiplierDigit * multiplierPlaceValue} = ${partialProduct}`;
+                    explanation = explainMultiplicationRow(page.currentRow, this.model.getCurrentStep().leftOperand);
                 } else if (page.finalAnswer !== undefined) {
                     // Sum the revealed partial products.
                     explanation = `${page.visibleRows.map(row => row.partialProduct).join(" + ")} = ${page.finalAnswer}`;

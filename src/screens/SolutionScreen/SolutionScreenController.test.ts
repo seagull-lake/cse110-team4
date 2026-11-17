@@ -49,22 +49,33 @@ it("shows the first generated row and explanation immediately, then advances one
 
     expect(view.multiplication).toHaveBeenCalledWith(5, problem, expect.objectContaining({
         visibleRows: [problem.solution.steps[0].multiplicationRows?.[0]], hasNext: true,
-    }), "23 × 2 = 46");
+    }), "3 × 2 = 6\n2 × 2 = 4\nRow: 46");
 
     view.onNextStep();
     expect(view.multiplication).toHaveBeenLastCalledWith(5, problem, expect.objectContaining({
         visibleRows: problem.solution.steps[0].multiplicationRows?.slice(0, 2), hasNext: true,
-    }), "23 × 10 = 230");
+    }), "3 × 1 = 3\n2 × 1 = 2\n23 × 10 = 230");
 
     view.onNextStep();
     expect(view.multiplication).toHaveBeenLastCalledWith(5, problem, expect.objectContaining({
         visibleRows: problem.solution.steps[0].multiplicationRows, finalAnswer: undefined, hasNext: true,
-    }), "23 × 300 = 6900");
+    }), "3 × 3 = 9\n2 × 3 = 6\n69 × 100 = 6900");
 
     view.onNextStep();
     expect(view.multiplication).toHaveBeenLastCalledWith(5, problem, expect.objectContaining({
         currentRow: undefined, finalAnswer: 7176, hasNext: false,
     }), "46 + 230 + 6900 = 7176");
+});
+
+it("adds the units carry after multiplying the tens digit", () => {
+    const randomValues = [0.5334, 0.23]; // 58 × 3
+    const problem = new MainGameProblemGenerator(() => randomValues.shift()!).generate({
+        operation: "multiplication", operandDigits: [2, 1],
+    });
+    const { controller } = setup();
+    controller.setProblem(problem, "multiplication", 2);
+
+    expect(view.multiplication.mock.lastCall?.[3]).toBe("8 × 3 = 24 (carry 2)\n5 × 3 + 2 = 17\nRow: 174");
 });
 
 it("explains a zero partial product using the generated row", () => {
@@ -84,7 +95,7 @@ it("opens the newly routed problem from its first page", () => {
     controller.setProblem(nextProblem, "multiplication", 5);
 
     expect(view.multiplication.mock.lastCall?.[1]).toBe(nextProblem);
-    expect(view.multiplication.mock.lastCall?.[3]).toBe("23 × 2 = 46");
+    expect(view.multiplication.mock.lastCall?.[3]).toBe("3 × 2 = 6\n2 × 2 = 4\nRow: 46");
     expect(view.multiplication.mock.lastCall?.[2]).toMatchObject({ visibleRows: [nextProblem.solution.steps[0].multiplicationRows?.[0]] });
 });
 

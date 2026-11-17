@@ -25,9 +25,9 @@ export class SolutionScreenView {
 
     /** Create reusable operation views with shared navigation callbacks. */
     constructor(onNextStep: () => void, onHome: () => void, onBackToMap: () => void) {
-        this.divisionView = new DivisionSolutionView(onNextStep);
+        this.divisionView = new DivisionSolutionView(onNextStep, onHome, onBackToMap);
         this.additionView = new AdditionSolutionView(onNextStep, onHome, onBackToMap);
-        this.subtractionView = new SubtractionSolutionView(onNextStep);
+        this.subtractionView = new SubtractionSolutionView(onNextStep, onHome, onBackToMap);
         this.multiplicationView = new MultiplicationSolutionView(onHome, onBackToMap, onNextStep);
 
         this.group = new Konva.Group({ visible: false });

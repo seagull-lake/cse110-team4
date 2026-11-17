@@ -2,10 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import type { Screen } from "../../types.ts";
 import type { ProblemLayout } from "./MainProblemLayout.ts";
 import { MainProblemScreenController } from "./MainProblemScreenController.ts";
-import { solvedDivision } from "./testProblems.ts";
+import { solvedDivision, solvedProblem } from "./testProblems.ts";
 import { MainGameProblemGenerator } from "../../problem-engine/MainGameProblemGenerator.ts";
 import type { SolvedMainGameProblem } from "../../problem-engine/MainGameProblemGenerator.ts";
-import { getAnswerFields } from "./MainProblemScreenModel.ts";
+import { getAnswerFields, getExpectedEntries } from "./MainProblemScreenModel.ts";
 import type { LevelType } from "../../levels/levelConfig.ts";
 
 // Konva can't draw text in tests, so the view is replaced with one that records what it was told
@@ -28,6 +28,8 @@ const view = vi.hoisted(() => ({
   enteredAnswer: [] as string[],
   correctAnswerShown: false,
   incorrectAnswerShown: false,
+  /** The fields marked wrong in the Incorrect state */
+  wrongFields: [] as readonly number[],
   incompleteMessageShown: false,
   submitEnabled: false,
   visible: false,
@@ -73,7 +75,10 @@ vi.mock("./MainProblemScreenView.ts", () => ({
     }
     getEnteredAnswer() { return view.enteredAnswer; }
     showCorrectAnswer() { view.correctAnswerShown = true; }
-    showIncorrectAnswer() { view.incorrectAnswerShown = true; }
+    showIncorrectAnswer(wrongFields: readonly number[]) {
+      view.incorrectAnswerShown = true;
+      view.wrongFields = wrongFields;
+    }
     showIncompleteMessage() { view.incompleteMessageShown = true; }
     setSubmitEnabled(enabled: boolean) { view.submitEnabled = enabled; }
     resetForRetry() {
@@ -258,16 +263,17 @@ describe("main problem screen controller", () => {
   });
 
   /**
-   * Types every field like a student would: each step field is filled with zeros and the answer with
+   * Types every field like a student would: each step field gets its right value and the answer gets
    * `answer` (fields are typed from the ones digit to the left, so the characters go in reversed).
    * With `skipSteps`, only the answer is typed.
    */
   function fillOut(topic: LevelType, problem: SolvedMainGameProblem, answer: string, skipSteps = false) {
     const fields = getAnswerFields(topic, problem);
+    const steps = getExpectedEntries(topic, problem, fields);
     fields.forEach((field, index) => {
       view.onFieldClick(index);
       view.onKey("Escape");
-      const text = field.kind === "answer" ? answer : skipSteps ? "" : "0".repeat(field.length);
+      const text = field.kind === "answer" ? answer : skipSteps ? "" : steps[index] ?? "";
       Array.from(text).reverse().forEach(key => view.onKey(key));
     });
   }
@@ -337,6 +343,22 @@ describe("main problem screen controller", () => {
     if (route.type !== "solution") throw new Error("Expected a solution route.");
     expect(route.problem).toBe(problem);
     expect(generate).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows the Incorrect state for a right answer with a wrong step, and marks that step", () => {
+    const problem = solvedProblem("subtraction", 604, 278);
+    const { controller, screens } = setup({ generate: () => problem });
+    controller.setLevel("subtraction", 3);
+    fillOut("subtraction", problem, "326");
+    view.onFieldClick(0);
+    view.onKey("Escape");
+    view.onKey("0"); // the tens lent 1 to the ones, so this should be 1
+    view.onSubmitClick();
+    expect(view.incorrectAnswerShown).toBe(true);
+    expect(view.correctAnswerShown).toBe(false);
+    expect(view.wrongFields).toEqual([0]);
+    view.onContinueClick();
+    expect(screens).toEqual([]);
   });
 
   it("Try Again after an incorrect answer opens a new problem of the same level with every box empty", () => {

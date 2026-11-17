@@ -424,7 +424,7 @@ describe("checking the steps and the answer", () => {
   });
 
   it("only checks the answer when a problem comes without worked steps", () => {
-    const model = modelFor("addition", { operands: [58, 67], answer: 125 } as SolvedMainGameProblem);
+    const model = modelFor("addition", { operands: [58, 67], answer: 125 } as unknown as SolvedMainGameProblem);
     fill(model, ["9", "9", "125"]);
     expect(model.checkSolution()).toBe(true);
   });

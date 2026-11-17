@@ -163,13 +163,13 @@ describe("SolutionScreenModel subtraction columns", () => {
         expect(model.getSubtractionPage().visibleColumns.map(column => column.resultDigit)).toEqual([6, 2, 3]);
     });
 
-    it("preserves the original operands and negative final answer", () => {
+    it("puts the larger number on top, so 472 and 546 give 546 − 472 = 74", () => {
         const model = new SolutionScreenModel(subtractionProblem(472, 546), "subtraction", 3);
 
-        expect(model.getOperand()).toEqual([472, 546]);
+        expect(model.getOperand()).toEqual([546, 472]);
         model.nextSubtractionPage();
         model.nextSubtractionPage();
-        expect(model.getSubtractionPage().finalAnswer).toBe(-74);
+        expect(model.getSubtractionPage().finalAnswer).toBe(74);
     });
 
     it("has a column for every digit, even when the answer is shorter", () => {

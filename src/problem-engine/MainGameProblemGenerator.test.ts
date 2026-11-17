@@ -620,3 +620,22 @@ describe("MainGameProblemGenerator", () => {
     })).toThrow("Unsupported operation");
   });
 });
+
+describe("main-game subtraction is never negative", () => {
+  it("puts the larger number on top when both have the same number of digits", () => {
+    const values = [0.5, 0.6]; // 3 digits: 550, then 640
+    const problem = new MainGameProblemGenerator(() => values.shift()!).generate({ operation: "subtraction", operandDigits: [3, 3] });
+    expect(problem.operands).toEqual([640, 550]);
+    expect(problem.answer).toBe(90);
+    expect(problem.solution.steps[0]).toMatchObject({ leftOperand: 640, rightOperand: 550, result: 90 });
+  });
+
+  it.each([[2, 1], [3, 2], [3, 3], [4, 4], [5, 5]])("never gives a negative answer for %s-digit − %s-digit", (left, right) => {
+    const generator = new MainGameProblemGenerator();
+    for (let attempt = 0; attempt < 500; attempt++) {
+      const problem = generator.generate({ operation: "subtraction", operandDigits: [left, right] });
+      expect(problem.answer).toBeGreaterThanOrEqual(0);
+      expect(problem.operands[0]).toBeGreaterThanOrEqual(problem.operands[1]);
+    }
+  });
+});

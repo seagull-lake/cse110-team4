@@ -1,7 +1,7 @@
 import Konva from "konva";
 import { BUTTON_COLOR, FONT_FAMILY, STAGE_HEIGHT, STAGE_WIDTH, TITLE_COLOR } from "../../constants.ts";
 import { createBackToMapButton, createHomeButton } from "../../components/HomeButton.ts";
-import { createNextStepButton } from "../../components/ComponentFactory.ts";
+import { FINAL_ANSWER_FILL, createNextStepButton } from "../../components/ComponentFactory.ts";
 import { getProblemLayout } from "../MainProblemScreen/MainProblemLayout.ts";
 import type { FieldLayout } from "../MainProblemScreen/MainProblemLayout.ts";
 import { explainSubtractionColumn } from "./SolutionScreenModel.ts";
@@ -44,10 +44,12 @@ export class SubtractionSolutionView {
         const { width: cell, height: row, fontSize } = layout.cellSize;
         const right = layout.line.x2;
 
-        // Shade the column being explained, from the borrow row down to the answer
+        // Shade the column being explained, from the borrow row down to the answer (not on the last
+        // page, where the whole answer is highlighted instead)
         const current = page.visibleColumns.length - 1;
+        const isLastPage = page.finalAnswer !== undefined;
         const top = layout.steps[0]?.y ?? layout.cells[0].y;
-        this.group.add(new Konva.Rect({
+        if (!isLastPage) this.group.add(new Konva.Rect({
             x: right - (current + 1) * cell, y: top, width: cell,
             height: layout.answer.y + layout.answer.size.height - top,
             fill: CURRENT_COLUMN_FILL, opacity: 0.6, cornerRadius: 6,
@@ -66,7 +68,7 @@ export class SubtractionSolutionView {
         });
 
         // Result digits under the line, ones first. Leading zeros (e.g. 1000 − 999) have no box.
-        this.drawBoxes(layout.answer);
+        this.drawBoxes(layout.answer, isLastPage ? FINAL_ANSWER_FILL : "#FFFFFF");
         const answerXs = [...layout.answer.cellXs].reverse();
         page.visibleColumns.forEach((column, index) => {
             const x = answerXs[index];
@@ -87,10 +89,10 @@ export class SubtractionSolutionView {
     }
 
     // One empty box per character of a field.
-    private drawBoxes(field: FieldLayout): void {
+    private drawBoxes(field: FieldLayout, fill = "#FFFFFF"): void {
         field.cellXs.forEach(x => this.group.add(new Konva.Rect({
             x: x + 4, y: field.y + 4, width: field.size.width - 8, height: field.size.height - 8,
-            fill: "#FFFFFF", stroke: BUTTON_COLOR, strokeWidth: 2, cornerRadius: 6, listening: false,
+            fill, stroke: BUTTON_COLOR, strokeWidth: 2, cornerRadius: 6, listening: false,
         })));
     }
 

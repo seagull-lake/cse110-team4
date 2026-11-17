@@ -4,6 +4,8 @@ import type { Screen } from "../../types.ts";
 import { MainGameProblemGenerator } from "../../problem-engine/MainGameProblemGenerator.ts";
 import { STAGE_HEIGHT, STAGE_WIDTH } from "../../constants.ts";
 import { SolutionScreenController } from "./SolutionScreenController.ts";
+import { FINAL_ANSWER_FILL } from "../../components/ComponentFactory.ts";
+import { solvedDivision, solvedProblem } from "../MainProblemScreen/testProblems.ts";
 
 let controller: SolutionScreenController;
 let screens: Screen[];
@@ -90,4 +92,38 @@ describe("every solution screen has the same buttons", () => {
             click("Back to map");
             expect(screens).toEqual([{ type: "adventuremap", topic }]);
         });
+});
+
+describe("the last page highlights the answer", () => {
+    const solved = {
+        // 642 + 677 = 1319 (a carry into a new digit) and 123 + 456 = 579 (no carry out: no leading 0 box)
+        addition: [solvedProblem("addition", 642, 677), solvedProblem("addition", 123, 456)],
+        subtraction: [solvedProblem("subtraction", 604, 278), solvedProblem("subtraction", 1000, 999)],
+        multiplication: [solvedProblem("multiplication", 47, 23)],
+        division: [solvedDivision(96, 4), solvedDivision(4738, 23)],
+    } as const;
+    const greenBoxes = () => controller.getView().getGroup().find<Konva.Rect>("Rect")
+        .filter(rect => rect.isVisible() && rect.fill() === FINAL_ANSWER_FILL);
+    const texts = () => controller.getView().getGroup().find<Konva.Text>("Text")
+        .filter(node => node.isVisible()).map(node => node.text());
+
+    it.each((Object.keys(solved) as (keyof typeof solved)[])
+        .flatMap(topic => solved[topic].map(problem => [topic, problem] as const)))(
+        "%s: green answer boxes only on the last page", (topic, problem) => {
+            controller.setProblem(problem, topic, 3);
+            while (texts().includes("Next Step →")) {
+                expect(greenBoxes()).toHaveLength(0);
+                click("Next Step →");
+            }
+            // One green box per digit of the answer
+            expect(greenBoxes()).toHaveLength(String(problem.answer).length);
+        });
+
+    it("writes the whole sum on addition's Full Solution page, without a leading 0", () => {
+        controller.setProblem(solvedProblem("addition", 123, 456), "addition", 3);
+        while (texts().includes("Next Step →")) click("Next Step →");
+        expect(texts()).toContain("123 + 456 = 579");
+        // The three 0s are the carry boxes (nothing carries); the answer row has no leading 0
+        expect(texts().filter(text => text === "0")).toHaveLength(3);
+    });
 });

@@ -1,14 +1,13 @@
 import Konva from "konva";
 import { FONT_FAMILY, STAGE_HEIGHT, STAGE_WIDTH, TITLE_COLOR } from "../../constants.ts";
 import { createBackToMapButton, createHomeButton } from "../../components/HomeButton.ts";
-import { createNextStepButton, createNumberField } from "../../components/ComponentFactory.ts";
+import { FINAL_ANSWER_FILL, createNextStepButton, createNumberField } from "../../components/ComponentFactory.ts";
 import type { MainGameProblem } from "../../domain/problem.ts";
 import { getProblemLayout } from "../MainProblemScreen/MainProblemLayout.ts";
 import type { SolutionPage } from "./SolutionScreenModel.ts";
 
 const CALCULATION_OFFSET_X = -120;
 const FIELD_STROKE = "#27695B";
-const CORRECT_FILL = "#B8E6C7";
 const WORKING_ROW_STROKE_WIDTH = 4;
 const DIGIT_HIGHLIGHT_INSET = 4;
 const EXPLANATION_CENTER_Y = 365;
@@ -115,7 +114,7 @@ export class MultiplicationSolutionView {
             const isCurrentProduct = page.currentRow !== undefined && index === shownRow;
             const isFinalAnswer = index === productFields.length;
             calculation.add(createNumberField(field, value === undefined ? "" : String(value), {
-                fill: isFinalAnswer && page.finalAnswer !== undefined ? CORRECT_FILL : "#FFFFFF",
+                fill: isFinalAnswer && page.finalAnswer !== undefined ? FINAL_ANSWER_FILL : "#FFFFFF",
                 stroke: FIELD_STROKE,
                 strokeWidth: isCurrentProduct ? WORKING_ROW_STROKE_WIDTH : 2,
                 textName: isFinalAnswer ? "final-answer" : "partial-product",

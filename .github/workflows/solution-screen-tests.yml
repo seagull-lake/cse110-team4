@@ -34,3 +34,5 @@ jobs:
           src/screens/SolutionScreen/SolutionScreenModel.test.ts
           src/screens/SolutionScreen/SolutionScreenController.test.ts
           src/screens/SolutionScreen/SolutionController.test.ts
+          src/screens/SolutionScreen/SolutionNavigation.integration.test.ts
+          src/screens/SolutionScreen/MultiplicationSolution.integration.test.ts

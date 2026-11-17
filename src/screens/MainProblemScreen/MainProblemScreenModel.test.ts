@@ -362,8 +362,8 @@ describe("checking the steps and the answer", () => {
     ["addition", solvedProblem("addition", 58, 67), ["1", "1", "125"]],
     // 604 − 278: the tens lend 1 to the ones, the hundreds lend 1 to the tens
     ["subtraction", solvedProblem("subtraction", 604, 278), ["1", "1", "326"]],
-    // 472 − 546 is worked out as 546 − 472 (only the tens' column needs a borrow from the hundreds)
-    ["subtraction", solvedProblem("subtraction", 472, 546), ["0", "1", "-74"]],
+    // 472 and 546 become 546 − 472 (only the tens' column needs a borrow from the hundreds)
+    ["subtraction", solvedProblem("subtraction", 472, 546), ["0", "1", "74"]],
     // 47 × 23: × 3 carries 2 then 1 (141), × 2 carries 1 (940), then 141 + 940
     ["multiplication", solvedProblem("multiplication", 47, 23), ["2", "1", "141", "1", "940", "1081"]],
     // 96 ÷ 4: 20 × 4 = 80 leaves 16, then 4 × 4 = 16 leaves 0

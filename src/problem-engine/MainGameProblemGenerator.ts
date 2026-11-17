@@ -344,6 +344,12 @@ export class MainGameProblemGenerator {
         const operand = minimum + Math.floor(this.random() * (maximum - minimum + 1));
         operands.push(operand);
       }
+      // Subtracting two numbers with the same number of digits: put the larger one on top, so the
+      // answer is never negative (e.g. 662 - 512, not 512 - 662). Different digit counts keep their order.
+      const [leftDigits, rightDigits] = input.operandDigits;
+      if (input.operation === "subtraction" && operands.length === 2 && leftDigits === rightDigits && operands[0] < operands[1]) {
+        operands.reverse();
+      }
     }
     //start with the first operand, then apply the operation from left to right.
     const steps: SolutionStep[] = [];

@@ -1,5 +1,6 @@
 import Konva from "konva";
 import { BUTTON_COLOR, FONT_FAMILY, STAGE_HEIGHT, STAGE_WIDTH, TITLE_COLOR } from "../../constants.ts";
+import { createBackToMapButton, createHomeButton } from "../../components/HomeButton.ts";
 import { getProblemLayout } from "../MainProblemScreen/MainProblemLayout.ts";
 import type { FieldLayout } from "../MainProblemScreen/MainProblemLayout.ts";
 import { explainSubtractionColumn } from "./SolutionScreenModel.ts";
@@ -13,10 +14,14 @@ const CURRENT_COLUMN_FILL = "#FFE28A";
 export class SubtractionSolutionView {
     private readonly group = new Konva.Group();
     private readonly onNextStep: () => void;
+    private readonly onHome: () => void;
+    private readonly onBackToMap: () => void;
 
-    // Report button clicks to the Controller, which updates the Model.
-    constructor(onNextStep: () => void = () => {}) {
+    // Report button clicks to the Controller, which updates the Model or changes the screen.
+    constructor(onNextStep: () => void = () => {}, onHome: () => void = () => {}, onBackToMap: () => void = () => {}) {
         this.onNextStep = onNextStep;
+        this.onHome = onHome;
+        this.onBackToMap = onBackToMap;
     }
 
     /** Draw revealed columns from the common page and the original operands. */
@@ -73,6 +78,9 @@ export class SubtractionSolutionView {
         if (page.finalAnswer !== undefined) {
             this.drawText(this.group, `Answer: ${String(page.finalAnswer).replace("-", "−")}`, 0, belowAnswer + 70, STAGE_WIDTH, 40, 30);
         }
+        // Home and Back to map, like the problem screen, so the student is never stuck here
+        this.group.add(createHomeButton(this.onHome));
+        this.group.add(createBackToMapButton(this.onBackToMap));
         this.drawNextButton(page.hasNext);
         this.group.getLayer()?.batchDraw();
     }

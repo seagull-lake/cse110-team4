@@ -1,6 +1,7 @@
 import Konva from "konva";
 import type { DivisionBoxMethod } from "../../problem-engine/MainGameProblemGenerator.ts";
 import { FONT_FAMILY, STAGE_WIDTH, STAGE_HEIGHT, TITLE_COLOR } from "../../constants.ts";
+import { createBackToMapButton, createHomeButton } from "../../components/HomeButton.ts";
 
 const CELL_WIDTH = 30;
 const ROW_HEIGHT = 38;
@@ -9,10 +10,14 @@ const BOX_PADDING = 8;
 export class DivisionSolutionView{
     private readonly group = new Konva.Group();//the entire diagram is drawn inside this group, which is returned to the parent screen for display
     private readonly onNextStep: () => void;
+    private readonly onHome: () => void;
+    private readonly onBackToMap: () => void;
 
-    // Report button clicks to the Controller, which updates the Model.
-    constructor(onNextStep: () => void = () => {}) {
+    // Report button clicks to the Controller, which updates the Model or changes the screen.
+    constructor(onNextStep: () => void = () => {}, onHome: () => void = () => {}, onBackToMap: () => void = () => {}) {
         this.onNextStep = onNextStep;
+        this.onHome = onHome;
+        this.onBackToMap = onBackToMap;
     }
 
     // Draw all boxes and fill only those revealed by the Model.
@@ -93,6 +98,9 @@ export class DivisionSolutionView{
         if (count === division.boxes.length) {
             this.drawSlotNumber(diagram, answerRight, answerY, division.quotient);
         }
+        // Home and Back to map, like the problem screen, so the student is never stuck here
+        this.group.add(createHomeButton(this.onHome));
+        this.group.add(createBackToMapButton(this.onBackToMap));
         this.drawNextButton(count < division.boxes.length);//draw next step if there are more boxes to reveal, otherwise show a disabled button with "Completed"
         this.group.getLayer()?.batchDraw();//redraw the layer to reflect the changes
     }

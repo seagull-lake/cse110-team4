@@ -130,7 +130,7 @@ export class MultiplicationSolutionView {
             padding: 20,
             text: explanation,
             fontFamily: FONT_FAMILY,
-            fontSize: explanation.includes("\n") ? 20 : 24,
+            fontSize: 24,
             lineHeight: 1.3,
             fill: TITLE_COLOR,
             align: "center",

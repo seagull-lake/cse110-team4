@@ -25,11 +25,11 @@ const BOX_STROKE = "#27695B";
 /** The field being typed in */
 const ACTIVE_FILL = "#FFF1B8";
 const ACTIVE_STROKE = "#E0A100";
-/** The answer once it is correct */
+/** A box that is right once the solution is submitted */
 const CORRECT_FILL = "#B8E6C7";
 /** The "Correct!" message */
 const CORRECT_TEXT_COLOR = "#3f9a5b";
-/** The answer once it is incorrect, and the "Incorrect" message */
+/** A box that is wrong once the solution is submitted, and the "Incorrect" message */
 const INCORRECT_FILL = "#F6C1BF";
 const INCORRECT_TEXT_COLOR = "#C62828";
 /** The "fill in every box" reminder */
@@ -84,9 +84,7 @@ export class MainProblemScreenView implements View {
   private active = 0;
   /** Once the answer is submitted, typing and clicking boxes does nothing. */
   private answerLocked = false;
-  /** How the answer boxes are colored once the answer is locked. */
-  private lockedAnswerFill = CORRECT_FILL;
-  /** After an incorrect submission: the step boxes that are wrong, colored like a wrong answer. */
+  /** After submitting: the boxes that are wrong (red); every other box is right (green). */
   private wrongFields = new Set<number>();
 
   /**
@@ -212,10 +210,10 @@ export class MainProblemScreenView implements View {
   /** The characters typed in the final answer field, one per box. */
   getEnteredAnswer(): readonly string[] { return Array.from(this.entries.at(-1) ?? ""); }
 
-  /** Turns the answer boxes green, locks the answer and offers Continue. */
+  /** Turns every box green, locks the answer and offers Continue. */
   showCorrectAnswer(): void {
     this.answerLocked = true;
-    this.lockedAnswerFill = CORRECT_FILL;
+    this.wrongFields.clear();
     this.feedback.text("Correct!");
     this.feedback.fill(CORRECT_TEXT_COLOR);
     this.submitButton.visible(false);
@@ -225,14 +223,13 @@ export class MainProblemScreenView implements View {
   }
 
   /**
-   * Turns the wrong boxes red (steps and/or the answer), locks the answer and offers Try Again or Review
+   * Turns the wrong boxes red and the right ones green (steps and the answer), locks the answer and offers Try Again or Review
    * Mistakes. The student's work stays on screen so they can see what they wrote before looking at the solution.
    */
   showIncorrectAnswer(wrongFields: readonly number[] = [this.fields.length - 1]): void {
     this.answerLocked = true;
     this.wrongFields = new Set(wrongFields);
     const answerIsRight = !this.wrongFields.has(this.fields.length - 1);
-    this.lockedAnswerFill = answerIsRight ? BOX_FILL : INCORRECT_FILL;
     // Multiplication shows one row's carries at a time: show a row whose carries are wrong
     this.shownRow = getFirstWrongCarryRow(this.fields, this.wrongFields) ?? this.shownRow;
     this.feedback.text(answerIsRight
@@ -288,10 +285,10 @@ export class MainProblemScreenView implements View {
       if (isHiddenCarry(field, this.shownRow)) return; // another row's carries are in these boxes
       const inWorkingRow = isWorkingRow(field, this.shownRow, this.rowMarkers.length > 0);
       const isActive = index === active && !this.answerLocked;
-      const isLockedAnswer = this.answerLocked && index === this.fields.length - 1;
-      const isWrongStep = this.answerLocked && !isLockedAnswer && this.wrongFields.has(index);
+      // Once submitted, every box shows whether it is right (green) or wrong (red)
+      const checkedFill = this.wrongFields.has(index) ? INCORRECT_FILL : CORRECT_FILL;
       this.answerGroup.add(createNumberField(field, entries[index] ?? "", {
-        fill: isLockedAnswer ? this.lockedAnswerFill : isWrongStep ? INCORRECT_FILL : isActive ? ACTIVE_FILL : BOX_FILL,
+        fill: this.answerLocked ? checkedFill : isActive ? ACTIVE_FILL : BOX_FILL,
         stroke: isActive ? ACTIVE_STROKE : BOX_STROKE,
         strokeWidth: inWorkingRow ? WORKING_ROW_STROKE_WIDTH : 2,
         textListening: false,

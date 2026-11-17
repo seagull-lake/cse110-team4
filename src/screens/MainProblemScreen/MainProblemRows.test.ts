@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getProblemLayout } from "./MainProblemLayout.ts";
 import type { FieldLayout } from "./MainProblemLayout.ts";
-import { getCarryFieldIndexes, getRowProgress, getShownRow, isHiddenCarry, isWorkingRow } from "./MainProblemRows.ts";
+import { getCarryFieldIndexes, getFirstWrongCarryRow, getRowProgress, getShownRow, isHiddenCarry, isWorkingRow, rowHasMistake } from "./MainProblemRows.ts";
 import { MainProblemScreenModel } from "./MainProblemScreenModel.ts";
 
 /** The screen's field list for a problem: the layout's steps, then its answer (the model's order). */
@@ -142,5 +142,25 @@ describe("filling out a multiplication, as the student does", () => {
       expect(field.kind === "carry").toBe(times32[index].carry === true);
       expect(field.length).toBe(times32[index].cellXs.length);
     });
+  });
+});
+
+describe("finding the mistakes after submitting", () => {
+  it("knows which rows have a wrong carry or partial product", () => {
+    // Field 0 is a carry of row 0, field 4 the partial product of row 1
+    expect([0, 1].map(row => rowHasMistake(times32, [0], row))).toEqual([true, false]);
+    expect([0, 1].map(row => rowHasMistake(times32, [4], row))).toEqual([false, true]);
+    expect([0, 1].map(row => rowHasMistake(times32, [5], row))).toEqual([false, false]); // only the answer
+  });
+
+  it("shows the first row with a wrong carry", () => {
+    expect(getFirstWrongCarryRow(times32, [3, 0])).toBe(0);
+    expect(getFirstWrongCarryRow(times32, [2, 5])).toBe(1);
+  });
+
+  it("has no row to show when no carry is wrong", () => {
+    expect(getFirstWrongCarryRow(times32, [1, 4, 5])).toBeNull();
+    expect(getFirstWrongCarryRow(times32, [])).toBeNull();
+    expect(getFirstWrongCarryRow(fieldsOf("addition", [57, 76]), [0])).toBeNull();
   });
 });

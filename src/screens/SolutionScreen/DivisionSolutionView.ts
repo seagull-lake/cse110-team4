@@ -2,6 +2,7 @@ import Konva from "konva";
 import type { DivisionBoxMethod } from "../../problem-engine/MainGameProblemGenerator.ts";
 import { FONT_FAMILY, STAGE_WIDTH, STAGE_HEIGHT, TITLE_COLOR } from "../../constants.ts";
 import { createBackToMapButton, createHomeButton } from "../../components/HomeButton.ts";
+import { createNextStepButton } from "../../components/ComponentFactory.ts";
 
 const CELL_WIDTH = 30;
 const ROW_HEIGHT = 38;
@@ -101,22 +102,9 @@ export class DivisionSolutionView{
         // Home and Back to map, like the problem screen, so the student is never stuck here
         this.group.add(createHomeButton(this.onHome));
         this.group.add(createBackToMapButton(this.onBackToMap));
-        this.drawNextButton(count < division.boxes.length);//draw next step if there are more boxes to reveal, otherwise show a disabled button with "Completed"
+        // "Next Step →" while there are boxes left to reveal, then a faded "Completed"
+        this.group.add(createNextStepButton(count < division.boxes.length, this.onNextStep));
         this.group.getLayer()?.batchDraw();//redraw the layer to reflect the changes
-    }
-
-    // Request the next box, disabling the button when all boxes are visible.
-    private drawNextButton(hasNext: boolean): void {
-        const button = new Konva.Group({ x: STAGE_WIDTH - 190, y: STAGE_HEIGHT - 62 });
-        button.add(new Konva.Rect({
-            width: 160, height: 40, fill: "#FFE28A", stroke: TITLE_COLOR,
-            cornerRadius: 6, opacity: hasNext ? 1 : 0.5,
-        }));
-        this.drawText(button, hasNext ? "Next Step →" : "Completed", 0, 0, 160, 40, 22);
-        button.on("click tap", () => {
-            if (hasNext) this.onNextStep();
-        });
-        this.group.add(button);
     }
 
     //draw one empty slot per digit, aligned to the right edge of a box.

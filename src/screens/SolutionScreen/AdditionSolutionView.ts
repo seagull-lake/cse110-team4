@@ -1,7 +1,8 @@
 import Konva from "konva";
 import type { AdditionColumn, SolutionStep } from "../../problem-engine/MainGameProblemGenerator.ts";
 import { FONT_FAMILY, STAGE_WIDTH, STAGE_HEIGHT, TITLE_COLOR } from "../../constants.ts";
-import { createHomeButton } from "../../components/HomeButton.ts";
+import { createBackToMapButton, createHomeButton } from "../../components/HomeButton.ts";
+import { createNextStepButton } from "../../components/ComponentFactory.ts";
 
 /*
  * Addition solution, one column per page (like the Figma "Fixed grid" frames):
@@ -36,7 +37,6 @@ const BACKGROUND = "#FFF0CF";
 const HIGHLIGHT = "#F7D37A";   // current column, its carries, and its answer digit
 const PANEL_FILL = "#FBE3A0";
 const BOX_FILL = "#FFFFFF";
-const NEXT_BUTTON = { width: 170, height: 40, fill: "#FFE28A" };
 
 const PLACE_NAMES = ["Ones", "Tens", "Hundreds", "Thousands", "Ten Thousands", "Hundred Thousands", "Millions"];
 
@@ -122,7 +122,8 @@ export class AdditionSolutionView {
 
         /*--- Buttons ---*/
         this.group.add(createHomeButton(this.onHome));
-        this.drawNextButton(isFullSolution);
+        this.group.add(createBackToMapButton(this.onBackToMap));
+        this.group.add(createNextStepButton(!isFullSolution, this.onNextStep));
 
         this.group.getLayer()?.batchDraw();
     }
@@ -168,24 +169,6 @@ export class AdditionSolutionView {
             ? `${column.leftDigit} + ${column.rightDigit} = ${column.total}`
             : `${column.carryIn} + ${column.leftDigit} + ${column.rightDigit} = ${column.total}`;
         this.drawText(equation, PANEL.x, PANEL.y + 44, PANEL.width, 60, 30);
-    }
-
-    // "Next Step →" while there are columns left, "Back to Map" on the Full Solution page
-    private drawNextButton(isFullSolution: boolean): void {
-        const button = new Konva.Group({
-            x: STAGE_WIDTH - 30 - NEXT_BUTTON.width,
-            y: STAGE_HEIGHT - 62,
-        });
-        button.add(new Konva.Rect({
-            width: NEXT_BUTTON.width, height: NEXT_BUTTON.height,
-            fill: NEXT_BUTTON.fill, stroke: TITLE_COLOR, strokeWidth: 2, cornerRadius: 8,
-        }));
-        this.drawText(isFullSolution ? "Back to Map" : "Next Step →", 0, 0,
-            NEXT_BUTTON.width, NEXT_BUTTON.height, 20, "center", button);
-        button.on("click tap", () => (isFullSolution ? this.onBackToMap() : this.onNextStep()));
-        button.on("mouseenter", () => (document.body.style.cursor = "pointer"));
-        button.on("mouseleave", () => (document.body.style.cursor = "default"));
-        this.group.add(button);
     }
 
     // Text never catches clicks, so buttons and boxes underneath still do

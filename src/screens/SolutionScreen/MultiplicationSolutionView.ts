@@ -1,7 +1,7 @@
 import Konva from "konva";
-import { BUTTON_COLOR, BUTTON_TEXT_COLOR, FONT_FAMILY, STAGE_HEIGHT, STAGE_WIDTH, TITLE_COLOR } from "../../constants.ts";
-import { createHomeButton } from "../../components/HomeButton.ts";
-import { createActionButton, createNumberField } from "../../components/ComponentFactory.ts";
+import { FONT_FAMILY, STAGE_HEIGHT, STAGE_WIDTH, TITLE_COLOR } from "../../constants.ts";
+import { createBackToMapButton, createHomeButton } from "../../components/HomeButton.ts";
+import { createNextStepButton, createNumberField } from "../../components/ComponentFactory.ts";
 import type { MainGameProblem } from "../../domain/problem.ts";
 import { getProblemLayout } from "../MainProblemScreen/MainProblemLayout.ts";
 import type { SolutionPage } from "./SolutionScreenModel.ts";
@@ -140,26 +140,8 @@ export class MultiplicationSolutionView {
             EXPLANATION_BOTTOM - explanationText.height()));
         this.group.add(explanationPanel);
         this.group.add(createHomeButton(this.onHome));
-        const backButton = new Konva.Group({ x: 140, y: STAGE_HEIGHT - 62 });
-        backButton.add(new Konva.Rect({ width: 150, height: 40, fill: BUTTON_COLOR, cornerRadius: 8 }));
-        backButton.add(new Konva.Text({
-            width: 150,
-            height: 40,
-            text: "Back to map",
-            fontSize: 18,
-            fontFamily: FONT_FAMILY,
-            fill: BUTTON_TEXT_COLOR,
-            align: "center",
-            verticalAlign: "middle",
-        }));
-        backButton.on("click", this.onBackToMap);
-        backButton.on("mouseenter", () => (document.body.style.cursor = "pointer"));
-        backButton.on("mouseleave", () => (document.body.style.cursor = "default"));
-        this.group.add(backButton);
-        const nextButton = createActionButton("Next Step");
-        nextButton.visible(page.hasNext);
-        nextButton.on("click tap", this.onNextStep);
-        this.group.add(nextButton);
+        this.group.add(createBackToMapButton(this.onBackToMap));
+        this.group.add(createNextStepButton(page.hasNext, this.onNextStep));
         this.group.getLayer()?.batchDraw();
     }
 

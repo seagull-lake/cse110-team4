@@ -27,6 +27,32 @@ export function createActionButton(label: string, x = STAGE_WIDTH - 200, y = STA
     return button;
 }
 
+/**
+ * The bottom-right button of every solution screen: "Next Step →" while there are steps left, then a
+ * faded "Completed" that does nothing once the whole solution is shown.
+ */
+export function createNextStepButton(hasNext: boolean, onNextStep: () => void): Konva.Group {
+    const button = new Konva.Group({ x: STAGE_WIDTH - 190, y: STAGE_HEIGHT - 62, name: "next-step-button" });
+    button.add(new Konva.Rect({
+        width: 160, height: 40, fill: "#FFE28A", stroke: TITLE_COLOR, cornerRadius: 6, opacity: hasNext ? 1 : 0.5,
+    }));
+    button.add(new Konva.Text({
+        text: hasNext ? "Next Step →" : "Completed",
+        width: 160,
+        height: 40,
+        fontSize: 22,
+        fontFamily: FONT_FAMILY,
+        fill: TITLE_COLOR,
+        align: "center",
+        verticalAlign: "middle",
+        listening: false,
+    }));
+    button.on("click tap", () => { if (hasNext) onNextStep(); });
+    button.on("mouseenter", () => { document.body.style.cursor = hasNext ? "pointer" : "default"; });
+    button.on("mouseleave", () => { document.body.style.cursor = "default"; });
+    return button;
+}
+
 /** Draw one right-aligned number field, leaving field selection to its caller. */
 export function createNumberField(
     field: { y: number; cellXs: readonly number[]; size: { width: number; height: number; fontSize: number } },

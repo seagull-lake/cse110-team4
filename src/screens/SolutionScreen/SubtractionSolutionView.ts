@@ -1,6 +1,7 @@
 import Konva from "konva";
 import { BUTTON_COLOR, FONT_FAMILY, STAGE_HEIGHT, STAGE_WIDTH, TITLE_COLOR } from "../../constants.ts";
 import { createBackToMapButton, createHomeButton } from "../../components/HomeButton.ts";
+import { createNextStepButton } from "../../components/ComponentFactory.ts";
 import { getProblemLayout } from "../MainProblemScreen/MainProblemLayout.ts";
 import type { FieldLayout } from "../MainProblemScreen/MainProblemLayout.ts";
 import { explainSubtractionColumn } from "./SolutionScreenModel.ts";
@@ -81,21 +82,8 @@ export class SubtractionSolutionView {
         // Home and Back to map, like the problem screen, so the student is never stuck here
         this.group.add(createHomeButton(this.onHome));
         this.group.add(createBackToMapButton(this.onBackToMap));
-        this.drawNextButton(page.hasNext);
+        this.group.add(createNextStepButton(page.hasNext, this.onNextStep));
         this.group.getLayer()?.batchDraw();
-    }
-
-    // Request the next column, disabling the button once every column is shown (same as division).
-    private drawNextButton(hasNext: boolean): void {
-        const button = new Konva.Group({ x: STAGE_WIDTH - 190, y: STAGE_HEIGHT - 62 });
-        button.add(new Konva.Rect({
-            width: 160, height: 40, fill: "#FFE28A", stroke: TITLE_COLOR, cornerRadius: 6, opacity: hasNext ? 1 : 0.5,
-        }));
-        this.drawText(button, hasNext ? "Next Step →" : "Completed", 0, 0, 160, 40, 22);
-        button.on("click tap", () => { if (hasNext) this.onNextStep(); });
-        button.on("mouseenter", () => (document.body.style.cursor = hasNext ? "pointer" : "default"));
-        button.on("mouseleave", () => (document.body.style.cursor = "default"));
-        this.group.add(button);
     }
 
     // One empty box per character of a field.

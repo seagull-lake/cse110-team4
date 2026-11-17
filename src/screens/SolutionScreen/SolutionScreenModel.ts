@@ -16,6 +16,23 @@ export type SolutionPage = {
 
 const PLACE_NAMES = ["ones", "tens", "hundreds", "thousands", "ten thousands"];
 
+/** Explain each digit product, its carry, and the row's place-value shift. */
+export function explainMultiplicationRow(row: MultiplicationRow, leftOperand: number): string {
+    if (row.multiplierDigit === 0) return `${leftOperand} × 0 = 0`;
+    // The extra leading column only stores the final carry, already included in the last total.
+    const columns = row.columns.slice(0, String(leftOperand).length);
+    const lines = columns.map((column, index) => {
+        const carryIn = column.carryIn ? ` + ${column.carryIn}` : "";
+        const carryOut = column.carryOut && index < columns.length - 1 ? ` (carry ${column.carryOut})` : "";
+        return `${column.leftDigit} × ${row.multiplierDigit}${carryIn} = ${column.total}${carryOut}`;
+    });
+    const unshiftedProduct = row.partialProduct / row.multiplierPlaceValue;
+    lines.push(row.multiplierPlaceValue === 1
+        ? `Row: ${row.partialProduct}`
+        : `${unshiftedProduct} × ${row.multiplierPlaceValue} = ${row.partialProduct}`);
+    return lines.join("\n");
+}
+
 /** One page of the subtraction solution: the columns revealed so far, from the ones place up. */
 export interface SubtractionPage {
     /** The number on top and the number under it. For a negative answer this is larger − smaller. */

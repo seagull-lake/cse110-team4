@@ -11,6 +11,8 @@ const FIELD_STROKE = "#27695B";
 const CORRECT_FILL = "#B8E6C7";
 const WORKING_ROW_STROKE_WIDTH = 4;
 const DIGIT_HIGHLIGHT_INSET = 4;
+const EXPLANATION_CENTER_Y = 365;
+const EXPLANATION_BOTTOM = STAGE_HEIGHT - 90;
 
 /** Draws the multiplication solution on a Konva group. */
 export class MultiplicationSolutionView {
@@ -120,20 +122,22 @@ export class MultiplicationSolutionView {
             }));
         }
         this.group.add(calculation);
-        const explanationPanel = new Konva.Label({ x: 480, y: 290 });
+        const explanationPanel = new Konva.Label({ x: 480 });
         explanationPanel.add(new Konva.Tag({ fill: "#FFE9AE", cornerRadius: 8 }));
-        explanationPanel.add(new Konva.Text({
+        // Let wrapped text set the panel height, keeping its bottom above the controls.
+        const explanationText = new Konva.Text({
             width: 285,
-            height: 150,
             padding: 20,
             text: explanation,
             fontFamily: FONT_FAMILY,
-            fontSize: 24,
+            fontSize: explanation.includes("\n") ? 20 : 24,
             lineHeight: 1.3,
             fill: TITLE_COLOR,
             align: "center",
-            verticalAlign: "middle",
-        }));
+        });
+        explanationPanel.add(explanationText);
+        explanationPanel.y(Math.min(EXPLANATION_CENTER_Y - explanationText.height() / 2,
+            EXPLANATION_BOTTOM - explanationText.height()));
         this.group.add(explanationPanel);
         this.group.add(createHomeButton(this.onHome));
         const backButton = new Konva.Group({ x: 140, y: STAGE_HEIGHT - 62 });

@@ -1,0 +1,37 @@
+name: Problem Screen Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Level navigation + problem screen tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies from the lockfile
+        run: npm ci
+
+      - name: Run level navigation and problem screen unit tests
+        run: >-
+          npm test -- --run --cache=false
+          src/levels/isLevelUnlocked.test.ts
+          src/screens/AdventureMapScreen/AdventureMapScreenController.click.test.ts
+          src/screens/MainProblemScreen/MainProblemScreenController.test.ts
+          src/screens/MainProblemScreen/MainProblemScreenModel.test.ts
+          src/screens/MainProblemScreen/MainProblemLayout.test.ts

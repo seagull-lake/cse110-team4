@@ -2,7 +2,7 @@ import Konva from "konva";
 import type { AdditionColumn, SolutionStep } from "../../problem-engine/MainGameProblemGenerator.ts";
 import { FONT_FAMILY, STAGE_WIDTH, STAGE_HEIGHT, TITLE_COLOR } from "../../constants.ts";
 import { createBackToMapButton, createHomeButton } from "../../components/HomeButton.ts";
-import { createNextStepButton } from "../../components/ComponentFactory.ts";
+import { FINAL_ANSWER_FILL, createNextStepButton } from "../../components/ComponentFactory.ts";
 
 /*
  * Addition solution, one column per page (like the Figma "Fixed grid" frames):
@@ -107,18 +107,21 @@ export class AdditionSolutionView {
                 : isFullSolution ? "0" : "";
             // highlighted: the carry INTO the current column, and the carry OUT of it
             const highlighted = column === current || column === current + 1;
-            this.drawBox(columnX(column), CARRY_Y, CARRY_SIZE, value, CARRY_FONT, highlighted);
+            this.drawBox(columnX(column), CARRY_Y, CARRY_SIZE, value, CARRY_FONT, highlighted ? HIGHLIGHT : BOX_FILL);
         }
 
         /*--- Answer boxes: one under every column ---*/
+        // On the Full Solution page the answer's digits turn green; a column the answer doesn't reach
+        // (no carry out of the leftmost column) stays empty instead of showing a leading 0.
         for (let column = 0; column < gridColumns; column++) {
-            const value = column < doneColumns ? String(columns[column]?.resultDigit ?? 0)
-                : isFullSolution ? "0" : "";
-            this.drawBox(columnX(column), ANSWER_Y, ANSWER_SIZE, value, DIGIT_FONT - 10, column === current);
+            const value = column < doneColumns ? String(columns[column]?.resultDigit ?? 0) : "";
+            const fill = column === current ? HIGHLIGHT
+                : isFullSolution && column < columns.length ? FINAL_ANSWER_FILL : BOX_FILL;
+            this.drawBox(columnX(column), ANSWER_Y, ANSWER_SIZE, value, DIGIT_FONT - 10, fill);
         }
 
         /*--- Explanation panel on the right ---*/
-        this.drawPanel(isFullSolution ? undefined : columns[current], current);
+        this.drawPanel(isFullSolution ? undefined : columns[current], current, `${top} + ${bottom} = ${step.result}`);
 
         /*--- Buttons ---*/
         this.group.add(createHomeButton(this.onHome));
@@ -147,23 +150,26 @@ export class AdditionSolutionView {
             this.drawText(digit, columnX(column), y, CELL, DIGIT_ROW, DIGIT_FONT));
     }
 
-    // A square box centered in a column, optionally highlighted, with a value inside
-    private drawBox(cellX: number, y: number, size: number, value: string, fontSize: number, highlighted: boolean): void {
+    // A square box centered in a column, filled with `fill`, with a value inside
+    private drawBox(cellX: number, y: number, size: number, value: string, fontSize: number, fill: string): void {
         const x = cellX + (CELL - size) / 2;
         this.group.add(new Konva.Rect({
             x, y, width: size, height: size,
-            fill: highlighted ? HIGHLIGHT : BOX_FILL,
+            fill,
             stroke: TITLE_COLOR, strokeWidth: 1.5, cornerRadius: 5, listening: false,
         }));
         if (value) this.drawText(value, x, y, size, size, fontSize);
     }
 
-    // "Tens" + "1 + 8 + 8 = 17", or just "Full Solution" on the last page
-    private drawPanel(column: AdditionColumn | undefined, index: number): void {
+    // "Tens" + "1 + 8 + 8 = 17", or "Full Solution" + the whole sum on the last page
+    private drawPanel(column: AdditionColumn | undefined, index: number, fullSum: string): void {
         this.group.add(new Konva.Rect({ ...PANEL, fill: PANEL_FILL, cornerRadius: 6, listening: false }));
         const title = column ? PLACE_NAMES[index] ?? `10^${index}` : "Full Solution";
         this.drawText(title, PANEL.x + 14, PANEL.y + 10, PANEL.width - 28, 24, 18, "left");
-        if (!column) return;
+        if (!column) {
+            this.drawText(fullSum, PANEL.x, PANEL.y + 44, PANEL.width, 60, 26);
+            return;
+        }
         // The ones column has nothing carried in, so it only shows the two digits
         const equation = index === 0
             ? `${column.leftDigit} + ${column.rightDigit} = ${column.total}`

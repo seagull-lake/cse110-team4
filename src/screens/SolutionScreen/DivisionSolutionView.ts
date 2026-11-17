@@ -2,7 +2,7 @@ import Konva from "konva";
 import type { DivisionBoxMethod } from "../../problem-engine/MainGameProblemGenerator.ts";
 import { FONT_FAMILY, STAGE_WIDTH, STAGE_HEIGHT, TITLE_COLOR } from "../../constants.ts";
 import { createBackToMapButton, createHomeButton } from "../../components/HomeButton.ts";
-import { createNextStepButton } from "../../components/ComponentFactory.ts";
+import { FINAL_ANSWER_FILL, createNextStepButton } from "../../components/ComponentFactory.ts";
 
 const CELL_WIDTH = 30;
 const ROW_HEIGHT = 38;
@@ -94,9 +94,10 @@ export class DivisionSolutionView{
         const answerY = boxTop + boxHeight + 24;
         const answerRight = diagramWidth - BOX_PADDING;
         this.drawText(diagram, "Answer", answerRight - answerLength * CELL_WIDTH - 110,answerY, 100, ROW_HEIGHT, 22);
-        this.drawEmptySlots(diagram, answerRight, answerY, answerLength);
-        //reveal the final quotient only after every box has been shown.
-        if (count === division.boxes.length) {
+        // The answer boxes turn green once every box has been shown and the quotient is revealed
+        const isLastPage = count === division.boxes.length;
+        this.drawEmptySlots(diagram, answerRight, answerY, answerLength, isLastPage ? FINAL_ANSWER_FILL : "white");
+        if (isLastPage) {
             this.drawSlotNumber(diagram, answerRight, answerY, division.quotient);
         }
         // Home and Back to map, like the problem screen, so the student is never stuck here
@@ -108,14 +109,14 @@ export class DivisionSolutionView{
     }
 
     //draw one empty slot per digit, aligned to the right edge of a box.
-    private drawEmptySlots(parent: Konva.Group, right: number, y: number, count: number): void {
+    private drawEmptySlots(parent: Konva.Group, right: number, y: number, count: number, fill = "white"): void {
         for (let i = 0; i < count; i++) {
             parent.add(new Konva.Rect({
                 x: right - (count - i) * CELL_WIDTH + 4,
                 y: y + 4,
                 width: CELL_WIDTH - 8,
                 height: ROW_HEIGHT - 8,
-                fill: "white",
+                fill,
                 stroke: "#27695B",
                 cornerRadius: 4,
             }));

@@ -27,6 +27,9 @@ export function createActionButton(label: string, x = STAGE_WIDTH - 200, y = STA
     return button;
 }
 
+/** The answer boxes on the last page of every solution, the same green as a correct answer. */
+export const FINAL_ANSWER_FILL = "#B8E6C7";
+
 /**
  * The bottom-right button of every solution screen: "Next Step →" while there are steps left, then a
  * faded "Completed" that does nothing once the whole solution is shown.

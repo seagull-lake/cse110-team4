@@ -5,7 +5,9 @@ import { createHomeButton } from "../../components/HomeButton.ts";
 import { createNumberField } from "../../components/ComponentFactory.ts";
 import { MARKER_SIZE, ROW_HEIGHT } from "./MainProblemLayout.ts";
 import type { FieldLayout, HorizontalLine, ProblemLayout, Rect, RowMarker } from "./MainProblemLayout.ts";
-import { getCarryFieldIndexes, getRowProgress, getShownRow, isHiddenCarry, isWorkingRow } from "./MainProblemRows.ts";
+import {
+  getCarryFieldIndexes, getFirstWrongCarryRow, getRowProgress, getShownRow, isHiddenCarry, isWorkingRow, rowHasMistake,
+} from "./MainProblemRows.ts";
 import type { RowProgress } from "./MainProblemRows.ts";
 
 const BACK_BUTTON = { width: 150, height: 40 };
@@ -231,6 +233,8 @@ export class MainProblemScreenView implements View {
     this.wrongFields = new Set(wrongFields);
     const answerIsRight = !this.wrongFields.has(this.fields.length - 1);
     this.lockedAnswerFill = answerIsRight ? BOX_FILL : INCORRECT_FILL;
+    // Multiplication shows one row's carries at a time: show a row whose carries are wrong
+    this.shownRow = getFirstWrongCarryRow(this.fields, this.wrongFields) ?? this.shownRow;
     this.feedback.text(answerIsRight
       ? "Some steps are wrong – try again or review your mistakes"
       : "Incorrect – try again or review your mistakes");
@@ -277,7 +281,8 @@ export class MainProblemScreenView implements View {
     this.entries = entries;
     this.active = active;
     this.answerGroup.destroyChildren();
-    this.shownRow = getShownRow(this.fields, active, this.shownRow);
+    // Once submitted, the shown row only changes when a row's circle is clicked
+    if (!this.answerLocked) this.shownRow = getShownRow(this.fields, active, this.shownRow);
     this.drawMultiplierDigitHighlight();
     this.fields.forEach((field, index) => {
       if (isHiddenCarry(field, this.shownRow)) return; // another row's carries are in these boxes
@@ -311,19 +316,29 @@ export class MainProblemScreenView implements View {
 
   /**
    * One circle beside each partial product: red when none of its carries are filled in, yellow when some
-   * are, green when all are. The row whose carries are shown has a thicker outline; clicking a circle shows its carries.
+   * are, green when all are. After submitting, it is red when the row has a wrong carry or partial product
+   * and green otherwise. The row whose carries are shown has a thicker outline; clicking a circle shows
+   * its carries (after submitting too, to look at them without typing).
    */
   private drawRowMarkers(entries: readonly string[]): void {
     this.rowMarkers.forEach(({ row, x, y }) => {
       const progress = getRowProgress(this.fields, entries, row);
       if (!progress) return;
+      const checked = rowHasMistake(this.fields, this.wrongFields, row) ? "empty" : "complete";
       const marker = new Konva.Circle({
         x: x + MARKER_SIZE / 2, y: y + MARKER_SIZE / 2, radius: MARKER_SIZE / 2 - 3, // leaves room for the thickest outline
-        fill: MARKER_FILL[progress],
+        fill: MARKER_FILL[this.answerLocked ? checked : progress],
         stroke: TITLE_COLOR, strokeWidth: row === this.shownRow ? 5 : 2,
       });
       const [firstCarry] = getCarryFieldIndexes(this.fields, row);
-      marker.on("click tap", () => { if (!this.answerLocked) this.onFieldClick(firstCarry); });
+      marker.on("click tap", () => {
+        if (!this.answerLocked) {
+          this.onFieldClick(firstCarry);
+          return;
+        }
+        this.shownRow = row;
+        this.showAnswer(this.entries, this.active);
+      });
       marker.on("mouseenter", () => (document.body.style.cursor = "pointer"));
       marker.on("mouseleave", () => (document.body.style.cursor = "default"));
       this.answerGroup.add(marker);

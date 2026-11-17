@@ -42,7 +42,7 @@ export function explainSubtractionColumn(column: SubtractionColumn, index: numbe
         `${column.leftDigit + 10}${minusLent} − ${column.rightDigit} = ${column.resultDigit}`;
 }
 
-export class SolutionScreenModel{
+export class SolutionScreenModel {
     private readonly problem: SolvedMainGameProblem;
 
     private stepIndex = 0;
@@ -52,45 +52,58 @@ export class SolutionScreenModel{
     private additionPageIndex = 0;
     private subtractionColumnIndex = 0;
 
-    constructor(problem: SolvedMainGameProblem){
+    /** Own the routed problem and start from its first page. */
+    constructor(problem: SolvedMainGameProblem) {
         this.problem = problem;
     }
 
-    getOperand(){
+    /** Return the original problem supplied by gameplay. */
+    getProblem(): SolvedMainGameProblem {
+        return this.problem;
+    }
+
+    /** Read the operands from the routed problem. */
+    getOperand() {
         return this.problem.operands;
     }
 
-    getFinalAnswer(){
+    /** Read the final answer computed by the generator. */
+    getFinalAnswer() {
         return this.problem.solution.finalAnswer;
     }
 
-    getCurrentStep(){
+    /** Read the active arithmetic step. */
+    getCurrentStep() {
         return this.problem.solution.steps[this.stepIndex];
     }
 
-    getCurrentColumn(){
+    /** Read the active addition column. */
+    getCurrentColumn() {
         return this.getCurrentStep().additionColumns?.[this.columnIndex];
     }
 
-    getVisibleColumns(){//this returns the columns that should be visible on the screeen 
+    /** Expose the addition columns revealed so far. */
+    getVisibleColumns() {
         const columns = this.getCurrentStep().additionColumns;
-        if(!columns) return [];
+        if (!columns) return [];
         return columns.slice(0, this.columnIndex + 1);
-    }  
+    }
 
-    hasNextColumn(){
+    /** Check whether another addition column remains. */
+    hasNextColumn() {
         const columns = this.getCurrentStep().additionColumns;
-        if(!columns) return false;
+        if (!columns) return false;
         return this.columnIndex < columns.length - 1;
     }
 
-    nextColumn(){
-        if(this.hasNextColumn()){
+    /** Reveal one more addition column when available. */
+    nextColumn() {
+        if (this.hasNextColumn()) {
             this.columnIndex++;
         }
     }
 
-    // Return the division data and how many boxes should be filled in.
+    /** Expose the division data and revealed box count. */
     getDivisionPage() {
         const division = this.getCurrentStep().divisionBoxMethod;
         if (!division) throw new Error("The current solution step is not division.");
@@ -101,32 +114,34 @@ export class SolutionScreenModel{
         };
     }
 
-    // Reveal one more box, stopping at the last box.
+    /** Reveal one more division box when available. */
     nextDivisionPage(): void {
         if (this.getDivisionPage().hasNext) this.divisionBoxIndex++;
     }
+
+    /** Expose revealed products or the separate final answer. */
     getMultiplicationPage() {
         const rows = this.getCurrentStep().multiplicationRows;
         if (!rows) {
             throw new Error("The current solution step is not multiplication.");
         }
-        const hasNext = this.multiplicationRowIndex < rows.length - 1;
+        const hasNext = this.multiplicationRowIndex < rows.length;
         return {
-            currentRow: rows[this.multiplicationRowIndex],
+            currentRow: hasNext ? rows[this.multiplicationRowIndex] : undefined,
             visibleRows: rows.slice(0, this.multiplicationRowIndex + 1),
             hasNext,
             finalAnswer: hasNext ? undefined : this.getFinalAnswer(),
         };
     }
 
+    /** Reveal the next product or final-answer page. */
     nextMultiplicationPage(): void {
         if (this.getMultiplicationPage().hasNext) {
             this.multiplicationRowIndex++;
         }
     }
 
-    // Return the addition data and how many columns should be filled in.
-    // Which page to draw, and whether "Next Step" can go further.
+    /** Expose the current addition column or Full Solution page. */
     getAdditionPage() {
         const step = this.getCurrentStep();
         const columns = step.additionColumns;
@@ -138,12 +153,12 @@ export class SolutionScreenModel{
         };
     }
 
-    // Move to the next page, stopping at the Full Solution page.
+    /** Advance addition, stopping on Full Solution. */
     nextAdditionPage(): void {
         if (this.getAdditionPage().hasNext) this.additionPageIndex++;
     }
-    
-    // Return the subtraction columns revealed so far, one more on every Next Step.
+
+    /** Expose revealed subtraction columns and borrow explanations. */
     getSubtractionPage(): SubtractionPage {
         const step = this.getCurrentStep();
         const columns = step.subtractionColumns;
@@ -162,7 +177,7 @@ export class SolutionScreenModel{
         };
     }
 
-    // Reveal one more column, stopping at the last one.
+    /** Reveal one more subtraction column when available. */
     nextSubtractionPage(): void {
         if (this.getSubtractionPage().hasNext) this.subtractionColumnIndex++;
     }

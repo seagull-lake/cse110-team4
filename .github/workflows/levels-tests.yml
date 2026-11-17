@@ -1,0 +1,36 @@
+name: Levels Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Levels tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies from the lockfile
+        run: npm ci
+
+      - name: Run level config and progression unit tests
+        run: >-
+          npm test -- --run --cache=false
+          src/levels/levelConfig.test.ts
+          src/levels/progression.test.ts
+          src/levels/progressionStatus.test.ts
+          src/levels/isLevelUnlocked.test.ts

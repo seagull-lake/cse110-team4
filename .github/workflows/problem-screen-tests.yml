@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   test:
-    name: Level navigation + problem screen tests
+    name: Main problem screen tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -27,11 +27,10 @@ jobs:
       - name: Install dependencies from the lockfile
         run: npm ci
 
-      - name: Run level navigation and problem screen unit tests
+      - name: Run main problem screen unit tests
         run: >-
           npm test -- --run --cache=false
-          src/levels/isLevelUnlocked.test.ts
-          src/screens/AdventureMapScreen/AdventureMapScreenController.click.test.ts
           src/screens/MainProblemScreen/MainProblemScreenController.test.ts
           src/screens/MainProblemScreen/MainProblemScreenModel.test.ts
           src/screens/MainProblemScreen/MainProblemLayout.test.ts
+          src/screens/MainProblemScreen/MainProblemRows.test.ts

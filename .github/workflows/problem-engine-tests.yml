@@ -27,8 +27,9 @@ jobs:
       - name: Install dependencies from the lockfile
         run: npm ci
 
-      - name: Run problem dispatcher and integration tests
+      - name: Run problem dispatcher, generator, and integration tests
         run: >-
           npm test -- --run --cache=false
           src/problem-engine/ProblemDispatcher.test.ts
+          src/problem-engine/MultiplicationDivisionGenerator.test.ts
           src/problem-engine/ProblemEngine.integration.test.ts

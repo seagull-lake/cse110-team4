@@ -30,4 +30,4 @@ jobs:
       - name: Run score manager unit tests
         run: >-
           npm test -- --run --cache=false
-          src/ScoreManager.test.ts
+          src/scoreManager.test.ts

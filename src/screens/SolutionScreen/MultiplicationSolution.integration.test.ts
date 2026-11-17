@@ -53,10 +53,12 @@ it.each([
     for (const partialProducts of pages) {
         expect(digitsIn(".partial-product")).toBe(partialProducts);
         expect(nodes(".final-answer")).toHaveLength(0);
-        click("Next Step");
+        click("Next Step →");
     }
     expect(digitsIn(".final-answer")).toBe(answer);
-    expect(nodes("Text").some(node => node.text() === "Next Step")).toBe(false);
+    // The last page shows a faded "Completed" instead of Next Step, like every solution screen
+    expect(nodes("Text").some(node => node.text() === "Next Step →")).toBe(false);
+    expect(nodes("Text").some(node => node.text() === "Completed")).toBe(true);
     const answerBoxes = nodes(".final-answer")[0]?.getParent()?.find<Konva.Rect>("Rect") ?? [];
     expect(answerBoxes).not.toHaveLength(0);
     expect(answerBoxes.every(box => box.fill() === "#B8E6C7")).toBe(true);
@@ -65,6 +67,6 @@ it.each([
 it("replaces the current row's carries instead of leaving old carries visible", () => {
     controller.setProblem(problem(27, 19), "multiplication", 3);
     expect(nodes(".carry-digit").map(node => node.text())).toEqual(["6", "2"]);
-    click("Next Step");
+    click("Next Step →");
     expect(nodes(".carry-digit")).toHaveLength(0);
 });

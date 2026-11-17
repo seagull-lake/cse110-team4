@@ -84,6 +84,8 @@ export class MainProblemScreenView implements View {
   private answerLocked = false;
   /** How the answer boxes are colored once the answer is locked. */
   private lockedAnswerFill = CORRECT_FILL;
+  /** After an incorrect submission: the step boxes that are wrong, colored like a wrong answer. */
+  private wrongFields = new Set<number>();
 
   /**
    * onKey gets every key pressed while this screen is shown, e.g. "7", "-", "Backspace" or "Tab"
@@ -221,13 +223,17 @@ export class MainProblemScreenView implements View {
   }
 
   /**
-   * Turns the answer boxes red, locks the answer and offers Try Again or Review Mistakes. The student's
-   * work stays on screen so they can see what they wrote before looking at the solution.
+   * Turns the wrong boxes red (steps and/or the answer), locks the answer and offers Try Again or Review
+   * Mistakes. The student's work stays on screen so they can see what they wrote before looking at the solution.
    */
-  showIncorrectAnswer(): void {
+  showIncorrectAnswer(wrongFields: readonly number[] = [this.fields.length - 1]): void {
     this.answerLocked = true;
-    this.lockedAnswerFill = INCORRECT_FILL;
-    this.feedback.text("Incorrect – try again or review your mistakes");
+    this.wrongFields = new Set(wrongFields);
+    const answerIsRight = !this.wrongFields.has(this.fields.length - 1);
+    this.lockedAnswerFill = answerIsRight ? BOX_FILL : INCORRECT_FILL;
+    this.feedback.text(answerIsRight
+      ? "Some steps are wrong – try again or review your mistakes"
+      : "Incorrect – try again or review your mistakes");
     this.feedback.fill(INCORRECT_TEXT_COLOR);
     this.submitButton.visible(false);
     this.reviewButton.visible(true);
@@ -257,6 +263,7 @@ export class MainProblemScreenView implements View {
   /** Back to answering: no feedback, only Submit. */
   private resetButtons(): void {
     this.answerLocked = false;
+    this.wrongFields.clear();
     this.feedback.text("");
     this.feedback.fill(CORRECT_TEXT_COLOR);
     this.submitButton.visible(true);
@@ -277,8 +284,9 @@ export class MainProblemScreenView implements View {
       const inWorkingRow = isWorkingRow(field, this.shownRow, this.rowMarkers.length > 0);
       const isActive = index === active && !this.answerLocked;
       const isLockedAnswer = this.answerLocked && index === this.fields.length - 1;
+      const isWrongStep = this.answerLocked && !isLockedAnswer && this.wrongFields.has(index);
       this.answerGroup.add(createNumberField(field, entries[index] ?? "", {
-        fill: isLockedAnswer ? this.lockedAnswerFill : isActive ? ACTIVE_FILL : BOX_FILL,
+        fill: isLockedAnswer ? this.lockedAnswerFill : isWrongStep ? INCORRECT_FILL : isActive ? ACTIVE_FILL : BOX_FILL,
         stroke: isActive ? ACTIVE_STROKE : BOX_STROKE,
         strokeWidth: inWorkingRow ? WORKING_ROW_STROKE_WIDTH : 2,
         textListening: false,

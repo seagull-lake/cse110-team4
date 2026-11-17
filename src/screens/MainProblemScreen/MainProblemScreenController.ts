@@ -81,9 +81,10 @@ export class MainProblemScreenController extends ScreenController {
   }
 
   /**
-   * Only checks the answer once every box (the in-between steps and the answer) is filled in;
-   * otherwise the student is told to finish first. A correct answer offers Continue, an incorrect
-   * one shows the Incorrect state, which offers Try Again or Review Mistakes (the solution screen).
+   * Only checks the solution once every box (the in-between steps and the answer) is filled in;
+   * otherwise the student is told to finish first. The steps and the answer must all be right: then
+   * Continue is offered. Otherwise the Incorrect state marks the wrong boxes and offers Try Again or
+   * Review Mistakes (the solution screen).
    */
   private handleSubmitClick(): void {
     if (!this.model || this.model.canTryAgain()) return;
@@ -91,10 +92,10 @@ export class MainProblemScreenController extends ScreenController {
       this.view.showIncompleteMessage();
       return;
     }
-    if (this.model.checkAnswer(Array.from(this.model.getEnteredAnswer()))) {
+    if (this.model.checkSolution()) {
       this.view.showCorrectAnswer();
     } else {
-      this.view.showIncorrectAnswer();
+      this.view.showIncorrectAnswer(this.model.getWrongFields());
     }
   }
 

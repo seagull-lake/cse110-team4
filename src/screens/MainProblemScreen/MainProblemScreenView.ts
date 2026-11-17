@@ -2,6 +2,7 @@ import Konva from "konva";
 import type { View } from "../../types.ts";
 import { STAGE_WIDTH, STAGE_HEIGHT, FONT_FAMILY, TITLE_COLOR, BUTTON_COLOR, BUTTON_TEXT_COLOR } from "../../constants.ts";
 import { createHomeButton } from "../../components/HomeButton.ts";
+import { createNumberField } from "../../components/ComponentFactory.ts";
 import { MARKER_SIZE, ROW_HEIGHT } from "./MainProblemLayout.ts";
 import type { FieldLayout, HorizontalLine, ProblemLayout, Rect, RowMarker } from "./MainProblemLayout.ts";
 import { getCarryFieldIndexes, getRowProgress, getShownRow, isHiddenCarry, isWorkingRow } from "./MainProblemRows.ts";
@@ -17,7 +18,6 @@ const PRIMARY_BUTTON_X = STAGE_WIDTH - SCREEN_MARGIN - PRIMARY_BUTTON.width;
 const PRIMARY_BUTTON_Y = HOME_BUTTON_BOTTOM - PRIMARY_BUTTON.height;
 const BUTTON_GAP = 12;
 const TRY_AGAIN_BUTTON_X = PRIMARY_BUTTON_X - PRIMARY_BUTTON.width - BUTTON_GAP;
-const BOX_INSET = 4;
 const BOX_FILL = "#FFFFFF";
 const BOX_STROKE = "#27695B";
 /** The field being typed in */
@@ -277,20 +277,12 @@ export class MainProblemScreenView implements View {
       const inWorkingRow = isWorkingRow(field, this.shownRow, this.rowMarkers.length > 0);
       const isActive = index === active && !this.answerLocked;
       const isLockedAnswer = this.answerLocked && index === this.fields.length - 1;
-      field.cellXs.forEach(x => {
-        const box = new Konva.Rect({
-          x: x + BOX_INSET, y: field.y + BOX_INSET,
-          width: field.size.width - BOX_INSET * 2, height: field.size.height - BOX_INSET * 2,
-          fill: isLockedAnswer ? this.lockedAnswerFill : isActive ? ACTIVE_FILL : BOX_FILL,
-          stroke: isActive ? ACTIVE_STROKE : BOX_STROKE,
-          strokeWidth: inWorkingRow ? WORKING_ROW_STROKE_WIDTH : 2, cornerRadius: 6,
-        });
-        box.on("click tap", () => { if (!this.answerLocked) this.onFieldClick(index); });
-        box.on("mouseenter", () => (document.body.style.cursor = "text"));
-        box.on("mouseleave", () => (document.body.style.cursor = "default"));
-        this.answerGroup.add(box);
-      });
-      this.drawCharacters(field, entries[index] ?? "");
+      this.answerGroup.add(createNumberField(field, entries[index] ?? "", {
+        fill: isLockedAnswer ? this.lockedAnswerFill : isActive ? ACTIVE_FILL : BOX_FILL,
+        stroke: isActive ? ACTIVE_STROKE : BOX_STROKE,
+        strokeWidth: inWorkingRow ? WORKING_ROW_STROKE_WIDTH : 2,
+        textListening: false,
+      }, () => { if (!this.answerLocked) this.onFieldClick(index); }));
     });
     this.carried.forEach(copy => this.drawCharacters(copy, entries[copy.from] ?? ""));
     this.drawRowMarkers(entries);

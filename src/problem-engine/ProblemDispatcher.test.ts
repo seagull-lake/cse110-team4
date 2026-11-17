@@ -19,11 +19,18 @@ function setup() {
 
 describe("ProblemDispatcher", () => {
   it.each([
-    ["addition", 12], ["subtraction", 8], ["multiplication", 10], ["division", 10],
+    ["addition", 12], ["subtraction", 8], ["multiplication", 10],
   ] as const)("uses the main-game difficulty and requested %s operation", (operation, answer) => {
     const { dispatcher, miniGame } = setup();
     expect(dispatcher.generate({ gameType: "main-game", difficulty: 2, operation }))
       .toMatchObject({ operands: [10, 1, 1], answer });
+    expect(miniGame.generate).not.toHaveBeenCalled();
+  });
+
+  it("uses the main-game difficulty for division, which only has a dividend and a divisor", () => {
+    const { dispatcher, miniGame } = setup();
+    expect(dispatcher.generate({ gameType: "main-game", difficulty: 2, operation: "division" }))
+      .toMatchObject({ operands: [10, 1], answer: 10 });
     expect(miniGame.generate).not.toHaveBeenCalled();
   });
 

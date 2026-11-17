@@ -27,7 +27,8 @@ jobs:
       - name: Install dependencies from the lockfile
         run: npm ci
 
-      - name: Run main-game generator unit tests
+      - name: Run generator and solution model unit tests
         run: >-
           npm test -- --run --cache=false
           src/problem-engine/MainGameProblemGenerator.test.ts
+          src/screens/SolutionScreen/SolutionScreenModel.test.ts

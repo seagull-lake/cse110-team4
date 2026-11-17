@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { problemDifficultyConfig } from "../../levels/levelConfig.ts";
 import type { LevelType } from "../../levels/levelConfig.ts";
-import { MainProblemScreenModel, createProblemDispatcher, getAnswerFields, getPartialProducts } from "./MainProblemScreenModel.ts";
+import { MainProblemScreenModel, createProblemDispatcher, getAnswerFields, getExpectedEntries, getPartialProducts } from "./MainProblemScreenModel.ts";
 import type { SolvedMainGameProblem } from "../../problem-engine/MainGameProblemGenerator.ts";
-import { solvedDivision } from "./testProblems.ts";
+import { solvedDivision, solvedProblem } from "./testProblems.ts";
 
 const topics = ["addition", "subtraction", "multiplication", "division"] as const;
 const levels = topics.flatMap(topic => [1, 2, 3, 4, 5].map(difficulty => [topic, difficulty] as const));
@@ -340,5 +340,92 @@ describe("filling out the steps of the other topics", () => {
     [..."138"].forEach(c => model.typeCharacter(c)); // the carry, then the answer's ones digit first
     expect(model.getEntries()).toEqual(["1", "83"]);
     expect(model.getAnswerValue()).toBe(83);
+  });
+});
+
+describe("checking the steps and the answer", () => {
+  /** A model for this exact problem. */
+  function modelFor(topic: LevelType, problem: SolvedMainGameProblem): MainProblemScreenModel {
+    return new MainProblemScreenModel(topic, 1, { generate: () => problem } as never);
+  }
+  /** Types each entry into its field, like a student (from the ones digit to the left). */
+  function fill(model: MainProblemScreenModel, entries: readonly string[]): void {
+    entries.forEach((entry, index) => {
+      model.selectField(index);
+      model.clearActiveField();
+      [...entry].reverse().forEach(character => model.typeCharacter(character));
+    });
+  }
+
+  it.each([
+    // 58 + 67: the ones carry 1 into the tens, the tens carry 1 into the answer's extra digit
+    ["addition", solvedProblem("addition", 58, 67), ["1", "1", "125"]],
+    // 604 − 278: the tens lend 1 to the ones, the hundreds lend 1 to the tens
+    ["subtraction", solvedProblem("subtraction", 604, 278), ["1", "1", "326"]],
+    // 472 − 546 is worked out as 546 − 472 (only the tens' column needs a borrow from the hundreds)
+    ["subtraction", solvedProblem("subtraction", 472, 546), ["0", "1", "-74"]],
+    // 47 × 23: × 3 carries 2 then 1 (141), × 2 carries 1 (940), then 141 + 940
+    ["multiplication", solvedProblem("multiplication", 47, 23), ["2", "1", "141", "1", "940", "1081"]],
+    // 96 ÷ 4: 20 × 4 = 80 leaves 16, then 4 × 4 = 16 leaves 0
+    ["division", solvedDivision(96, 4), ["20", "80", "16", "4", "16", "0", "24"]],
+  ] as const)("knows every step of a %s problem", (topic, problem, expected) => {
+    expect(getExpectedEntries(topic, problem)).toEqual(expected);
+  });
+
+  it.each(levels)("the worked steps of %s level %s fit their boxes", (topic, difficulty) => {
+    for (let attempt = 0; attempt < 100; attempt++) {
+      const model = new MainProblemScreenModel(topic, difficulty);
+      const expected = getExpectedEntries(topic, model.getProblem());
+      model.getFields().forEach((field, index) => expect(expected[index]?.length).toBe(field.length));
+      fill(model, expected as string[]);
+      expect(model.isComplete()).toBe(true);
+      expect(model.checkSolution()).toBe(true);
+    }
+  });
+
+  it("accepts a solution only when every step and the answer are right", () => {
+    const model = modelFor("subtraction", solvedProblem("subtraction", 604, 278));
+    fill(model, ["1", "1", "326"]);
+    expect(model.checkSolution()).toBe(true);
+    expect(model.getWrongFields()).toEqual([]);
+    expect(model.canContinue()).toBe(true);
+  });
+
+  it("rejects a right answer with a wrong step and says which step", () => {
+    const model = modelFor("subtraction", solvedProblem("subtraction", 604, 278));
+    fill(model, ["1", "0", "326"]);
+    expect(model.checkSolution()).toBe(false);
+    expect(model.getWrongFields()).toEqual([1]);
+    expect(model.canReviewMistakes()).toBe(true);
+    expect(model.canContinue()).toBe(false);
+  });
+
+  it("lists a wrong answer and wrong steps together", () => {
+    const model = modelFor("multiplication", solvedProblem("multiplication", 47, 23));
+    fill(model, ["2", "1", "141", "0", "940", "1091"]);
+    expect(model.checkSolution()).toBe(false);
+    expect(model.getWrongFields()).toEqual([3, 5]);
+  });
+
+  it("checks every division box", () => {
+    const model = modelFor("division", solvedDivision(96, 4));
+    fill(model, ["20", "80", "16", "4", "16", "1", "24"]);
+    expect(model.checkSolution()).toBe(false);
+    expect(model.getWrongFields()).toEqual([5]);
+  });
+
+  it("forgets the wrong steps when the answer is cleared", () => {
+    const model = modelFor("addition", solvedProblem("addition", 58, 67));
+    fill(model, ["0", "1", "125"]);
+    model.checkSolution();
+    model.clearAnswer();
+    expect(model.getWrongFields()).toEqual([]);
+    expect(model.canTryAgain()).toBe(false);
+  });
+
+  it("only checks the answer when a problem comes without worked steps", () => {
+    const model = modelFor("addition", { operands: [58, 67], answer: 125 } as SolvedMainGameProblem);
+    fill(model, ["9", "9", "125"]);
+    expect(model.checkSolution()).toBe(true);
   });
 });

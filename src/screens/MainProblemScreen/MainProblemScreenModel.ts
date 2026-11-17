@@ -97,6 +97,37 @@ export function getAnswerFields(topic: LevelType, problem: MainGameProblem): Ans
   ];
 }
 
+/**
+ * What the student should write in each field, taken from the generator's worked solution:
+ * - Carry / borrow box k (1 = tens): what column k − 1 carried or borrowed
+ * - Multiplication carries: the same, for the row of the multiplier digit they belong to
+ * - Partial products and division boxes: their numbers
+ * A step is null when the problem has no worked solution to compare it with.
+ */
+export function getExpectedEntries(topic: LevelType, problem: MainGameProblem,
+  fields: readonly AnswerField[] = getAnswerFields(topic, problem)): (string | null)[] {
+  const step = (problem as Partial<SolvedMainGameProblem>).solution?.steps[0];
+  const written = (value: number | undefined) => value === undefined ? null : String(value);
+  return fields.map(field => {
+    const box = field.box ?? 0;
+    switch (field.kind) {
+      case "answer": return String(problem.answer);
+      case "carry": {
+        const columns = topic === "multiplication" ? step?.multiplicationRows?.[field.row ?? 0]?.columns : step?.additionColumns;
+        return columns ? written(columns[box - 1]?.carryOut ?? 0) : null;
+      }
+      case "borrow": {
+        const columns = step?.subtractionColumns;
+        return columns ? written(columns[box - 1]?.borrowOut ?? 0) : null;
+      }
+      case "partialProduct": return written(getPartialProducts(problem)[box]);
+      case "partialQuotient": return written(step?.divisionBoxMethod?.boxes[box]?.partialQuotient);
+      case "product": return written(step?.divisionBoxMethod?.boxes[box]?.amountSubtracted);
+      case "remaining": return written(step?.divisionBoxMethod?.boxes[box]?.remainingAmount);
+    }
+  });
+}
+
 /** The level being played (topic and difficulty), the problem generated for it, and what the student typed. */
 export class MainProblemScreenModel {
   private readonly level: LevelDefinition;
@@ -104,6 +135,8 @@ export class MainProblemScreenModel {
   private readonly problem: SolvedMainGameProblem;
   /** The result of the last submission, or null while the student is still working on it. */
   private result: "correct" | "incorrect" | null = null;
+  /** The fields that were wrong when the solution was last checked. */
+  private wrongFields: number[] = [];
   private readonly fields: readonly AnswerField[];
   /** What the student typed in each field as it reads on screen, e.g. "72"; typing fills it from the right. */
   private readonly entries: string[];
@@ -139,6 +172,20 @@ export class MainProblemScreenModel {
     this.result = correct ? "correct" : "incorrect";
     return correct;
   }
+
+  /**
+   * Checks every field, the in-between steps and the answer, against the worked solution. The solution
+   * is correct only when all of them match; the ones that don't are kept for getWrongFields().
+   */
+  checkSolution(): boolean {
+    const expected = getExpectedEntries(this.level.type, this.problem, this.fields);
+    this.wrongFields = expected.flatMap((value, index) => value !== null && this.entries[index] !== value ? [index] : []);
+    this.result = this.wrongFields.length === 0 ? "correct" : "incorrect";
+    return this.result === "correct";
+  }
+
+  /** The fields that didn't match the solution on the last checkSolution(), in field order. */
+  getWrongFields(): readonly number[] { return [...this.wrongFields]; }
 
   /** True once every box of every field (steps and the answer) has been filled in. */
   isComplete(): boolean {
@@ -204,6 +251,7 @@ export class MainProblemScreenModel {
     this.entries.fill("");
     this.active = 0;
     this.result = null;
+    this.wrongFields = [];
   }
 
   /** The typed answer as a number, or null while nothing (or only "-") has been typed. */

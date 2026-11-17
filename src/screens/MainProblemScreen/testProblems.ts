@@ -14,3 +14,14 @@ export function solvedDivision(dividend: number, divisor: number): SolvedMainGam
     solution: { steps: [{ operation: "division", leftOperand: dividend, rightOperand: divisor, result: answer, divisionBoxMethod }], finalAnswer: answer },
   };
 }
+
+/** An addition, subtraction or multiplication problem with exactly these numbers and the generator's worked steps. */
+export function solvedProblem(operation: "addition" | "subtraction" | "multiplication", left: number, right: number): SolvedMainGameProblem {
+  const digits = [String(left).length, String(right).length];
+  // The generator picks each number as min + floor(random × size), so aim at the middle of the wanted number's slot
+  const randoms = [left, right].map((value, index) => {
+    const minimum = 10 ** (digits[index] - 1);
+    return (value - minimum + 0.5) / (10 ** digits[index] - minimum);
+  });
+  return new MainGameProblemGenerator(() => randoms.shift() ?? 0).generate({ operation, operandDigits: digits });
+}

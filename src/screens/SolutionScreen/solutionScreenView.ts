@@ -4,7 +4,7 @@ import type { MainGameProblem } from "../../domain/problem.ts";
 import { AdditionSolutionView } from "./AdditionSolutionView.ts";
 import { SubtractionSolutionView } from "./SubtractionSolutionView.ts";
 import type { SubtractionPage } from "./SolutionScreenModel.ts";
-import type { SolutionScreenModel } from "./SolutionScreenModel.ts";
+import type { SolutionPage } from "./SolutionScreenModel.ts";
 import { DivisionSolutionView } from "./DivisionSolutionView.ts";
 import { MultiplicationSolutionView } from "./MultiplicationSolutionView.ts";
 
@@ -52,7 +52,7 @@ export class SolutionScreenView {
 
     /** Attach the multiplication view and draw its current page. */
     renderMultiplication(level: number, problem: MainGameProblem,
-        page: ReturnType<SolutionScreenModel["getMultiplicationPage"]>, explanation: string): void {
+        page: Extract<SolutionPage, { operation: "multiplication" }>, explanation: string): void {
         this.content.removeChildren();
         this.content.add(this.multiplicationView.getGroup());
         this.multiplicationView.render(level, problem, page, explanation);

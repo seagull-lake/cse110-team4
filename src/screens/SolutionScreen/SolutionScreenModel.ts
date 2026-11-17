@@ -9,7 +9,7 @@ export type SolutionPage = {
     finalAnswer?: number;
 } & (
         | { operation: "addition"; currentColumn: AdditionColumn | undefined; visibleColumns: readonly AdditionColumn[] }
-        | { operation: "subtraction"; currentColumn: SubtractionColumn | undefined; visibleColumns: readonly SubtractionColumn[] }
+        | { operation: "subtraction"; currentColumn: SubtractionColumn; visibleColumns: readonly SubtractionColumn[] }
         | { operation: "multiplication"; currentRow: MultiplicationRow | undefined; visibleRows: readonly MultiplicationRow[] }
         | { operation: "division"; division: DivisionBoxMethod; visibleBoxCount: number }
     );
@@ -31,22 +31,6 @@ export function explainMultiplicationRow(row: MultiplicationRow, leftOperand: nu
         ? `Row: ${row.partialProduct}`
         : `${unshiftedProduct} × ${row.multiplierPlaceValue} = ${row.partialProduct}`);
     return lines.join("\n");
-}
-
-/** One page of the subtraction solution: the columns revealed so far, from the ones place up. */
-export interface SubtractionPage {
-    /** The number on top and the number under it. For a negative answer this is larger − smaller. */
-    readonly top: number;
-    readonly bottom: number;
-    /** True when the problem was smaller − larger, so the answer gets a minus. */
-    readonly isNegative: boolean;
-    readonly columns: readonly SubtractionColumn[];
-    readonly visibleColumnCount: number;
-    /** The column explained on this page (the last one revealed). */
-    readonly currentColumn: SubtractionColumn;
-    readonly hasNext: boolean;
-    /** Only on the last page. */
-    readonly finalAnswer?: number;
 }
 
 function placeName(index: number): string {
@@ -159,16 +143,7 @@ export class SolutionScreenModel {
                     finalAnswer: hasNext ? undefined : this.getFinalAnswer(),
                 };
             }
-            case "subtraction": {
-                const page = this.getSubtractionPage();
-                return {
-                    operation: "subtraction",
-                    currentColumn: page.currentColumn,
-                    visibleColumns: page.columns.slice(0, page.visibleColumnCount),
-                    hasNext: page.hasNext,
-                    finalAnswer: page.finalAnswer,
-                };
-            }
+            case "subtraction": return this.getSubtractionPage();
         }
     }
 
@@ -241,18 +216,14 @@ export class SolutionScreenModel {
     }
 
     /** Expose revealed subtraction columns and borrow explanations. */
-    getSubtractionPage(): SubtractionPage {
+    getSubtractionPage(): Extract<SolutionPage, { operation: "subtraction" }> {
         const step = this.getCurrentStep();
         const columns = step.subtractionColumns;
         if (!columns) throw new Error("The current solution step is not subtraction.");
-        const isNegative = step.leftOperand < step.rightOperand;
         const hasNext = this.subtractionColumnIndex < columns.length - 1;
         return {
-            top: isNegative ? step.rightOperand : step.leftOperand,
-            bottom: isNegative ? step.leftOperand : step.rightOperand,
-            isNegative,
-            columns,
-            visibleColumnCount: this.subtractionColumnIndex + 1,
+            operation: "subtraction",
+            visibleColumns: columns.slice(0, this.subtractionColumnIndex + 1),
             currentColumn: columns[this.subtractionColumnIndex],
             hasNext,
             finalAnswer: hasNext ? undefined : this.getFinalAnswer(),

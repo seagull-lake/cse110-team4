@@ -64,7 +64,7 @@ export class SolutionScreenController extends ScreenController {
                 break;
             }
             case "subtraction":
-                this.view.renderSubtraction(this.model.getSubtractionPage());
+                this.view.renderSubtraction(this.model.getCurrentStep(), page);
                 break;
         }
     }

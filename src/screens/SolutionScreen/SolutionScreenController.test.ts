@@ -137,13 +137,13 @@ it("renders subtraction columns through the dedicated view and reveals the final
     const problem = new MainGameProblemGenerator(() => 0.5).generate({ operation: "subtraction", operandDigits: [3, 2] });
     const { controller } = setup();
     controller.setProblem(problem, "subtraction", 2);
-    expect(view.subtraction).toHaveBeenLastCalledWith(expect.objectContaining({
-        top: 550, bottom: 55, visibleColumnCount: 1, finalAnswer: undefined,
+    expect(view.subtraction).toHaveBeenLastCalledWith(problem.solution.steps[0], expect.objectContaining({
+        operation: "subtraction", visibleColumns: [problem.solution.steps[0].subtractionColumns?.[0]], finalAnswer: undefined,
     }));
 
     view.onNextStep();
     view.onNextStep();
-    expect(view.subtraction).toHaveBeenLastCalledWith(expect.objectContaining({
-        visibleColumnCount: 3, hasNext: false, finalAnswer: 495,
+    expect(view.subtraction).toHaveBeenLastCalledWith(problem.solution.steps[0], expect.objectContaining({
+        visibleColumns: problem.solution.steps[0].subtractionColumns, hasNext: false, finalAnswer: 495,
     }));
 });

@@ -3,7 +3,6 @@ import type { AdditionColumn, SolutionStep, DivisionBoxMethod } from "../../prob
 import type { MainGameProblem } from "../../domain/problem.ts";
 import { AdditionSolutionView } from "./AdditionSolutionView.ts";
 import { SubtractionSolutionView } from "./SubtractionSolutionView.ts";
-import type { SubtractionPage } from "./SolutionScreenModel.ts";
 import type { SolutionPage } from "./SolutionScreenModel.ts";
 import { DivisionSolutionView } from "./DivisionSolutionView.ts";
 import { MultiplicationSolutionView } from "./MultiplicationSolutionView.ts";
@@ -66,10 +65,10 @@ export class SolutionScreenView {
     }
 
     // Keep the subtraction View alive while redrawing the revealed columns.
-    renderSubtraction(page: SubtractionPage): void {
+    renderSubtraction(step: SolutionStep, page: Extract<SolutionPage, { operation: "subtraction" }>): void {
         this.content.removeChildren();
         this.content.add(this.subtractionView.getGroup());
-        this.subtractionView.render(page);
+        this.subtractionView.render(step, page);
     }
 
     /** Show the solution group and request a redraw. */

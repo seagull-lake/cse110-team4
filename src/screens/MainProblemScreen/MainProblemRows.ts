@@ -41,3 +41,17 @@ export function isHiddenCarry(field: FieldLayout, shownRow: number): boolean {
 export function isWorkingRow(field: FieldLayout, shownRow: number, hasPartialProductRows: boolean): boolean {
   return hasPartialProductRows && field.row === shownRow;
 }
+
+/** After an incorrect submission: whether one of a row's fields (its carries or its partial product) is wrong. */
+export function rowHasMistake(fields: readonly FieldLayout[], wrongFields: Iterable<number>, row: number): boolean {
+  return [...wrongFields].some(index => fields[index]?.row === row);
+}
+
+/**
+ * After an incorrect submission: the first row with a wrong carry, so its carries can be shown (only one
+ * row's carries are drawn at a time). Null when every carry is right.
+ */
+export function getFirstWrongCarryRow(fields: readonly FieldLayout[], wrongFields: Iterable<number>): number | null {
+  const index = [...wrongFields].sort((a, b) => a - b).find(index => fields[index]?.carry);
+  return index === undefined ? null : fields[index].row ?? null;
+}

@@ -5,7 +5,9 @@ import { createHomeButton } from "../../components/HomeButton.ts";
 import { createNumberField } from "../../components/ComponentFactory.ts";
 import { MARKER_SIZE, ROW_HEIGHT } from "./MainProblemLayout.ts";
 import type { FieldLayout, HorizontalLine, ProblemLayout, Rect, RowMarker } from "./MainProblemLayout.ts";
-import { getCarryFieldIndexes, getRowProgress, getShownRow, isHiddenCarry, isWorkingRow } from "./MainProblemRows.ts";
+import {
+  getCarryFieldIndexes, getFirstWrongCarryRow, getRowProgress, getShownRow, isHiddenCarry, isWorkingRow, rowHasMistake,
+} from "./MainProblemRows.ts";
 import type { RowProgress } from "./MainProblemRows.ts";
 
 const BACK_BUTTON = { width: 150, height: 40 };
@@ -23,11 +25,11 @@ const BOX_STROKE = "#27695B";
 /** The field being typed in */
 const ACTIVE_FILL = "#FFF1B8";
 const ACTIVE_STROKE = "#E0A100";
-/** The answer once it is correct */
+/** A box that is right once the solution is submitted */
 const CORRECT_FILL = "#B8E6C7";
 /** The "Correct!" message */
 const CORRECT_TEXT_COLOR = "#3f9a5b";
-/** The answer once it is incorrect, and the "Incorrect" message */
+/** A box that is wrong once the solution is submitted, and the "Incorrect" message */
 const INCORRECT_FILL = "#F6C1BF";
 const INCORRECT_TEXT_COLOR = "#C62828";
 /** The "fill in every box" reminder */
@@ -82,9 +84,7 @@ export class MainProblemScreenView implements View {
   private active = 0;
   /** Once the answer is submitted, typing and clicking boxes does nothing. */
   private answerLocked = false;
-  /** How the answer boxes are colored once the answer is locked. */
-  private lockedAnswerFill = CORRECT_FILL;
-  /** After an incorrect submission: the step boxes that are wrong, colored like a wrong answer. */
+  /** After submitting: the boxes that are wrong (red); every other box is right (green). */
   private wrongFields = new Set<number>();
 
   /**
@@ -210,10 +210,10 @@ export class MainProblemScreenView implements View {
   /** The characters typed in the final answer field, one per box. */
   getEnteredAnswer(): readonly string[] { return Array.from(this.entries.at(-1) ?? ""); }
 
-  /** Turns the answer boxes green, locks the answer and offers Continue. */
+  /** Turns every box green, locks the answer and offers Continue. */
   showCorrectAnswer(): void {
     this.answerLocked = true;
-    this.lockedAnswerFill = CORRECT_FILL;
+    this.wrongFields.clear();
     this.feedback.text("Correct!");
     this.feedback.fill(CORRECT_TEXT_COLOR);
     this.submitButton.visible(false);
@@ -223,14 +223,15 @@ export class MainProblemScreenView implements View {
   }
 
   /**
-   * Turns the wrong boxes red (steps and/or the answer), locks the answer and offers Try Again or Review
+   * Turns the wrong boxes red and the right ones green (steps and the answer), locks the answer and offers Try Again or Review
    * Mistakes. The student's work stays on screen so they can see what they wrote before looking at the solution.
    */
   showIncorrectAnswer(wrongFields: readonly number[] = [this.fields.length - 1]): void {
     this.answerLocked = true;
     this.wrongFields = new Set(wrongFields);
     const answerIsRight = !this.wrongFields.has(this.fields.length - 1);
-    this.lockedAnswerFill = answerIsRight ? BOX_FILL : INCORRECT_FILL;
+    // Multiplication shows one row's carries at a time: show a row whose carries are wrong
+    this.shownRow = getFirstWrongCarryRow(this.fields, this.wrongFields) ?? this.shownRow;
     this.feedback.text(answerIsRight
       ? "Some steps are wrong – try again or review your mistakes"
       : "Incorrect – try again or review your mistakes");
@@ -277,16 +278,17 @@ export class MainProblemScreenView implements View {
     this.entries = entries;
     this.active = active;
     this.answerGroup.destroyChildren();
-    this.shownRow = getShownRow(this.fields, active, this.shownRow);
+    // Once submitted, the shown row only changes when a row's circle is clicked
+    if (!this.answerLocked) this.shownRow = getShownRow(this.fields, active, this.shownRow);
     this.drawMultiplierDigitHighlight();
     this.fields.forEach((field, index) => {
       if (isHiddenCarry(field, this.shownRow)) return; // another row's carries are in these boxes
       const inWorkingRow = isWorkingRow(field, this.shownRow, this.rowMarkers.length > 0);
       const isActive = index === active && !this.answerLocked;
-      const isLockedAnswer = this.answerLocked && index === this.fields.length - 1;
-      const isWrongStep = this.answerLocked && !isLockedAnswer && this.wrongFields.has(index);
+      // Once submitted, every box shows whether it is right (green) or wrong (red)
+      const checkedFill = this.wrongFields.has(index) ? INCORRECT_FILL : CORRECT_FILL;
       this.answerGroup.add(createNumberField(field, entries[index] ?? "", {
-        fill: isLockedAnswer ? this.lockedAnswerFill : isWrongStep ? INCORRECT_FILL : isActive ? ACTIVE_FILL : BOX_FILL,
+        fill: this.answerLocked ? checkedFill : isActive ? ACTIVE_FILL : BOX_FILL,
         stroke: isActive ? ACTIVE_STROKE : BOX_STROKE,
         strokeWidth: inWorkingRow ? WORKING_ROW_STROKE_WIDTH : 2,
         textListening: false,
@@ -311,19 +313,29 @@ export class MainProblemScreenView implements View {
 
   /**
    * One circle beside each partial product: red when none of its carries are filled in, yellow when some
-   * are, green when all are. The row whose carries are shown has a thicker outline; clicking a circle shows its carries.
+   * are, green when all are. After submitting, it is red when the row has a wrong carry or partial product
+   * and green otherwise. The row whose carries are shown has a thicker outline; clicking a circle shows
+   * its carries (after submitting too, to look at them without typing).
    */
   private drawRowMarkers(entries: readonly string[]): void {
     this.rowMarkers.forEach(({ row, x, y }) => {
       const progress = getRowProgress(this.fields, entries, row);
       if (!progress) return;
+      const checked = rowHasMistake(this.fields, this.wrongFields, row) ? "empty" : "complete";
       const marker = new Konva.Circle({
         x: x + MARKER_SIZE / 2, y: y + MARKER_SIZE / 2, radius: MARKER_SIZE / 2 - 3, // leaves room for the thickest outline
-        fill: MARKER_FILL[progress],
+        fill: MARKER_FILL[this.answerLocked ? checked : progress],
         stroke: TITLE_COLOR, strokeWidth: row === this.shownRow ? 5 : 2,
       });
       const [firstCarry] = getCarryFieldIndexes(this.fields, row);
-      marker.on("click tap", () => { if (!this.answerLocked) this.onFieldClick(firstCarry); });
+      marker.on("click tap", () => {
+        if (!this.answerLocked) {
+          this.onFieldClick(firstCarry);
+          return;
+        }
+        this.shownRow = row;
+        this.showAnswer(this.entries, this.active);
+      });
       marker.on("mouseenter", () => (document.body.style.cursor = "pointer"));
       marker.on("mouseleave", () => (document.body.style.cursor = "default"));
       this.answerGroup.add(marker);

@@ -11,7 +11,8 @@ export class MenuScreenController extends ScreenController {
         this.screenSwitcher = screenSwitcher;
         this.view = new MenuScreenView(() => this.handleMainGameClick(),
                                        () => this.handleMultiDivGameClick(),
-                                       () => this.handleFractionGameClick());
+                                       () => this.handleFractionGameClick(),
+                                       () => this.screenSwitcher.switchToScreen({ type: "treasurehunt" }));
     }
 
     private handleMainGameClick(): void {

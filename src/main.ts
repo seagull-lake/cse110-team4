@@ -9,6 +9,7 @@ import { MultiplicationDivisionScreenController } from "./screens/Multiplication
 import { AdventureMapScreenController } from "./screens/AdventureMapScreen/AdventureMapScreenController.ts";
 import { MainProblemScreenController } from "./screens/MainProblemScreen/MainProblemScreenController.ts";
 import { SolutionScreenController } from "./screens/SolutionScreen/SolutionScreenController.ts";
+import { TreasureHuntScreenController } from "./screens/TreasureHuntScreen/TreasureHuntScreenController.ts";
 import { getLevelDefinition } from "./levels/levelConfig.ts";
 import { isLevelUnlocked } from "./levels/progression.ts";
 
@@ -23,6 +24,7 @@ class App implements ScreenSwitcher {
   private adventureMapController: AdventureMapScreenController;
   private mainProblemController: MainProblemScreenController;
   private solutionController: SolutionScreenController;
+  private treasureHuntController: TreasureHuntScreenController;
 
   constructor(container: string) {
     this.stage = new Konva.Stage({ container, width: STAGE_WIDTH, height: STAGE_HEIGHT });
@@ -36,6 +38,7 @@ class App implements ScreenSwitcher {
     this.adventureMapController = new AdventureMapScreenController(this);
     this.mainProblemController = new MainProblemScreenController(this);
     this.solutionController = new SolutionScreenController(this);
+    this.treasureHuntController = new TreasureHuntScreenController(this);
 
     this.layer.add(this.menuController.getView().getGroup());
     this.layer.add(this.fractiongameController.getView().getGroup());
@@ -44,6 +47,7 @@ class App implements ScreenSwitcher {
     this.layer.add(this.adventureMapController.getView().getGroup());
     this.layer.add(this.mainProblemController.getView().getGroup());
     this.layer.add(this.solutionController.getView().getGroup());
+    this.layer.add(this.treasureHuntController.getView().getGroup());
 
 
     this.layer.draw();
@@ -65,10 +69,12 @@ class App implements ScreenSwitcher {
     this.adventureMapController.hide();
     this.mainProblemController.hide();
     this.solutionController.hide();
+    this.treasureHuntController.hide();
 
     switch (screen.type) {
       case "menu": this.menuController.show(); break;
       case "maingame": this.maingameController.show(); break;
+      case "treasurehunt": this.treasureHuntController.show(); break;
       case "adventuremap":
         this.adventureMapController.setTopic(screen.topic);
         this.adventureMapController.show();

@@ -1,8 +1,7 @@
 import Konva from "konva";
 import type { View } from "../../types.ts";
 import { STAGE_WIDTH, STAGE_HEIGHT, FONT_FAMILY, TITLE_COLOR, BUTTON_COLOR, BUTTON_TEXT_COLOR } from "../../constants.ts";
-import { createHomeButton } from "../../components/HomeButton.ts";
-import { PRIMARY_BUTTON_SIZE as PRIMARY_BUTTON, createNumberField, createPrimaryButton } from "../../components/ComponentFactory.ts";
+import { createHomeButton, PRIMARY_BUTTON_SIZE as PRIMARY_BUTTON, createNumberField, createPrimaryButton } from "../../components/ComponentFactory.ts";
 import { MARKER_SIZE, ROW_HEIGHT } from "./MainProblemLayout.ts";
 import type { FieldLayout, HorizontalLine, ProblemLayout, Rect, RowMarker } from "./MainProblemLayout.ts";
 import {

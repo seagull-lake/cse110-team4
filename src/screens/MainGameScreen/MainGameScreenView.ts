@@ -2,7 +2,7 @@ import Konva from "konva";
 import type { View } from "../../types.ts";
 import type { LevelType } from "../../levels/levelConfig.ts";
 import type { Topic } from "./MainGameScreenModel.ts";
-import { createHomeButton } from "../../components/HomeButton.ts";
+import { createHomeButton } from "../../components/ComponentFactory.ts";
 import {
     STAGE_WIDTH, FONT_FAMILY, TITLE_COLOR, BUTTON_COLOR, BUTTON_TEXT_COLOR,
 } from "../../constants.ts";

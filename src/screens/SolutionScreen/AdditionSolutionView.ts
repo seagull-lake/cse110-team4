@@ -1,8 +1,7 @@
 import Konva from "konva";
 import type { AdditionColumn, SolutionStep } from "../../problem-engine/MainGameProblemGenerator.ts";
 import { FONT_FAMILY, STAGE_WIDTH, STAGE_HEIGHT, TITLE_COLOR } from "../../constants.ts";
-import { createBackToMapButton, createHomeButton } from "../../components/HomeButton.ts";
-import { FINAL_ANSWER_FILL, createNextStepButton } from "../../components/ComponentFactory.ts";
+import { createBackToMapButton, createHomeButton, FINAL_ANSWER_FILL, createNextStepButton } from "../../components/ComponentFactory.ts";
 
 /*
  * Addition solution, one column per page (like the Figma "Fixed grid" frames):

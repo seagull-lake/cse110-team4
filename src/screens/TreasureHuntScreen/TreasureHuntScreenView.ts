@@ -2,7 +2,7 @@ import Konva from "konva";
 import type { View } from "../../types.ts";
 import type { LevelType } from "../../levels/levelConfig.ts";
 import type { TreasureHuntData } from "./TreasureHuntScreenModel.ts";
-import { createHomeButton } from "../../components/HomeButton.ts";
+import { createHomeButton } from "../../components/ComponentFactory.ts";
 import { BUTTON_COLOR, FONT_FAMILY, STAGE_WIDTH, TITLE_COLOR } from "../../constants.ts";
 
 export class TreasureHuntScreenView implements View {

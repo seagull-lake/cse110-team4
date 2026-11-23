@@ -1,7 +1,72 @@
 import Konva from "konva";
 import { BUTTON_COLOR, BUTTON_TEXT_COLOR, FONT_FAMILY, STAGE_HEIGHT, STAGE_WIDTH, TITLE_COLOR } from "../constants.ts";
 
+// Shared screen components: navigation buttons, action buttons, solution controls, then number fields.
+
 export const PRIMARY_BUTTON_SIZE = { width: 170, height: 48 };
+
+/** The answer boxes on the last page of every solution, the same green as a correct answer. */
+export const FINAL_ANSWER_FILL = "#B8E6C7";
+
+// Navigation buttons
+
+/**
+ * Shared Home button — reuse in any screen's view:
+ *   this.group.add(createHomeButton(onHomeClick));
+ * Sits in the bottom-left corner by default, matching every screen.
+ */
+export function createHomeButton(onClick: () => void, x = 30, y = STAGE_HEIGHT - 62): Konva.Group {
+    const button = new Konva.Group({ x, y });
+
+    button.add(new Konva.Rect({
+        width: 90,
+        height: 40,
+        fill: TITLE_COLOR,
+        cornerRadius: 8,
+    }));
+
+    button.add(new Konva.Text({
+        width: 90,
+        height: 40,
+        text: "Home",
+        fontSize: 18,
+        fontFamily: FONT_FAMILY,
+        fill: "white",
+        align: "center",
+        verticalAlign: "middle",
+    }));
+
+    button.on("click", onClick);
+    button.on("mouseenter", () => (document.body.style.cursor = "pointer"));
+    button.on("mouseleave", () => (document.body.style.cursor = "default"));
+
+    return button;
+}
+
+/**
+ * Shared "Back to map" button, right of the Home button, like on the problem screen:
+ *   this.group.add(createBackToMapButton(onBackClick));
+ */
+export function createBackToMapButton(onClick: () => void, x = 140, y = STAGE_HEIGHT - 62): Konva.Group {
+    const button = new Konva.Group({ x, y });
+    button.add(new Konva.Rect({ width: 150, height: 40, fill: BUTTON_COLOR, cornerRadius: 8 }));
+    button.add(new Konva.Text({
+        width: 150,
+        height: 40,
+        text: "Back to map",
+        fontSize: 18,
+        fontFamily: FONT_FAMILY,
+        fill: BUTTON_TEXT_COLOR,
+        align: "center",
+        verticalAlign: "middle",
+    }));
+    button.on("click tap", onClick);
+    button.on("mouseenter", () => (document.body.style.cursor = "pointer"));
+    button.on("mouseleave", () => (document.body.style.cursor = "default"));
+    return button;
+}
+
+// Action buttons
 
 /** Shared green action button used by main-game actions and solution retries. */
 export function createPrimaryButton(label: string, x: number, y: number, onClick: () => void): Konva.Group {
@@ -45,8 +110,7 @@ export function createActionButton(label: string, x = STAGE_WIDTH - 200, y = STA
     return button;
 }
 
-/** The answer boxes on the last page of every solution, the same green as a correct answer. */
-export const FINAL_ANSWER_FILL = "#B8E6C7";
+// Solution controls
 
 /**
  * The bottom-right button of every solution screen: "Next Step →" while there are steps left, then a
@@ -82,6 +146,8 @@ export function createNextStepButton(hasNext: boolean, onNextStep: () => void): 
     button.on("mouseleave", () => { document.body.style.cursor = "default"; });
     return button;
 }
+
+// Number fields
 
 /** Draw one right-aligned number field, leaving field selection to its caller. */
 export function createNumberField(

@@ -1,7 +1,6 @@
 import Konva from "konva";
 import { BUTTON_COLOR, FONT_FAMILY, STAGE_HEIGHT, STAGE_WIDTH, TITLE_COLOR } from "../../constants.ts";
-import { createBackToMapButton, createHomeButton } from "../../components/HomeButton.ts";
-import { FINAL_ANSWER_FILL, createNextStepButton } from "../../components/ComponentFactory.ts";
+import { createBackToMapButton, createHomeButton, FINAL_ANSWER_FILL, createNextStepButton } from "../../components/ComponentFactory.ts";
 import { getProblemLayout } from "../MainProblemScreen/MainProblemLayout.ts";
 import type { FieldLayout } from "../MainProblemScreen/MainProblemLayout.ts";
 import { explainSubtractionColumn } from "./SolutionScreenModel.ts";

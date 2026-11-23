@@ -2,7 +2,7 @@ import Konva from "konva";
 import type { View } from "../../types.ts";
 import type { LevelType } from "../../levels/levelConfig.ts";
 import { STAGE_WIDTH, STAGE_HEIGHT, FONT_FAMILY, TITLE_COLOR, BUTTON_COLOR, BUTTON_TEXT_COLOR } from "../../constants.ts";
-import { createHomeButton } from "../../components/HomeButton.ts";
+import { createHomeButton } from "../../components/ComponentFactory.ts";
 import type { AdventureMapData } from "./AdventureMapScreenModel.ts";
 import {
   BADGE_HEIGHT, CARD_HEADER_HEIGHT, CARD_LINE_HEIGHT, CARD_OPERATOR_WIDTH, CARD_PADDING,

@@ -1,6 +1,7 @@
 import { getLevelDefinition } from "../../levels/levelConfig.ts";
 import type { LevelType } from "../../levels/levelConfig.ts";
-import { treasureCluesByTopic } from "../../levels/treasureConfig.ts";
+import { treasureCluesByTopic, treasuresByTopic } from "../../levels/treasureConfig.ts";
+import type { TopicTreasureDefinition } from "../../levels/treasureConfig.ts";
 
 export type TreasureRewardType = "clue" | "treasure" | "ultimate";
 
@@ -14,7 +15,8 @@ interface TreasureRewardProgress {
 
 export type TreasureRewardPage = TreasureRewardProgress & (
     { readonly type: "clue"; readonly clue: string } |
-    { readonly type: "treasure" | "ultimate" }
+    { readonly type: "treasure"; readonly treasure: TopicTreasureDefinition } |
+    { readonly type: "ultimate" }
 );
 
 export class TreasureRewardScreenModel {
@@ -53,7 +55,10 @@ export class TreasureRewardScreenModel {
                 clue: treasureCluesByTopic[this.topic][this.difficulty - 1],
             };
         }
-        return { ...progress, type: this.rewardType };
+        if (this.rewardType === "treasure") {
+            return { ...progress, type: "treasure", treasure: treasuresByTopic[this.topic] };
+        }
+        return { ...progress, type: "ultimate" };
     }
     nextPage(): void {
         if (this.getCurrentPage().hasNext) {

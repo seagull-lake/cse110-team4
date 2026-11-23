@@ -3,6 +3,7 @@ import type { View } from "../../types.ts";
 import { createHomeButton, createPrimaryButton, PRIMARY_BUTTON_SIZE } from "../../components/ComponentFactory.ts";
 import { FONT_FAMILY, STAGE_WIDTH, STAGE_HEIGHT, TITLE_COLOR } from "../../constants.ts";
 import type { TreasureRewardPage } from "./TreasureRewardScreenModel.ts";
+import type { TopicTreasureDefinition } from "../../levels/treasureConfig.ts";
 
 const GOLD = "#FFDC65";
 const PINK = "#FF3766";
@@ -29,7 +30,7 @@ export class TreasureRewardScreenView implements View {
     render(page: TreasureRewardPage): void {
         this.content.destroyChildren();
         if (page.type === "clue") this.renderClue(page);
-        else if (page.type === "treasure") this.renderTreasure();
+        else if (page.type === "treasure") this.renderTreasure(page.treasure);
         else this.renderUltimate();
         this.group.getLayer()?.batchDraw();
     }
@@ -37,38 +38,38 @@ export class TreasureRewardScreenView implements View {
     // Show a new clue and one progress marker for each level.
     private renderClue(page: TreasureRewardPage & { type: "clue" }): void {
         this.drawHeader("Treasure Hint");
-        const clueText = [
+        this.centerTextBlock([
             this.drawText("You found a clue:", 30, 0, 470, 38),
             this.drawText(page.clue, 30, 0, 470, 62),
             this.drawText("for the Golden Treasure", 30, 0, 470, 30),
-        ];
-        const gap = 24;
-        const textHeight = clueText.reduce((height, text) => height + text.height(), 0)
-            + gap * (clueText.length - 1);
-        let y = (STAGE_HEIGHT - textHeight) / 2;
-        for (const text of clueText) {
-            text.align("center");
-            text.y(y);
-            y += text.height() + gap;
-        }
+        ]);
         this.drawText("The Golden\nTreasure", 535, 95, 250, 39, PINK);
         this.drawProgress(page);
         this.drawChest(610, 270, false);
     }
 
-    // Celebrate the five completed levels with a golden calculator.
-    private renderTreasure(): void {
+    // Celebrate the five completed levels with the topic's configured treasure.
+    private renderTreasure(treasure: TopicTreasureDefinition): void {
         this.drawHeader("Treasure Found");
-        this.drawText("You found the\ntreasure!\nA Golden\nCalculator!", 30, 125, 470, 51);
-        this.drawText("The Golden\nCalculator", 525, 95, 260, 39, PINK);
-        this.drawCalculator();
+        this.centerTextBlock([
+            this.drawText(`You found the\ntreasure!\nA Golden\n${treasure.name}!`, 30, 0, 470, 51),
+        ]);
+        this.drawText(`The Golden\n${treasure.name}`, 525, 95, 260, 39, PINK);
+        switch (treasure.kind) {
+            case "abacus": this.drawAbacus(); break;
+            case "pencil": this.drawPencil(); break;
+            case "calculator": this.drawCalculator(); break;
+            case "scale": this.drawScale(); break;
+        }
     }
 
     // Celebrate completing all four topics.
     private renderUltimate(): void {
         this.drawHeader("Ultimate Treasure Found");
-        this.drawText("You did it!", 30, 125, 440, 62);
-        this.drawText("You've completed\nthe adventure and\nunlocked the\nUltimate Treasure!", 30, 255, 440, 35);
+        this.centerTextBlock([
+            this.drawText("You did it!", 30, 0, 470, 62),
+            this.drawText("You've completed\nthe adventure and\nunlocked the\nUltimate Treasure!", 30, 0, 470, 35),
+        ]);
         this.drawText("The Ultimate\nTreasure", 505, 95, 280, 42, PINK);
         this.drawChest(530, 285, true);
     }
@@ -139,6 +140,99 @@ export class TreasureRewardScreenView implements View {
                 fontSize: 22, fontFamily: FONT_FAMILY, fill: TITLE_COLOR, align: "center" }));
         }
         this.content.add(calculator);
+    }
+
+    private drawAbacus(): void {
+        const abacus = new Konva.Group({ x: 550, y: 230 });
+        abacus.add(new Konva.Rect({ width: 200, height: 225, cornerRadius: 22,
+            fill: GOLD, stroke: "#BD7812", strokeWidth: 4 }));
+        abacus.add(new Konva.Rect({ x: 14, y: 14, width: 172, height: 197, cornerRadius: 12,
+            fill: "#FFF5DD", stroke: "#BD7812", strokeWidth: 3 }));
+        for (let row = 0; row < 4; row++) {
+            const y = 45 + row * 45;
+            abacus.add(new Konva.Rect({ x: 16, y: y - 3, width: 168, height: 6,
+                fill: "#E6A519", stroke: "#BD7812", cornerRadius: 3 }));
+            for (let column = 0; column < 4; column++) {
+                abacus.add(new Konva.Rect({ x: 24 + column * 40, y: y - 19,
+                    width: 30, height: 38, cornerRadius: 15, stroke: "#BD7812", strokeWidth: 2,
+                    fillLinearGradientStartPoint: { x: 0, y: 0 },
+                    fillLinearGradientEndPoint: { x: 30, y: 38 },
+                    fillLinearGradientColorStops: [0, "#FFF3AA", 0.5, GOLD, 1, "#E6A519"] }));
+            }
+        }
+        abacus.add(new Konva.Line({ points: [22, 7, 175, 7], stroke: "#FFFBE8", strokeWidth: 3,
+            lineCap: "round" }));
+        this.content.add(abacus);
+    }
+
+    private drawPencil(): void {
+        const pencil = new Konva.Group({ x: 535, y: 445, rotation: -42 });
+        pencil.add(new Konva.Rect({ x: 245, y: -18, width: 24, height: 36, cornerRadius: 8,
+            fill: "#FFF0BE", stroke: "#BD7812", strokeWidth: 2 }));
+        pencil.add(new Konva.Line({ points: [0, 0, 45, -21, 45, 21], closed: true,
+            fill: "#FFE5A1", stroke: "#BD7812", strokeWidth: 2 }));
+        pencil.add(new Konva.Line({ points: [0, 0, 13, -6, 13, 6], closed: true,
+            fill: "#59534A" }));
+        pencil.add(new Konva.Rect({ x: 45, y: -21, width: 180, height: 42,
+            fill: GOLD, stroke: "#BD7812", strokeWidth: 2 }));
+        pencil.add(new Konva.Line({ points: [46, 12, 224, 12, 224, 21, 46, 21], closed: true,
+            fill: "#E6A519" }));
+        pencil.add(new Konva.Line({ points: [52, -14, 218, -14], stroke: "#FFFBE8", strokeWidth: 4,
+            lineCap: "round" }));
+        pencil.add(new Konva.Rect({ x: 225, y: -22, width: 24, height: 44,
+            fill: "#E6A519", stroke: "#BD7812", strokeWidth: 2 }));
+        for (const x of [231, 242]) {
+            pencil.add(new Konva.Line({ points: [x, -20, x, 20], stroke: GOLD, strokeWidth: 3 }));
+        }
+        pencil.add(new Konva.Star({ x: 95, y: 1, numPoints: 4, innerRadius: 3, outerRadius: 11,
+            fill: "#FFFBE8" }));
+        this.content.add(pencil);
+    }
+
+    private drawScale(): void {
+        const scale = new Konva.Group({ x: 520, y: 230 });
+        scale.add(new Konva.Rect({ x: 121, y: 22, width: 18, height: 180,
+            fill: GOLD, stroke: "#BD7812", strokeWidth: 3 }));
+        scale.add(new Konva.Rect({ x: 95, y: 187, width: 70, height: 24, cornerRadius: 12,
+            fill: GOLD, stroke: "#BD7812", strokeWidth: 3 }));
+        scale.add(new Konva.Rect({ x: 60, y: 202, width: 140, height: 26, cornerRadius: 13,
+            fill: GOLD, stroke: "#BD7812", strokeWidth: 3 }));
+        scale.add(new Konva.Circle({ x: 130, y: 12, radius: 16,
+            fill: GOLD, stroke: "#BD7812", strokeWidth: 3 }));
+        scale.add(new Konva.Rect({ x: 30, y: 28, width: 200, height: 18, cornerRadius: 7,
+            fill: GOLD, stroke: "#BD7812", strokeWidth: 3 }));
+        for (const centerX of [55, 205]) {
+            for (const rimX of [centerX - 45, centerX + 45]) {
+                scale.add(new Konva.Line({ points: [centerX, 47, rimX, 125],
+                    stroke: "#BD7812", strokeWidth: 3 }));
+            }
+            scale.add(new Konva.Path({ x: centerX - 55, y: 125, data: "M0 0 Q55 55 110 0 Z",
+                fill: GOLD, stroke: "#BD7812", strokeWidth: 3 }));
+            for (const offset of [-17, 0, 17]) {
+                scale.add(new Konva.Circle({ x: centerX + offset, y: 117, radius: 9,
+                    fill: GOLD, stroke: "#BD7812", strokeWidth: 2 }));
+            }
+            scale.add(new Konva.Ellipse({ x: centerX, y: 125, radiusX: 55, radiusY: 5,
+                fill: GOLD, stroke: "#FFF3AA", strokeWidth: 2 }));
+        }
+        scale.add(new Konva.Circle({ x: 130, y: 36, radius: 13,
+            fill: GOLD, stroke: "#BD7812", strokeWidth: 3 }));
+        scale.add(new Konva.Line({ points: [126, 58, 126, 180], stroke: "#FFFBE8", strokeWidth: 3,
+            lineCap: "round" }));
+        this.content.add(scale);
+    }
+
+    // Share the clue layout with the final rewards, accounting for each text's measured height.
+    private centerTextBlock(textLines: readonly Konva.Text[]): void {
+        const gap = 24;
+        const textHeight = textLines.reduce((height, text) => height + text.height(), 0)
+            + gap * (textLines.length - 1);
+        let y = (STAGE_HEIGHT - textHeight) / 2;
+        for (const text of textLines) {
+            text.align("center");
+            text.y(y);
+            y += text.height() + gap;
+        }
     }
 
     // Add themed text to the current reward content.

@@ -7,6 +7,12 @@ import { TreasureRewardScreenModel } from "./TreasureRewardScreenModel.ts";
 
 let controller: TreasureRewardScreenController;
 const switchToScreen = vi.fn();
+const expectedTreasures = {
+    addition: { kind: "abacus", name: "Abacus" },
+    subtraction: { kind: "pencil", name: "Pencil" },
+    multiplication: { kind: "calculator", name: "Calculator" },
+    division: { kind: "scale", name: "Scale" },
+} as const;
 
 beforeEach(() => {
     vi.spyOn(Konva.Util, "createCanvasElement").mockReturnValue({
@@ -47,11 +53,19 @@ describe.each(getAllLevelDefinitions())("$type treasure clues", level => {
         expect(switchToScreen).toHaveBeenCalledExactlyOnceWith({ type: "adventuremap", topic: level.type });
     });
 
-    it("reveals the calculator at level five without showing a clue", () => {
+    it("reveals its own treasure at level five without showing a clue", () => {
         controller.setReward(level.type, 5);
+        const treasure = expectedTreasures[level.type];
         expect(labels()).toContain("Treasure Found");
+        expect(labels()).toContain(`The Golden\n${treasure.name}`);
+        expect(labels()).toContain(`You found the\ntreasure!\nA Golden\n${treasure.name}!`);
         expect(labels()).not.toContain("You found a clue:");
-        expect(new TreasureRewardScreenModel(level.type, 5).getCurrentPage()).not.toHaveProperty("clue");
+        const page = new TreasureRewardScreenModel(level.type, 5).getCurrentPage();
+        expect(page).toMatchObject({ type: "treasure", treasure });
+        expect(page).not.toHaveProperty("clue");
+        expect(controller.getView().getGroup().find("Image")).toHaveLength(0);
+        clickContinue();
+        expect(switchToScreen).toHaveBeenCalledExactlyOnceWith({ type: "adventuremap", topic: level.type });
     });
 });
 
@@ -70,11 +84,12 @@ it("uses the selected topic's configuration when its strings change", () => {
     }
 });
 
-it("shows the ultimate treasure after the final calculator without leaking a previous clue", () => {
-    controller.setReward("division", 4);
+it.each(getAllLevelDefinitions())("shows the ultimate treasure after the final $type reward", level => {
+    controller.setReward(level.type, 4);
     expect(labels()).toContain("Equals");
-    controller.setReward("division", 5, true);
+    controller.setReward(level.type, 5, true);
     expect(labels()).toContain("Treasure Found");
+    expect(labels()).toContain(`The Golden\n${expectedTreasures[level.type].name}`);
     expect(labels()).not.toContain("Equals");
     clickContinue();
     expect(labels()).toContain("Ultimate Treasure Found");

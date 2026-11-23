@@ -11,6 +11,7 @@ import { MainProblemScreenView } from "./MainProblemScreenView.ts";
 
 export class MainProblemScreenController extends ScreenController {
   private model: MainProblemScreenModel | null = null;
+  private hasPendingReward = false;
   private readonly view: MainProblemScreenView;
   private readonly screenSwitcher: ScreenSwitcher;
   private readonly dispatcher: ProblemDispatcher;
@@ -33,6 +34,7 @@ export class MainProblemScreenController extends ScreenController {
 
   /** Opens the level clicked on the adventure map with a new problem for it. */
   setLevel(topic: LevelType, difficulty: number): void {
+    this.hasPendingReward = false;
     this.model = new MainProblemScreenModel(topic, difficulty, this.dispatcher);
     this.view.setTitle(this.model.getTitle());
     this.view.setProblem(getProblemLayout(topic, this.model.getProblem()));
@@ -99,6 +101,7 @@ export class MainProblemScreenController extends ScreenController {
       if (!progression.isCompleted && progression.currentDifficulty === this.model.getDifficulty()) {
         const activeProgression = startLevel(level, progression, level.id);
         saveProgression(level, completeLevel(level, activeProgression, level.id));
+        this.hasPendingReward = true;
       }
       this.view.showCorrectAnswer();
     } else {
@@ -120,11 +123,20 @@ export class MainProblemScreenController extends ScreenController {
   /** After a correct or incorrect answer: a new problem of the same level, with every box empty. */
   private handleTryAgainClick(): void {
     if (!this.model?.canTryAgain()) return;
+    // Retrying keeps the first-completion reward until Continue is chosen.
+    const hasPendingReward = this.hasPendingReward;
     this.setLevel(this.model.getTopic(), this.model.getDifficulty());
+    this.hasPendingReward = hasPendingReward;
   }
 
   private handleContinueClick(): void {
     if (!this.model?.canContinue()) return;
+    if (this.hasPendingReward) {
+      this.hasPendingReward = false;
+      this.screenSwitcher.switchToScreen({ type: "treasurehunt" });
+      return;
+    }
+
     this.screenSwitcher.switchToScreen({ type: "adventuremap", topic: this.model.getTopic() });
   }
 

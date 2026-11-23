@@ -1,11 +1,15 @@
 import { getAllLevelDefinitions } from "../../levels/levelConfig.ts";
 import type { LevelType } from "../../levels/levelConfig.ts";
+import { progressCount } from "../../levels/progression.ts";
 import { loadProgression } from "../../storage.ts";
 
 export interface TopicTreasure {
     readonly topic: LevelType;
     readonly label: string;
     readonly isUnlocked: boolean;
+    /** Levels finished in this topic (one clue each); equals totalClues once the treasure is collected. */
+    readonly cluesFound: number;
+    readonly totalClues: number;
 }
 
 export interface TreasureHuntData {
@@ -22,11 +26,17 @@ const TOPIC_LABELS: Record<LevelType, string> = {
 export class TreasureHuntScreenModel {
     /** Rewards follow saved topic completion, so revisits never create duplicate rewards. */
     getTreasureData(): TreasureHuntData {
-        const treasures = getAllLevelDefinitions().map(level => ({
-            topic: level.type,
-            label: TOPIC_LABELS[level.type],
-            isUnlocked: loadProgression(level).isCompleted,
-        }));
+        const treasures = getAllLevelDefinitions().map(level => {
+            const state = loadProgression(level);
+            const { completed, total } = progressCount(level, state);
+            return {
+                topic: level.type,
+                label: TOPIC_LABELS[level.type],
+                isUnlocked: state.isCompleted,
+                cluesFound: completed,
+                totalClues: total,
+            };
+        });
         return {
             treasures,
             collectedCount: treasures.filter(treasure => treasure.isUnlocked).length,

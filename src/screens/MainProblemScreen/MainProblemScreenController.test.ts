@@ -334,6 +334,38 @@ describe("main problem screen controller", () => {
       expect(isLevelUnlocked(level, loadProgression(level), 2)).toBe(true);
     });
 
+    it.each(topics)("keeps the first %s reward through correct and incorrect retries", topic => {
+      const { level, problem, screens } = openLevel(topic);
+      fillOut(topic, problem, String(problem.answer));
+      view.onSubmitClick();
+      view.onTryAgainClick();
+      fillOut(topic, problem, wrongAnswer(problem));
+      view.onSubmitClick();
+      view.onContinueClick();
+      expect(screens).toEqual([]);
+      view.onTryAgainClick();
+      fillOut(topic, problem, String(problem.answer));
+      view.onSubmitClick();
+      view.onContinueClick();
+      expect(screens).toEqual([{ type: "treasurehunt" }]);
+      expect(loadProgression(level).currentDifficulty).toBe(2);
+      view.onContinueClick();
+      expect(screens.at(-1)).toEqual({ type: "adventuremap", topic });
+    });
+
+    it("clears the pending reward when another level is opened on the same controller", () => {
+      const { controller, problem, screens } = openLevel("addition");
+      fillOut("addition", problem, String(problem.answer));
+      view.onSubmitClick();
+      view.onHomeClick();
+      controller.setLevel("subtraction", 1);
+      controller.setLevel("addition", 1);
+      fillOut("addition", problem, String(problem.answer));
+      view.onSubmitClick();
+      view.onContinueClick();
+      expect(screens).toEqual([{ type: "menu" }, { type: "adventuremap", topic: "addition" }]);
+    });
+
     it("does not advance twice after duplicate Submit, Continue or a correct retry", () => {
       const { level, problem } = openLevel("addition");
       fillOut("addition", problem, String(problem.answer));
@@ -549,7 +581,62 @@ describe("main problem screen controller", () => {
     view.onSubmitClick();
     expect(view.correctAnswerShown).toBe(true);
     view.onContinueClick();
-    expect(screens).toEqual([{ type: "adventuremap", topic: "addition" }]);
+    expect(screens).toEqual([{ type: "treasurehunt" }]);
     expect(generate).toHaveBeenCalledTimes(2);
+  });
+
+  describe("first-time level rewards", () => {
+    beforeEach(() => {
+      const data = new Map<string, string>();
+      vi.stubGlobal("localStorage", {
+        getItem: (key: string) => data.get(key) ?? null,
+        setItem: (key: string, value: string) => data.set(key, value),
+      });
+    });
+
+    afterEach(() => vi.unstubAllGlobals());
+
+    it.each(topics)("shows rewards once for each new %s level, including level five", topic => {
+      const level = getLevelDefinition(topic);
+      const problem = new MainGameProblemGenerator(() => 0.5).generate({
+        operation: topic, operandDigits: [2, 1],
+      });
+
+      for (let difficulty = 1; difficulty <= 5; difficulty++) {
+        const { controller, screens } = setup({ generate: () => problem });
+        controller.setLevel(topic, difficulty);
+        fillOut(topic, problem, String(problem.answer));
+        view.onSubmitClick();
+        view.onContinueClick();
+        expect(screens).toEqual([{ type: "treasurehunt" }]);
+        expect(loadProgression(level).isCompleted).toBe(difficulty === 5);
+
+        // Reopening the level uses the saved progress, even with a new Controller.
+        const replay = setup({ generate: () => problem });
+        replay.controller.setLevel(topic, difficulty);
+        fillOut(topic, problem, String(problem.answer));
+        view.onSubmitClick();
+        view.onContinueClick();
+        expect(replay.screens).toEqual([{ type: "adventuremap", topic }]);
+      }
+    });
+
+    it("does not show rewards or change saved progress after replaying an older level", () => {
+      const level = getLevelDefinition("addition");
+      saveProgression(level, {
+        levelId: level.id, currentDifficulty: 4, isActive: false, isCompleted: false,
+      });
+      const progress = loadProgression(level);
+      const problem = new MainGameProblemGenerator(() => 0).generate({
+        operation: "addition", operandDigits: [1, 1],
+      });
+      const { controller, screens } = setup({ generate: () => problem });
+      controller.setLevel("addition", 1);
+      fillOut("addition", problem, String(problem.answer));
+      view.onSubmitClick();
+      view.onContinueClick();
+      expect(screens).toEqual([{ type: "adventuremap", topic: "addition" }]);
+      expect(loadProgression(level)).toEqual(progress);
+    });
   });
 });

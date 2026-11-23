@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Screen } from "../../types.ts";
 import type { ProblemLayout } from "./MainProblemLayout.ts";
 import { MainProblemScreenController } from "./MainProblemScreenController.ts";
@@ -7,6 +7,8 @@ import { MainGameProblemGenerator } from "../../problem-engine/MainGameProblemGe
 import type { SolvedMainGameProblem } from "../../problem-engine/MainGameProblemGenerator.ts";
 import { getAnswerFields, getExpectedEntries } from "./MainProblemScreenModel.ts";
 import type { LevelType } from "../../levels/levelConfig.ts";
+import { getLevelDefinition } from "../../levels/levelConfig.ts";
+import { loadProgression, saveProgression } from "../../storage.ts";
 
 // Konva can't draw text in tests, so the view is replaced with one that records what it was told
 const view = vi.hoisted(() => ({
@@ -438,7 +440,62 @@ describe("main problem screen controller", () => {
     view.onSubmitClick();
     expect(view.correctAnswerShown).toBe(true);
     view.onContinueClick();
-    expect(screens).toEqual([{ type: "adventuremap", topic: "addition" }]);
+    expect(screens).toEqual([{ type: "treasurehunt" }]);
     expect(generate).toHaveBeenCalledTimes(2);
+  });
+
+  describe("first-time level rewards", () => {
+    beforeEach(() => {
+      const data = new Map<string, string>();
+      vi.stubGlobal("localStorage", {
+        getItem: (key: string) => data.get(key) ?? null,
+        setItem: (key: string, value: string) => data.set(key, value),
+      });
+    });
+
+    afterEach(() => vi.unstubAllGlobals());
+
+    it.each(topics)("shows rewards once for each new %s level, including level five", topic => {
+      const level = getLevelDefinition(topic);
+      const problem = new MainGameProblemGenerator(() => 0.5).generate({
+        operation: topic, operandDigits: [2, 1],
+      });
+
+      for (let difficulty = 1; difficulty <= 5; difficulty++) {
+        const { controller, screens } = setup({ generate: () => problem });
+        controller.setLevel(topic, difficulty);
+        fillOut(topic, problem, String(problem.answer));
+        view.onSubmitClick();
+        view.onContinueClick();
+        expect(screens).toEqual([{ type: "treasurehunt" }]);
+        expect(loadProgression(level).isCompleted).toBe(difficulty === 5);
+
+        // Reopening the level uses the saved progress, even with a new Controller.
+        const replay = setup({ generate: () => problem });
+        replay.controller.setLevel(topic, difficulty);
+        fillOut(topic, problem, String(problem.answer));
+        view.onSubmitClick();
+        view.onContinueClick();
+        expect(replay.screens).toEqual([{ type: "adventuremap", topic }]);
+      }
+    });
+
+    it("does not show rewards or change saved progress after replaying an older level", () => {
+      const level = getLevelDefinition("addition");
+      saveProgression(level, {
+        levelId: level.id, currentDifficulty: 4, isActive: false, isCompleted: false,
+      });
+      const progress = loadProgression(level);
+      const problem = new MainGameProblemGenerator(() => 0).generate({
+        operation: "addition", operandDigits: [1, 1],
+      });
+      const { controller, screens } = setup({ generate: () => problem });
+      controller.setLevel("addition", 1);
+      fillOut("addition", problem, String(problem.answer));
+      view.onSubmitClick();
+      view.onContinueClick();
+      expect(screens).toEqual([{ type: "adventuremap", topic: "addition" }]);
+      expect(loadProgression(level)).toEqual(progress);
+    });
   });
 });

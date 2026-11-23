@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MainGameScreenModel } from "./MainGameScreenModel.ts";
+import { saveProgression } from "../../storage.ts";
 import {
     ADDITION_LEVELS, SUBTRACTION_LEVELS, MULTIPLICATION_LEVELS, DIVISION_LEVELS,
 } from "../../levels/levelConfig.ts";
@@ -98,5 +99,43 @@ describe("MainGameScreenModel topics", () => {
         model.selectTopic("division");
         expect(() => model.generateProblem(difficulty, dispatcher)).toThrow();
         expect(model.getSelectedTopic()).toBe("division");
+    });
+});
+
+describe("MainGameScreenModel completed topics", () => {
+    beforeEach(() => {
+        const data = new Map<string, string>();
+        vi.stubGlobal("localStorage", {
+            getItem: (key: string) => data.get(key) ?? null,
+            setItem: (key: string, value: string) => data.set(key, value),
+        });
+    });
+    afterEach(() => vi.unstubAllGlobals());
+
+    const complete = (level: typeof ADDITION_LEVELS) => saveProgression(level, {
+        levelId: level.id, currentDifficulty: level.maxDifficulty, isActive: false, isCompleted: true,
+    });
+
+    it("has no completed topics at the start", () => {
+        expect(new MainGameScreenModel().getCompletedTopics().size).toBe(0);
+    });
+
+    it("does not count a topic that only reached its last difficulty", () => {
+        saveProgression(ADDITION_LEVELS, {
+            levelId: ADDITION_LEVELS.id, currentDifficulty: ADDITION_LEVELS.maxDifficulty,
+            isActive: false, isCompleted: false,
+        });
+        expect(new MainGameScreenModel().getCompletedTopics().has("addition")).toBe(false);
+    });
+
+    it("reports only the topics that are completed", () => {
+        complete(ADDITION_LEVELS);
+        complete(DIVISION_LEVELS);
+        expect([...new MainGameScreenModel().getCompletedTopics()].sort()).toEqual(["addition", "division"]);
+    });
+
+    it("reports all four topics when everything is completed", () => {
+        [ADDITION_LEVELS, SUBTRACTION_LEVELS, MULTIPLICATION_LEVELS, DIVISION_LEVELS].forEach(complete);
+        expect(new MainGameScreenModel().getCompletedTopics().size).toBe(4);
     });
 });

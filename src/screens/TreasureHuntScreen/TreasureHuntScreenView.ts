@@ -33,7 +33,7 @@ export class TreasureHuntScreenView implements View {
                 fontSize: 24, fontFamily: FONT_FAMILY, fill: TITLE_COLOR,
             }));
             card.add(new Konva.Text({
-                width: 300, y: 52, text: treasure.isUnlocked ? "Collected!" : "Locked - finish this topic",
+                width: 300, y: 52, text: treasure.isUnlocked ? "Collected!" : `Locked - ${treasure.cluesFound}/${treasure.totalClues} clues found`,
                 align: "center", fontSize: 19, fontFamily: FONT_FAMILY, fill: BUTTON_COLOR,
             }));
             card.on("click tap", () => this.onTopicClick(treasure.topic));

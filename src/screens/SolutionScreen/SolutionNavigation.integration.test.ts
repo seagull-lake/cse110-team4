@@ -96,7 +96,7 @@ describe("every solution screen has the same buttons", () => {
             expect(labels()).toEqual(expect.arrayContaining(["Home", "Back to map", "Try Again"]));
             expect(labels()).not.toContain("Completed");
             expect(nextButton()).toHaveLength(1);
-            expect(nextButton()[0].position()).toEqual({ x: STAGE_WIDTH - 190, y: STAGE_HEIGHT - 62 });
+            expect(nextButton()[0].position()).toEqual({ x: STAGE_WIDTH - 200, y: STAGE_HEIGHT - 70 });
             expect(nextButton()[0].findOne<Konva.Rect>("Rect")?.opacity()).toBe(1);
             click("Try Again", difficulty === 3 ? "tap" : "click");
             expect(screens).toEqual([{ type: "mainproblem", topic, difficulty }]);

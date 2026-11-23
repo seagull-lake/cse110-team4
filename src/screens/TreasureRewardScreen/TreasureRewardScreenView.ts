@@ -1,5 +1,6 @@
 import Konva from "konva";
 import type { View } from "../../types.ts";
+import { createHomeButton, createPrimaryButton, PRIMARY_BUTTON_SIZE } from "../../components/ComponentFactory.ts";
 import { FONT_FAMILY, STAGE_WIDTH, STAGE_HEIGHT, TITLE_COLOR } from "../../constants.ts";
 import type { TreasureRewardPage } from "./TreasureRewardScreenModel.ts";
 
@@ -14,8 +15,14 @@ export class TreasureRewardScreenView implements View {
     constructor(onContinue: () => void, onHome: () => void) {
         this.group.add(new Konva.Rect({ width: STAGE_WIDTH, height: STAGE_HEIGHT, fill: "#FFF5DD" }));
         this.group.add(this.content);
-        this.drawButton("Home", 30, onHome, true);
-        this.drawButton("Continue →", STAGE_WIDTH - 150, onContinue);
+        const homeButton = createHomeButton(onHome);
+        homeButton.on("tap", onHome);
+        const continueButton = createPrimaryButton(
+            "Continue →", STAGE_WIDTH - 30 - PRIMARY_BUTTON_SIZE.width,
+            STAGE_HEIGHT - 22 - PRIMARY_BUTTON_SIZE.height, onContinue,
+        );
+        continueButton.on("tap", onContinue);
+        this.group.add(homeButton, continueButton);
     }
 
     // Replace the reward content while keeping the buttons and background.
@@ -140,19 +147,6 @@ export class TreasureRewardScreenView implements View {
             fontFamily: FONT_FAMILY, lineHeight: 1.3, listening: false });
         this.content.add(label);
         return label;
-    }
-
-    // Draw a button and report mouse or touch activation to the Controller.
-    private drawButton(label: string, x: number, onClick: () => void, home = false): void {
-        const button = new Konva.Group({ x, y: STAGE_HEIGHT - 64 });
-        button.add(new Konva.Rect({ width: 120, height: 36, cornerRadius: home ? 18 : 7,
-            fill: home ? GOLD : "#FFEAB1", stroke: home ? GOLD : TITLE_COLOR, strokeWidth: 2 }));
-        button.add(new Konva.Text({ width: 120, height: 36, text: label, fontSize: 18,
-            fontFamily: FONT_FAMILY, fill: TITLE_COLOR, align: "center", verticalAlign: "middle" }));
-        button.on("click tap", onClick);
-        button.on("mouseenter", () => (document.body.style.cursor = "pointer"));
-        button.on("mouseleave", () => (document.body.style.cursor = "default"));
-        this.group.add(button);
     }
 
     // Show this screen and redraw its layer.

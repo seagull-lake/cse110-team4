@@ -27,9 +27,11 @@ jobs:
       - name: Install dependencies from the lockfile
         run: npm ci
 
+      - name: Build and type-check the game
+        run: npm run build
+
       - name: Run treasure hunt and reward screen tests
         run: >-
           npm test -- --run --cache=false
-          src/screens/TreasureHuntScreen/TreasureHuntScreenModel.test.ts
-          src/screens/TreasureHuntScreen/TreasureHuntScreenController.test.ts
-          src/screens/TreasureRewardScreen/TreasureRewardScreen.integration.test.ts
+          src/screens/TreasureHuntScreen/
+          src/screens/TreasureRewardScreen/

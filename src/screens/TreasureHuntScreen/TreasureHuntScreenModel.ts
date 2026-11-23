@@ -7,7 +7,7 @@ export interface TopicTreasure {
     readonly topic: LevelType;
     readonly label: string;
     readonly isUnlocked: boolean;
-    /** Levels finished in this topic (one clue each); equals totalClues once the treasure is collected. */
+    //Levels finished in this topic (one clue each); equals totalClues once the treasure is collected. 
     readonly cluesFound: number;
     readonly totalClues: number;
 }
@@ -24,7 +24,7 @@ const TOPIC_LABELS: Record<LevelType, string> = {
 };
 
 export class TreasureHuntScreenModel {
-    /** Rewards follow saved topic completion, so revisits never create duplicate rewards. */
+    //Rewards follow saved topic completion, so revisits never create duplicate rewards. 
     getTreasureData(): TreasureHuntData {
         const treasures = getAllLevelDefinitions().map(level => {
             const state = loadProgression(level);

@@ -4,7 +4,7 @@ import type { LevelType } from "../../levels/levelConfig.ts";
 import type { ProblemDispatcher } from "../../problem-engine/ProblemDispatcher.ts";
 import { getLevelDefinition } from "../../levels/levelConfig.ts";
 import { completeLevel, startLevel } from "../../levels/progression.ts";
-import { loadProgression, saveProgression } from "../../storage.ts";
+import { areAllTopicsCompleted, loadProgression, saveProgression } from "../../storage.ts";
 import { MainProblemScreenModel, createProblemDispatcher } from "./MainProblemScreenModel.ts";
 import { getProblemLayout } from "./MainProblemLayout.ts";
 import { MainProblemScreenView } from "./MainProblemScreenView.ts";
@@ -133,7 +133,12 @@ export class MainProblemScreenController extends ScreenController {
     if (!this.model?.canContinue()) return;
     if (this.hasPendingReward) {
       this.hasPendingReward = false;
-      this.screenSwitcher.switchToScreen({ type: "treasurehunt" });
+      this.screenSwitcher.switchToScreen({
+        type: "treasurereward",
+        topic: this.model.getTopic(),
+        difficulty: this.model.getDifficulty(),
+        allTopicsCompleted: areAllTopicsCompleted(),
+      });
       return;
     }
 

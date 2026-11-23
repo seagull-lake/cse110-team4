@@ -13,6 +13,7 @@ export type Screen =
     { type: "menu" } |
     { type: "maingame" } |
     { type: "treasurehunt" } |
+    { type: "treasurereward"; topic: LevelType; difficulty: number; allTopicsCompleted: boolean } |
     { type: "adventuremap"; topic: LevelType } |
     { type: "mainproblem"; topic: LevelType; difficulty: number } |
     { type: "solution"; problem: SolvedMainGameProblem; topic: LevelType; difficulty: number } |

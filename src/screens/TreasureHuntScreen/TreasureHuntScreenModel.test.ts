@@ -43,6 +43,34 @@ describe("Treasure Hunt rewards from saved progress", () => {
         });
     });
 
+    it("counts a clue for every finished level in a locked topic", () => {
+        const addition = getAllLevelDefinitions().find(level => level.type === "addition")!;
+        const cluesFor = () => new TreasureHuntScreenModel().getTreasureData()
+            .treasures.find(treasure => treasure.topic === "addition")!;
+        expect(cluesFor()).toMatchObject({ cluesFound: 0, totalClues: 5 });
+        for (let difficulty = 1; difficulty <= 4; difficulty++) {
+            saveProgression(addition, {
+                levelId: addition.id, currentDifficulty: difficulty, isActive: false, isCompleted: false,
+            });
+            expect(cluesFor()).toMatchObject({ cluesFound: difficulty - 1, isUnlocked: false });
+        }
+    });
+
+    it("does not count the level that is currently being played", () => {
+        const addition = getAllLevelDefinitions().find(level => level.type === "addition")!;
+        saveProgression(addition, { levelId: addition.id, currentDifficulty: 3, isActive: true, isCompleted: false });
+        const treasure = new TreasureHuntScreenModel().getTreasureData()
+            .treasures.find(t => t.topic === "addition")!;
+        expect(treasure.cluesFound).toBe(2);
+    });
+
+    it("counts all five clues once the topic is completed", () => {
+        const addition = getAllLevelDefinitions().find(level => level.type === "addition")!;
+        saveProgression(addition, { levelId: addition.id, currentDifficulty: 5, isActive: false, isCompleted: true });
+        expect(new TreasureHuntScreenModel().getTreasureData().treasures.find(t => t.topic === "addition"))
+            .toMatchObject({ cluesFound: 5, totalClues: 5, isUnlocked: true });
+    });
+
     it("keeps corrupted progress locked", () => {
         localStorage.setItem("cse110-team4:progression:addition", "invalid");
         expect(new TreasureHuntScreenModel().getTreasureData().collectedCount).toBe(0);

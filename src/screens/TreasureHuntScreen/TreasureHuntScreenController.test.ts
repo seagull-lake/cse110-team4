@@ -7,7 +7,11 @@ const view = vi.hoisted(() => ({
     setTreasureData: vi.fn(), show: vi.fn(),
 }));
 const progress = vi.hoisted(() => ({ completed: false }));
-vi.mock("../../storage.ts", () => ({ loadProgression: () => ({ isCompleted: progress.completed }) }));
+vi.mock("../../storage.ts", () => ({
+    loadProgression: (level: { id: string }) => ({
+        levelId: level.id, currentDifficulty: progress.completed ? 5 : 1, isActive: false, isCompleted: progress.completed,
+    }),
+}));
 vi.mock("./TreasureHuntScreenView.ts", () => ({
     TreasureHuntScreenView: class {
         constructor(onHome: () => void, onTopic: (topic: LevelType) => void) {

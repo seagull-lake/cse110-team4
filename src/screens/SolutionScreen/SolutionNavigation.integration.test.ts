@@ -24,11 +24,16 @@ afterEach(() => {
 });
 
 /** Clicks the visible button with this label. */
-function click(label: string): void {
+function click(label: string, event: "click" | "tap" = "click"): void {
     const text = controller.getView().getGroup().find<Konva.Text>("Text")
         .find(node => node.text() === label && node.isVisible());
     if (!text) throw new Error(`No "${label}" button is shown.`);
-    text.getParent()?.fire("click");
+    text.getParent()?.fire(event);
+}
+
+function labels(): string[] {
+    return controller.getView().getGroup().find<Konva.Text>("Text")
+        .filter(node => node.isVisible()).map(node => node.text());
 }
 
 const problems = {
@@ -51,9 +56,12 @@ describe.each(Object.keys(problems) as (keyof typeof problems)[])("the %s soluti
 
     it("can still leave after the last step", () => {
         controller.setProblem(problems[topic](), topic, 3);
-        for (let step = 0; step < 10; step++) {
-            try { click("Next Step →"); } catch { break; }
+        let pages = 1;
+        while (labels().includes("Next Step →")) {
+            click("Next Step →");
+            expect(++pages).toBeLessThan(20);
         }
+        expect(labels()).toContain("Try Again");
         click("Back to map");
         expect(screens).toEqual([{ type: "adventuremap", topic }]);
     });
@@ -66,31 +74,32 @@ describe("every solution screen has the same buttons", () => {
         multiplication: () => new MainGameProblemGenerator(() => 0.5).generate({ operation: "multiplication", operandDigits: [2, 2] }),
         division: problems.division,
     } as const;
-    /** The labels of the visible buttons. */
-    const labels = () => controller.getView().getGroup().find<Konva.Text>("Text")
-        .filter(node => node.isVisible()).map(node => node.text());
     const nextButton = () => controller.getView().getGroup().find<Konva.Group>(".next-step-button")
         .filter(node => node.isVisible());
 
-    it.each(Object.keys(allProblems) as (keyof typeof allProblems)[])(
-        "%s: Home and Back to map on every page, Next Step until the end, then Completed", topic => {
-            controller.setProblem(allProblems[topic](), topic, 3);
+    const cases = (Object.keys(allProblems) as (keyof typeof allProblems)[])
+        .flatMap(topic => [1, 3, 5].map(difficulty => [topic, difficulty] as const));
+
+    it.each(cases)(
+        "%s level %s: Next Step reveals the solution, then Try Again reopens the same level", (topic, difficulty) => {
+            controller.setProblem(allProblems[topic](), topic, difficulty);
             let pages = 1;
             while (labels().includes("Next Step →")) {
                 expect(labels()).toEqual(expect.arrayContaining(["Home", "Back to map"]));
                 expect(nextButton()).toHaveLength(1);
                 expect(nextButton()[0].position()).toEqual({ x: STAGE_WIDTH - 190, y: STAGE_HEIGHT - 62 });
+                expect(labels()).not.toContain("Try Again");
                 click("Next Step →");
+                expect(screens).toEqual([]);
                 expect(++pages).toBeLessThan(20);
             }
-            expect(labels()).toEqual(expect.arrayContaining(["Home", "Back to map", "Completed"]));
+            expect(labels()).toEqual(expect.arrayContaining(["Home", "Back to map", "Try Again"]));
+            expect(labels()).not.toContain("Completed");
             expect(nextButton()).toHaveLength(1);
             expect(nextButton()[0].position()).toEqual({ x: STAGE_WIDTH - 190, y: STAGE_HEIGHT - 62 });
-            // Completed does nothing; Back to map still leaves
-            click("Completed");
-            expect(screens).toEqual([]);
-            click("Back to map");
-            expect(screens).toEqual([{ type: "adventuremap", topic }]);
+            expect(nextButton()[0].findOne<Konva.Rect>("Rect")?.opacity()).toBe(1);
+            click("Try Again", difficulty === 3 ? "tap" : "click");
+            expect(screens).toEqual([{ type: "mainproblem", topic, difficulty }]);
         });
 });
 

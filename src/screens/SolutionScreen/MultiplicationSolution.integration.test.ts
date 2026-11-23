@@ -56,9 +56,9 @@ it.each([
         click("Next Step →");
     }
     expect(digitsIn(".final-answer")).toBe(answer);
-    // The last page shows a faded "Completed" instead of Next Step, like every solution screen
+    // The last page offers another exercise instead of advancing the solution.
     expect(nodes("Text").some(node => node.text() === "Next Step →")).toBe(false);
-    expect(nodes("Text").some(node => node.text() === "Completed")).toBe(true);
+    expect(nodes("Text").some(node => node.text() === "Try Again")).toBe(true);
     const answerBoxes = nodes(".final-answer")[0]?.getParent()?.find<Konva.Rect>("Rect") ?? [];
     expect(answerBoxes).not.toHaveLength(0);
     expect(answerBoxes.every(box => box.fill() === "#B8E6C7")).toBe(true);

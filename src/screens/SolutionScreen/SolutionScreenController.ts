@@ -31,9 +31,14 @@ export class SolutionScreenController extends ScreenController {
         this.updateView();
     }
 
-    /** Advance one page through the model, then redraw. */
+    /** Advance the solution, or open another exercise at the same level after its final page. */
     private handleNextStep(): void {
         if (!this.model) return;
+        if (!this.model.getCurrentPage().hasNext) {
+            const { topic, difficulty } = this.model.getContext();
+            this.screenSwitcher.switchToScreen({ type: "mainproblem", topic, difficulty });
+            return;
+        }
         this.model.nextPage();
         this.updateView();
     }

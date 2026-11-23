@@ -32,15 +32,15 @@ export const FINAL_ANSWER_FILL = "#B8E6C7";
 
 /**
  * The bottom-right button of every solution screen: "Next Step →" while there are steps left, then a
- * faded "Completed" that does nothing once the whole solution is shown.
+ * "Try Again" once the whole solution is shown. The controller handles either action.
  */
 export function createNextStepButton(hasNext: boolean, onNextStep: () => void): Konva.Group {
     const button = new Konva.Group({ x: STAGE_WIDTH - 190, y: STAGE_HEIGHT - 62, name: "next-step-button" });
     button.add(new Konva.Rect({
-        width: 160, height: 40, fill: "#FFE28A", stroke: TITLE_COLOR, cornerRadius: 6, opacity: hasNext ? 1 : 0.5,
+        width: 160, height: 40, fill: "#FFE28A", stroke: TITLE_COLOR, cornerRadius: 6,
     }));
     button.add(new Konva.Text({
-        text: hasNext ? "Next Step →" : "Completed",
+        text: hasNext ? "Next Step →" : "Try Again",
         width: 160,
         height: 40,
         fontSize: 22,
@@ -50,8 +50,8 @@ export function createNextStepButton(hasNext: boolean, onNextStep: () => void): 
         verticalAlign: "middle",
         listening: false,
     }));
-    button.on("click tap", () => { if (hasNext) onNextStep(); });
-    button.on("mouseenter", () => { document.body.style.cursor = hasNext ? "pointer" : "default"; });
+    button.on("click tap", onNextStep);
+    button.on("mouseenter", () => { document.body.style.cursor = "pointer"; });
     button.on("mouseleave", () => { document.body.style.cursor = "default"; });
     return button;
 }

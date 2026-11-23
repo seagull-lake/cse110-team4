@@ -11,6 +11,7 @@ import { MainProblemScreenView } from "./MainProblemScreenView.ts";
 
 export class MainProblemScreenController extends ScreenController {
   private model: MainProblemScreenModel | null = null;
+  private hasPendingReward = false;
   private readonly view: MainProblemScreenView;
   private readonly screenSwitcher: ScreenSwitcher;
   private readonly dispatcher: ProblemDispatcher;
@@ -33,6 +34,7 @@ export class MainProblemScreenController extends ScreenController {
 
   /** Opens the level clicked on the adventure map with a new problem for it. */
   setLevel(topic: LevelType, difficulty: number): void {
+    this.hasPendingReward = false;
     this.model = new MainProblemScreenModel(topic, difficulty, this.dispatcher);
     this.view.setTitle(this.model.getTitle());
     this.view.setProblem(getProblemLayout(topic, this.model.getProblem()));
@@ -82,9 +84,9 @@ export class MainProblemScreenController extends ScreenController {
 
   /**
    * Only checks the solution once every box (the in-between steps and the answer) is filled in;
-   * otherwise the student is told to finish first. The steps and the answer must all be right: then
-   * Continue is offered. Otherwise the Incorrect state marks the wrong boxes and offers Try Again or
-   * Review Mistakes (the solution screen).
+   * otherwise the student is told to finish first. When the steps and answer are all right, save
+   * completion and offer Continue. Otherwise the Incorrect state marks the wrong boxes and offers
+   * Try Again or Review Mistakes (the solution screen).
    */
   private handleSubmitClick(): void {
     if (!this.model || this.model.canTryAgain()) return;
@@ -93,6 +95,14 @@ export class MainProblemScreenController extends ScreenController {
       return;
     }
     if (this.model.checkSolution()) {
+      // Save before Try Again can replace this problem or the player can leave the screen.
+      const level = getLevelDefinition(this.model.getTopic());
+      const progression = loadProgression(level);
+      if (!progression.isCompleted && progression.currentDifficulty === this.model.getDifficulty()) {
+        const activeProgression = startLevel(level, progression, level.id);
+        saveProgression(level, completeLevel(level, activeProgression, level.id));
+        this.hasPendingReward = true;
+      }
       this.view.showCorrectAnswer();
     } else {
       this.view.showIncorrectAnswer(this.model.getWrongFields());
@@ -113,17 +123,16 @@ export class MainProblemScreenController extends ScreenController {
   /** After a correct or incorrect answer: a new problem of the same level, with every box empty. */
   private handleTryAgainClick(): void {
     if (!this.model?.canTryAgain()) return;
+    // Retrying keeps the first-completion reward until Continue is chosen.
+    const hasPendingReward = this.hasPendingReward;
     this.setLevel(this.model.getTopic(), this.model.getDifficulty());
+    this.hasPendingReward = hasPendingReward;
   }
 
   private handleContinueClick(): void {
     if (!this.model?.canContinue()) return;
-
-    const level = getLevelDefinition(this.model.getTopic());
-    const progression = loadProgression(level);
-    if (!progression.isCompleted && progression.currentDifficulty === this.model.getDifficulty()) {
-      const activeProgression = startLevel(level, progression, level.id);
-      saveProgression(level, completeLevel(level, activeProgression, level.id));
+    if (this.hasPendingReward) {
+      this.hasPendingReward = false;
       this.screenSwitcher.switchToScreen({ type: "treasurehunt" });
       return;
     }

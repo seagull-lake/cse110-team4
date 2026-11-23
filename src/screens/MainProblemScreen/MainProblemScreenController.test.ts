@@ -7,7 +7,7 @@ import { MainGameProblemGenerator } from "../../problem-engine/MainGameProblemGe
 import type { SolvedMainGameProblem } from "../../problem-engine/MainGameProblemGenerator.ts";
 import { getAnswerFields, getExpectedEntries } from "./MainProblemScreenModel.ts";
 import type { LevelType } from "../../levels/levelConfig.ts";
-import { getLevelDefinition } from "../../levels/levelConfig.ts";
+import { getAllLevelDefinitions, getLevelDefinition } from "../../levels/levelConfig.ts";
 import { loadProgression, saveProgression } from "../../storage.ts";
 
 // Konva can't draw text in tests, so the view is replaced with one that records what it was told
@@ -440,7 +440,9 @@ describe("main problem screen controller", () => {
     view.onSubmitClick();
     expect(view.correctAnswerShown).toBe(true);
     view.onContinueClick();
-    expect(screens).toEqual([{ type: "treasurehunt" }]);
+    expect(screens).toEqual([{
+      type: "treasurereward", topic: "addition", difficulty: 1, allTopicsCompleted: false,
+    }]);
     expect(generate).toHaveBeenCalledTimes(2);
   });
 
@@ -467,7 +469,9 @@ describe("main problem screen controller", () => {
         fillOut(topic, problem, String(problem.answer));
         view.onSubmitClick();
         view.onContinueClick();
-        expect(screens).toEqual([{ type: "treasurehunt" }]);
+        expect(screens).toEqual([{
+          type: "treasurereward", topic, difficulty, allTopicsCompleted: false,
+        }]);
         expect(loadProgression(level).isCompleted).toBe(difficulty === 5);
 
         // Reopening the level uses the saved progress, even with a new Controller.
@@ -478,6 +482,32 @@ describe("main problem screen controller", () => {
         view.onContinueClick();
         expect(replay.screens).toEqual([{ type: "adventuremap", topic }]);
       }
+    });
+
+    it("includes ultimate treasure only when the final topic is completed", () => {
+      for (const level of getAllLevelDefinitions()) {
+        saveProgression(level, {
+          levelId: level.id, currentDifficulty: 5, isActive: false,
+          isCompleted: level.type !== "division",
+        });
+      }
+      const problem = new MainGameProblemGenerator(() => 0.5).generate({
+        operation: "division", operandDigits: [2, 1],
+      });
+      const { controller, screens } = setup({ generate: () => problem });
+      controller.setLevel("division", 5);
+      fillOut("division", problem, String(problem.answer));
+      view.onSubmitClick();
+      view.onContinueClick();
+      expect(screens).toEqual([{
+        type: "treasurereward", topic: "division", difficulty: 5, allTopicsCompleted: true,
+      }]);
+      const replay = setup({ generate: () => problem });
+      replay.controller.setLevel("division", 5);
+      fillOut("division", problem, String(problem.answer));
+      view.onSubmitClick();
+      view.onContinueClick();
+      expect(replay.screens).toEqual([{ type: "adventuremap", topic: "division" }]);
     });
 
     it("does not show rewards or change saved progress after replaying an older level", () => {

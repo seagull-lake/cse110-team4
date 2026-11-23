@@ -38,20 +38,11 @@ export class TreasureRewardScreenView implements View {
     // Show a new clue and one progress marker for each level.
     private renderClue(page: TreasureRewardPage & { type: "clue" }): void {
         this.drawHeader("Treasure Hint");
-        const clueText = [
+        this.centerTextBlock([
             this.drawText("You found a clue:", 30, 0, 470, 38),
             this.drawText(page.clue, 30, 0, 470, 62),
             this.drawText("for the Golden Treasure", 30, 0, 470, 30),
-        ];
-        const gap = 24;
-        const textHeight = clueText.reduce((height, text) => height + text.height(), 0)
-            + gap * (clueText.length - 1);
-        let y = (STAGE_HEIGHT - textHeight) / 2;
-        for (const text of clueText) {
-            text.align("center");
-            text.y(y);
-            y += text.height() + gap;
-        }
+        ]);
         this.drawText("The Golden\nTreasure", 535, 95, 250, 39, PINK);
         this.drawProgress(page);
         this.drawChest(610, 270, false);
@@ -60,7 +51,9 @@ export class TreasureRewardScreenView implements View {
     // Celebrate the five completed levels with the topic's configured treasure.
     private renderTreasure(treasure: TopicTreasureDefinition): void {
         this.drawHeader("Treasure Found");
-        this.drawText(`You found the\ntreasure!\nA Golden\n${treasure.name}!`, 30, 125, 470, 51);
+        this.centerTextBlock([
+            this.drawText(`You found the\ntreasure!\nA Golden\n${treasure.name}!`, 30, 0, 470, 51),
+        ]);
         this.drawText(`The Golden\n${treasure.name}`, 525, 95, 260, 39, PINK);
         switch (treasure.kind) {
             case "abacus": this.drawAbacus(); break;
@@ -73,8 +66,10 @@ export class TreasureRewardScreenView implements View {
     // Celebrate completing all four topics.
     private renderUltimate(): void {
         this.drawHeader("Ultimate Treasure Found");
-        this.drawText("You did it!", 30, 125, 440, 62);
-        this.drawText("You've completed\nthe adventure and\nunlocked the\nUltimate Treasure!", 30, 255, 440, 35);
+        this.centerTextBlock([
+            this.drawText("You did it!", 30, 0, 470, 62),
+            this.drawText("You've completed\nthe adventure and\nunlocked the\nUltimate Treasure!", 30, 0, 470, 35),
+        ]);
         this.drawText("The Ultimate\nTreasure", 505, 95, 280, 42, PINK);
         this.drawChest(530, 285, true);
     }
@@ -225,6 +220,19 @@ export class TreasureRewardScreenView implements View {
         scale.add(new Konva.Line({ points: [126, 58, 126, 180], stroke: "#FFFBE8", strokeWidth: 3,
             lineCap: "round" }));
         this.content.add(scale);
+    }
+
+    // Share the clue layout with the final rewards, accounting for each text's measured height.
+    private centerTextBlock(textLines: readonly Konva.Text[]): void {
+        const gap = 24;
+        const textHeight = textLines.reduce((height, text) => height + text.height(), 0)
+            + gap * (textLines.length - 1);
+        let y = (STAGE_HEIGHT - textHeight) / 2;
+        for (const text of textLines) {
+            text.align("center");
+            text.y(y);
+            y += text.height() + gap;
+        }
     }
 
     // Add themed text to the current reward content.

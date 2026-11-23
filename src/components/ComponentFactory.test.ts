@@ -1,6 +1,6 @@
 import { afterAll, expect, it, vi } from "vitest";
 import Konva from "konva";
-import { createNumberField } from "./ComponentFactory.ts";
+import { createNextStepButton, createNumberField } from "./ComponentFactory.ts";
 
 vi.spyOn(Konva.Util, "createCanvasElement").mockReturnValue({
     getContext: () => ({ save() {}, restore() {}, measureText: (text: string) => ({ width: text.length * 10 }) }),
@@ -9,6 +9,17 @@ afterAll(() => vi.restoreAllMocks());
 
 const field = { y: 20, cellXs: [10, 50, 90], size: { width: 40, height: 44, fontSize: 36 } };
 const style = { fill: "#FFFFFF", stroke: "#27695B", strokeWidth: 2, textName: "partial-product" };
+
+it.each([true, false])("keeps the solution action enabled for click and tap (hasNext: %s)", hasNext => {
+    const onAction = vi.fn();
+    const button = createNextStepButton(hasNext, onAction);
+    expect(button.findOne<Konva.Text>("Text")?.text()).toBe(hasNext ? "Next Step →" : "Try Again");
+    expect(button.findOne<Konva.Rect>("Rect")?.opacity()).toBe(1);
+    button.fire("click");
+    button.fire("tap");
+    expect(onAction).toHaveBeenCalledTimes(2);
+    button.destroy();
+});
 
 it("draws every box and leaves an empty field blank", () => {
     const group = createNumberField(field, "", style);

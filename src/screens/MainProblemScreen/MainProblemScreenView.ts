@@ -2,7 +2,7 @@ import Konva from "konva";
 import type { View } from "../../types.ts";
 import { STAGE_WIDTH, STAGE_HEIGHT, FONT_FAMILY, TITLE_COLOR, BUTTON_COLOR, BUTTON_TEXT_COLOR } from "../../constants.ts";
 import { createHomeButton } from "../../components/HomeButton.ts";
-import { createNumberField } from "../../components/ComponentFactory.ts";
+import { PRIMARY_BUTTON_SIZE as PRIMARY_BUTTON, createNumberField, createPrimaryButton } from "../../components/ComponentFactory.ts";
 import { MARKER_SIZE, ROW_HEIGHT } from "./MainProblemLayout.ts";
 import type { FieldLayout, HorizontalLine, ProblemLayout, Rect, RowMarker } from "./MainProblemLayout.ts";
 import {
@@ -11,8 +11,6 @@ import {
 import type { RowProgress } from "./MainProblemRows.ts";
 
 const BACK_BUTTON = { width: 150, height: 40 };
-/** The main button in the bottom-right corner: "Submit", then "Continue" or "Review Mistakes", in the same spot. */
-const PRIMARY_BUTTON = { width: 170, height: 48 };
 /** Same distance from the edges as the Home button has in the bottom-left. */
 const SCREEN_MARGIN = 30;
 const HOME_BUTTON_BOTTOM = STAGE_HEIGHT - 22; // the Home button is 40 high and starts at STAGE_HEIGHT - 62
@@ -130,10 +128,10 @@ export class MainProblemScreenView implements View {
     });
     this.group.add(this.feedback);
     // Try Again appears beside Continue after a correct answer, or beside Review Mistakes after an incorrect one.
-    this.submitButton = this.makePrimaryButton("Submit", PRIMARY_BUTTON_X, PRIMARY_BUTTON_Y, onSubmitClick);
-    this.continueButton = this.makePrimaryButton("Continue", PRIMARY_BUTTON_X, PRIMARY_BUTTON_Y, onContinueClick);
-    this.reviewButton = this.makePrimaryButton("Review Mistakes", PRIMARY_BUTTON_X, PRIMARY_BUTTON_Y, onReviewClick);
-    this.tryAgainButton = this.makePrimaryButton("Try Again", TRY_AGAIN_BUTTON_X, PRIMARY_BUTTON_Y, onTryAgainClick);
+    this.submitButton = createPrimaryButton("Submit", PRIMARY_BUTTON_X, PRIMARY_BUTTON_Y, onSubmitClick);
+    this.continueButton = createPrimaryButton("Continue", PRIMARY_BUTTON_X, PRIMARY_BUTTON_Y, onContinueClick);
+    this.reviewButton = createPrimaryButton("Review Mistakes", PRIMARY_BUTTON_X, PRIMARY_BUTTON_Y, onReviewClick);
+    this.tryAgainButton = createPrimaryButton("Try Again", TRY_AGAIN_BUTTON_X, PRIMARY_BUTTON_Y, onTryAgainClick);
     this.continueButton.visible(false);
     this.reviewButton.visible(false);
     this.tryAgainButton.visible(false);
@@ -357,21 +355,6 @@ export class MainProblemScreenView implements View {
 
   private makeLine({ x1, x2, y }: HorizontalLine, strokeWidth = 3): Konva.Line {
     return new Konva.Line({ points: [x1, y, x2, y], stroke: TITLE_COLOR, strokeWidth, lineCap: "round" });
-  }
-
-  private makePrimaryButton(label: string, x: number, y: number, onClick: () => void): Konva.Group {
-    const button = new Konva.Group({ x, y });
-    button.add(new Konva.Rect({
-      ...PRIMARY_BUTTON, fill: BUTTON_COLOR, cornerRadius: 8,
-    }));
-    button.add(new Konva.Text({
-      ...PRIMARY_BUTTON, text: label, fontSize: 20, fontFamily: FONT_FAMILY,
-      fill: BUTTON_TEXT_COLOR, align: "center", verticalAlign: "middle",
-    }));
-    button.on("click", onClick);
-    button.on("mouseenter", () => (document.body.style.cursor = "pointer"));
-    button.on("mouseleave", () => (document.body.style.cursor = "default"));
-    return button;
   }
 
   private makeBackButton(onClick: () => void): Konva.Group {

@@ -69,20 +69,23 @@ describe("SolutionScreenController", () => {
         expect(view.renderSubtraction).not.toHaveBeenCalled();
     });
 
-    it("advances division through the callback and stops at the last box", () => {
+    it("advances division to the last box, then routes Try Again to the same level", () => {
         const problem = createDivisionProblem();
-        const controller = new SolutionScreenController({ switchToScreen: () => {} });
+        const screens: Screen[] = [];
+        const controller = new SolutionScreenController({ switchToScreen: screen => screens.push(screen) });
         controller.setProblem(problem, "division", 5);
 
         view.onNextStep();
         expect(view.renderDivision).toHaveBeenLastCalledWith(
             problem.solution.steps[0].divisionBoxMethod, 2,
         );
+        expect(screens).toEqual([]);
 
         view.onNextStep();
         expect(view.renderDivision).toHaveBeenLastCalledWith(
             problem.solution.steps[0].divisionBoxMethod, 2,
         );
+        expect(screens).toEqual([{ type: "mainproblem", topic: "division", difficulty: 5 }]);
     });
 
     it("resets progress when a different problem is set", () => {

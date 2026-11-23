@@ -103,7 +103,7 @@ export class DivisionSolutionView{
         // Home and Back to map, like the problem screen, so the student is never stuck here
         this.group.add(createHomeButton(this.onHome));
         this.group.add(createBackToMapButton(this.onBackToMap));
-        // "Next Step →" while there are boxes left to reveal, then a faded "Completed"
+        // "Next Step →" while there are boxes left to reveal, then "Try Again".
         this.group.add(createNextStepButton(count < division.boxes.length, this.onNextStep));
         this.group.getLayer()?.batchDraw();//redraw the layer to reflect the changes
     }

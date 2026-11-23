@@ -18,7 +18,7 @@ export class TreasureRewardScreenView implements View {
         const homeButton = createHomeButton(onHome);
         homeButton.on("tap", onHome);
         const continueButton = createPrimaryButton(
-            "Continue →", STAGE_WIDTH - 30 - PRIMARY_BUTTON_SIZE.width,
+            "Continue", STAGE_WIDTH - 30 - PRIMARY_BUTTON_SIZE.width,
             STAGE_HEIGHT - 22 - PRIMARY_BUTTON_SIZE.height, onContinue,
         );
         continueButton.on("tap", onContinue);

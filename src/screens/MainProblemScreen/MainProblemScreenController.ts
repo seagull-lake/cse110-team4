@@ -124,6 +124,8 @@ export class MainProblemScreenController extends ScreenController {
     if (!progression.isCompleted && progression.currentDifficulty === this.model.getDifficulty()) {
       const activeProgression = startLevel(level, progression, level.id);
       saveProgression(level, completeLevel(level, activeProgression, level.id));
+      this.screenSwitcher.switchToScreen({ type: "treasurehunt" });
+      return;
     }
 
     this.screenSwitcher.switchToScreen({ type: "adventuremap", topic: this.model.getTopic() });

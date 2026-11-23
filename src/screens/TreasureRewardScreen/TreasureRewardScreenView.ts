@@ -35,9 +35,22 @@ export class TreasureRewardScreenView implements View {
     }
 
     // Show a new clue and one progress marker for each level.
-    private renderClue(page: TreasureRewardPage): void {
+    private renderClue(page: TreasureRewardPage & { type: "clue" }): void {
         this.drawHeader("Treasure Hint");
-        this.drawText("You found a\nClue for the\nGolden Treasure", 30, 155, 470, 55);
+        const clueText = [
+            this.drawText("You found a clue:", 30, 0, 470, 38),
+            this.drawText(page.clue, 30, 0, 470, 62),
+            this.drawText("for the Golden Treasure", 30, 0, 470, 30),
+        ];
+        const gap = 24;
+        const textHeight = clueText.reduce((height, text) => height + text.height(), 0)
+            + gap * (clueText.length - 1);
+        let y = (STAGE_HEIGHT - textHeight) / 2;
+        for (const text of clueText) {
+            text.align("center");
+            text.y(y);
+            y += text.height() + gap;
+        }
         this.drawText("The Golden\nTreasure", 535, 95, 250, 39, PINK);
         this.drawProgress(page);
         this.drawChest(610, 270, false);
@@ -129,9 +142,11 @@ export class TreasureRewardScreenView implements View {
     }
 
     // Add themed text to the current reward content.
-    private drawText(text: string, x: number, y: number, width: number, fontSize: number, fill = TITLE_COLOR): void {
-        this.content.add(new Konva.Text({ x, y, width, text, fontSize, fill,
-            fontFamily: FONT_FAMILY, lineHeight: 1.3, listening: false }));
+    private drawText(text: string, x: number, y: number, width: number, fontSize: number, fill = TITLE_COLOR): Konva.Text {
+        const label = new Konva.Text({ x, y, width, text, fontSize, fill,
+            fontFamily: FONT_FAMILY, lineHeight: 1.3, listening: false });
+        this.content.add(label);
+        return label;
     }
 
     // Show this screen and redraw its layer.

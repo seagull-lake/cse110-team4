@@ -1,16 +1,21 @@
 import { getLevelDefinition } from "../../levels/levelConfig.ts";
 import type { LevelType } from "../../levels/levelConfig.ts";
+import { treasureCluesByTopic } from "../../levels/treasureConfig.ts";
 
 export type TreasureRewardType = "clue" | "treasure" | "ultimate";
 
-export interface TreasureRewardPage {
-    readonly type: TreasureRewardType;
+interface TreasureRewardProgress {
     readonly topic: LevelType;
     readonly difficulty: number;
     readonly cluesFound: number;
     readonly totalClues: number;
     readonly hasNext: boolean;
 }
+
+export type TreasureRewardPage = TreasureRewardProgress & (
+    { readonly type: "clue"; readonly clue: string } |
+    { readonly type: "treasure" | "ultimate" }
+);
 
 export class TreasureRewardScreenModel {
     private readonly topic: LevelType;
@@ -34,14 +39,21 @@ export class TreasureRewardScreenModel {
         this.rewardType = difficulty === level.maxDifficulty ? "treasure" : "clue";
     }
     getCurrentPage(): TreasureRewardPage {
-        return {
-            type: this.rewardType,
+        const progress = {
             topic: this.topic,
             difficulty: this.difficulty,
             cluesFound: this.difficulty,
             totalClues: this.totalClues,
             hasNext: this.rewardType === "treasure" && this.allTopicsCompleted,
         };
+        if (this.rewardType === "clue") {
+            return {
+                ...progress,
+                type: "clue",
+                clue: treasureCluesByTopic[this.topic][this.difficulty - 1],
+            };
+        }
+        return { ...progress, type: this.rewardType };
     }
     nextPage(): void {
         if (this.getCurrentPage().hasNext) {

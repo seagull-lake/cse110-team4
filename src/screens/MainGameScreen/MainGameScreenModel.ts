@@ -3,6 +3,7 @@ import {
 } from "../../levels/levelConfig.ts";
 import type { LevelDefinition, LevelType } from "../../levels/levelConfig.ts";
 import type { MainGameProblem } from "../../domain/problem.ts";
+import { loadProgression } from "../../storage.ts";
 import type { ProblemDispatcher } from "../../problem-engine/ProblemDispatcher.ts";
 
 export interface Topic {
@@ -29,6 +30,13 @@ export class MainGameScreenModel {
         const match = TOPICS.find((t) => t.level.type === topic);
         if (!match) throw new Error(`Unknown topic: ${topic}`);
         return match.level;
+    }
+
+    /** Topics whose levels are all finished (same saved flag the Treasure Hunt screen uses). */
+    getCompletedTopics(): ReadonlySet<LevelType> {
+        return new Set(
+            TOPICS.filter((t) => loadProgression(t.level).isCompleted).map((t) => t.level.type),
+        );
     }
 
     selectTopic(topic: LevelType): void {

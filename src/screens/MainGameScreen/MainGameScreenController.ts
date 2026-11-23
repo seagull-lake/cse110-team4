@@ -28,5 +28,11 @@ export class MainGameScreenController extends ScreenController {
         this.screenSwitcher.switchToScreen({ type: "menu" });
     }
 
+    /** Refresh on every visit so a topic finished a moment ago turns golden. */
+    override show(): void {
+        this.view.setCompletedTopics(this.model.getCompletedTopics());
+        super.show();
+    }
+
     getView(): MainGameScreenView { return this.view; }
 }

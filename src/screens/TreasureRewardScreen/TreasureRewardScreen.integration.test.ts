@@ -29,7 +29,7 @@ function labels(): string[] {
 
 function clickContinue(): void {
     const button = controller.getView().getGroup().find<Konva.Text>("Text")
-        .find(node => node.text() === "Continue →");
+        .find(node => node.text() === "Continue");
     if (!button) throw new Error("Continue button is missing.");
     button.getParent()?.fire("click");
 }

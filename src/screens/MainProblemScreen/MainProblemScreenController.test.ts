@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Screen } from "../../types.ts";
 import type { ProblemLayout } from "./MainProblemLayout.ts";
 import { MainProblemScreenController } from "./MainProblemScreenController.ts";
@@ -7,6 +7,9 @@ import { MainGameProblemGenerator } from "../../problem-engine/MainGameProblemGe
 import type { SolvedMainGameProblem } from "../../problem-engine/MainGameProblemGenerator.ts";
 import { getAnswerFields, getExpectedEntries } from "./MainProblemScreenModel.ts";
 import type { LevelType } from "../../levels/levelConfig.ts";
+import { getLevelDefinition, problemDifficultyConfig } from "../../levels/levelConfig.ts";
+import { initialProgression, isLevelUnlocked } from "../../levels/progression.ts";
+import { loadProgression, saveProgression } from "../../storage.ts";
 
 // Konva can't draw text in tests, so the view is replaced with one that records what it was told
 const view = vi.hoisted(() => ({
@@ -283,6 +286,114 @@ describe("main problem screen controller", () => {
     return String(problem.answer) === "9".repeat(length) ? "8".repeat(length) : "9".repeat(length);
   }
   const topics = ["addition", "subtraction", "multiplication", "division"] as const;
+
+  describe("saving completed levels", () => {
+    beforeEach(() => {
+      const saved = new Map<string, string>();
+      vi.stubGlobal("localStorage", {
+        getItem: (key: string) => saved.get(key) ?? null,
+        setItem: (key: string, value: string) => { saved.set(key, value); },
+      });
+    });
+    afterEach(() => vi.unstubAllGlobals());
+
+    function openLevel(topic: LevelType, difficulty = 1) {
+      const level = getLevelDefinition(topic);
+      const problem = new MainGameProblemGenerator(() => 0.5).generate({
+        operation: topic, operandDigits: problemDifficultyConfig.mainGame[topic][difficulty],
+      });
+      const game = setup({ generate: () => problem });
+      game.controller.setLevel(topic, difficulty);
+      return { ...game, level, problem };
+    }
+
+    it.each(topics)("saves %s completion on Submit, before Continue", topic => {
+      const { level, problem, screens } = openLevel(topic);
+      fillOut(topic, problem, String(problem.answer));
+      view.onSubmitClick();
+
+      expect(loadProgression(level).currentDifficulty).toBe(2);
+      expect(isLevelUnlocked(level, loadProgression(level), 2)).toBe(true);
+      expect(view.correctAnswerShown).toBe(true);
+      expect(screens).toEqual([]);
+    });
+
+    it.each(topics)("keeps %s completion after Try Again and an incorrect answer", topic => {
+      const { level, problem, screens } = openLevel(topic);
+      fillOut(topic, problem, String(problem.answer));
+      view.onSubmitClick();
+      view.onTryAgainClick();
+      expect(view.entries.every(entry => entry === "")).toBe(true);
+      fillOut(topic, problem, wrongAnswer(problem));
+      view.onSubmitClick();
+      expect(view.incorrectAnswerShown).toBe(true);
+      view.onBackClick();
+
+      expect(screens).toEqual([{ type: "adventuremap", topic }]);
+      expect(loadProgression(level).currentDifficulty).toBe(2);
+      expect(isLevelUnlocked(level, loadProgression(level), 2)).toBe(true);
+    });
+
+    it("does not advance twice after duplicate Submit, Continue or a correct retry", () => {
+      const { level, problem } = openLevel("addition");
+      fillOut("addition", problem, String(problem.answer));
+      view.onSubmitClick();
+      view.onSubmitClick();
+      expect(loadProgression(level).currentDifficulty).toBe(2);
+
+      view.onTryAgainClick();
+      fillOut("addition", problem, String(problem.answer));
+      view.onSubmitClick();
+      view.onContinueClick();
+      view.onContinueClick();
+      expect(loadProgression(level).currentDifficulty).toBe(2);
+    });
+
+    it.each(["home", "map"] as const)("keeps completion after leaving for %s and reopening the game", destination => {
+      const { level, problem, screens } = openLevel("addition");
+      fillOut("addition", problem, String(problem.answer));
+      view.onSubmitClick();
+      if (destination === "home") view.onHomeClick();
+      else view.onBackClick();
+      expect(screens).toEqual([destination === "home" ? { type: "menu" } : { type: "adventuremap", topic: "addition" }]);
+
+      openLevel("addition", 2);
+      expect(loadProgression(level).currentDifficulty).toBe(2);
+    });
+
+    it.each(topics)("saves the final %s level before Try Again", topic => {
+      const { level, problem } = openLevel(topic, 5);
+      saveProgression(level, { ...initialProgression(level), currentDifficulty: 5 });
+      fillOut(topic, problem, String(problem.answer));
+      view.onSubmitClick();
+      expect(loadProgression(level).isCompleted).toBe(true);
+      view.onTryAgainClick();
+      fillOut(topic, problem, String(problem.answer));
+      view.onSubmitClick();
+      view.onContinueClick();
+
+      expect(loadProgression(level)).toEqual({
+        ...initialProgression(level), currentDifficulty: 5, isCompleted: true,
+      });
+    });
+
+    it.each(["incomplete", "wrong answer", "wrong step"])("does not save completion for an %s solution", kind => {
+      const { level, problem } = openLevel("addition", 2);
+      const before = { ...initialProgression(level), currentDifficulty: 2 };
+      saveProgression(level, before);
+      if (kind !== "incomplete") {
+        fillOut("addition", problem, kind === "wrong answer" ? wrongAnswer(problem) : String(problem.answer));
+        if (kind === "wrong step") {
+          view.onFieldClick(0);
+          view.onKey("Escape");
+          view.onKey("0"); // 55 + 55 carries 1 into the tens column.
+        }
+      }
+      view.onSubmitClick();
+      view.onContinueClick();
+      expect(loadProgression(level)).toEqual(before);
+    });
+  });
 
   describe("submitting only once everything is filled out", () => {
     it.each(topics)("ignores Submit for %s until every box is filled in", topic => {

@@ -82,9 +82,9 @@ export class MainProblemScreenController extends ScreenController {
 
   /**
    * Only checks the solution once every box (the in-between steps and the answer) is filled in;
-   * otherwise the student is told to finish first. The steps and the answer must all be right: then
-   * Continue is offered. Otherwise the Incorrect state marks the wrong boxes and offers Try Again or
-   * Review Mistakes (the solution screen).
+   * otherwise the student is told to finish first. When the steps and answer are all right, save
+   * completion and offer Continue. Otherwise the Incorrect state marks the wrong boxes and offers
+   * Try Again or Review Mistakes (the solution screen).
    */
   private handleSubmitClick(): void {
     if (!this.model || this.model.canTryAgain()) return;
@@ -93,6 +93,13 @@ export class MainProblemScreenController extends ScreenController {
       return;
     }
     if (this.model.checkSolution()) {
+      // Save before Try Again can replace this problem or the player can leave the screen.
+      const level = getLevelDefinition(this.model.getTopic());
+      const progression = loadProgression(level);
+      if (!progression.isCompleted && progression.currentDifficulty === this.model.getDifficulty()) {
+        const activeProgression = startLevel(level, progression, level.id);
+        saveProgression(level, completeLevel(level, activeProgression, level.id));
+      }
       this.view.showCorrectAnswer();
     } else {
       this.view.showIncorrectAnswer(this.model.getWrongFields());
@@ -118,14 +125,6 @@ export class MainProblemScreenController extends ScreenController {
 
   private handleContinueClick(): void {
     if (!this.model?.canContinue()) return;
-
-    const level = getLevelDefinition(this.model.getTopic());
-    const progression = loadProgression(level);
-    if (!progression.isCompleted && progression.currentDifficulty === this.model.getDifficulty()) {
-      const activeProgression = startLevel(level, progression, level.id);
-      saveProgression(level, completeLevel(level, activeProgression, level.id));
-    }
-
     this.screenSwitcher.switchToScreen({ type: "adventuremap", topic: this.model.getTopic() });
   }
 

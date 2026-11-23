@@ -13,7 +13,7 @@ export function createPrimaryButton(label: string, x: number, y: number, onClick
         ...PRIMARY_BUTTON_SIZE, text: label, fontSize: 20, fontFamily: FONT_FAMILY,
         fill: BUTTON_TEXT_COLOR, align: "center", verticalAlign: "middle",
     }));
-    button.on("click tap", onClick);
+    button.on("click", onClick);
     button.on("mouseenter", () => (document.body.style.cursor = "pointer"));
     button.on("mouseleave", () => (document.body.style.cursor = "default"));
     return button;
@@ -59,6 +59,7 @@ export function createNextStepButton(hasNext: boolean, onNextStep: () => void): 
             STAGE_HEIGHT - 22 - PRIMARY_BUTTON_SIZE.height, onNextStep,
         );
         button.name("next-step-button");
+        button.on("tap", onNextStep);
         return button;
     }
     const button = new Konva.Group({ x: STAGE_WIDTH - 190, y: STAGE_HEIGHT - 62, name: "next-step-button" });

@@ -13,14 +13,14 @@ export class TreasureHuntScreenView implements View {
     constructor(onHomeClick: () => void, onTopicClick: (topic: LevelType) => void) {
         this.onTopicClick = onTopicClick;
         this.group.add(this.text("Treasure Hunt", 45, 44));
-        this.group.add(this.text("Complete each topic to collect its treasure!", 105, 23));
+        this.group.add(this.text("Complete each topic to collect its golden treasure!", 105, 23));
         this.group.add(this.rewards);
         this.group.add(createHomeButton(onHomeClick));
     }
 
     setTreasureData(data: TreasureHuntData): void {
         this.rewards.destroyChildren();
-        this.rewards.add(this.text(`${data.collectedCount} / ${data.treasures.length} treasures collected`, 145, 22));
+        this.rewards.add(this.text(`${data.collectedCount} / ${data.treasures.length} golden treasures collected`, 145, 22));
         data.treasures.forEach((treasure, index) => {
             const card = new Konva.Group({ x: 90 + (index % 2) * 320, y: 195 + Math.floor(index / 2) * 110 });
             card.add(new Konva.Rect({
